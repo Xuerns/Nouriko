@@ -211,7 +211,7 @@ export const apiClient = {
     params: AnalyzeChatParams
   ): Promise<ChatAnalyzeResponse> {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25_000);
+    const timeoutId = setTimeout(() => controller.abort(), 65_000);
 
     const trimmedMessage = (params.message ?? "").trim();
     const cleanContext = (params.conversationContext ?? [])

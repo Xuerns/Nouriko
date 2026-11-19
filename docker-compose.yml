@@ -39,7 +39,9 @@ services:
       AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?AUTH_JWT_SECRET must be set in .env (min 32 chars)}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      GEMINI_MODEL: gemini-3.5-flash-lite
+      GEMINI_THINKING_LEVEL: ${GEMINI_THINKING_LEVEL:-minimal}
+      GEMINI_TIMEOUT: ${GEMINI_TIMEOUT:-60s}
       FOOD_API_BASE_URL: ${FOOD_API_BASE_URL:-}
       FOOD_API_KEY: ${FOOD_API_KEY:-}
       RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-60}

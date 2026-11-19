@@ -56,7 +56,7 @@ func New(deps Dependencies) *fiber.App {
 		AppName:      "Nouriko API",
 		BodyLimit:    10 * 1024 * 1024, // 10 MiB for food photo uploads
 		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 30 * time.Second,
+		WriteTimeout: 75 * time.Second,
 		IdleTimeout:  60 * time.Second,
 		ErrorHandler: newErrorHandler(logger),
 	})

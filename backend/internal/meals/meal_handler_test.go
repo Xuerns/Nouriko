@@ -412,7 +412,7 @@ func doMealReq(t *testing.T, app *fiber.App, method, target, token, body string)
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
-	resp, err := app.Test(req)
+	resp, err := app.Test(req, fiber.TestConfig{Timeout: 10 * time.Second})
 	if err != nil {
 		t.Fatalf("app.Test %s %s: %v", method, target, err)
 	}

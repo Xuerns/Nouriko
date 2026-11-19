@@ -67,7 +67,7 @@ func doAuthJSONReq(t *testing.T, app *fiber.App, method, path, bearer string, bo
 	if bearer != "" {
 		req.Header.Set("Authorization", "Bearer "+bearer)
 	}
-	resp, err := app.Test(req)
+	resp, err := app.Test(req, fiber.TestConfig{Timeout: 10 * time.Second})
 	if err != nil {
 		t.Fatalf("%s %s: %v", method, path, err)
 	}
@@ -239,7 +239,7 @@ func TestAuthHandler_EdgeCasesAndStrictErrorContract(t *testing.T) {
 	// 2. Malformed JSON returns 400 INVALID_INPUT
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", strings.NewReader("{bad-json"))
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := app.Test(req)
+	resp, err := app.Test(req, fiber.TestConfig{Timeout: 10 * time.Second})
 	if err != nil {
 		t.Fatalf("malformed json test: %v", err)
 	}

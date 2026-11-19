@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"mime/multipart"
@@ -23,6 +24,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/limiter"
 	"github.com/google/uuid"
+	"google.golang.org/genai"
 )
 
 type mockAnalyzer struct {
@@ -131,7 +133,7 @@ func TestChatAnalyze_AuthOnboardingAndUnavailableGuards(t *testing.T) {
 	// 1. Unauthenticated -> 401 UNAUTHORIZED.
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/chat/analyze", strings.NewReader(`{"message":"budget 15rb"}`))
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := app.Test(req)
+	resp, err := app.Test(req, fiber.TestConfig{Timeout: 10 * time.Second})
 	if err != nil {
 		t.Fatalf("app.Test: %v", err)
 	}
@@ -146,7 +148,7 @@ func TestChatAnalyze_AuthOnboardingAndUnavailableGuards(t *testing.T) {
 	req2 := httptest.NewRequest(http.MethodPost, "/api/v1/chat/analyze", strings.NewReader(`{"message":"budget 15rb"}`))
 	req2.Header.Set("Content-Type", "application/json")
 	req2.Header.Set("Authorization", "Bearer "+unboardedID)
-	resp2, err := app.Test(req2)
+	resp2, err := app.Test(req2, fiber.TestConfig{Timeout: 10 * time.Second})
 	if err != nil {
 		t.Fatalf("app.Test: %v", err)
 	}
@@ -164,7 +166,7 @@ func TestChatAnalyze_AuthOnboardingAndUnavailableGuards(t *testing.T) {
 	req3 := httptest.NewRequest(http.MethodPost, "/api/v1/chat/analyze", strings.NewReader(`{"message":"budget 15rb"}`))
 	req3.Header.Set("Content-Type", "application/json")
 	req3.Header.Set("Authorization", "Bearer "+uid)
-	resp3, err := app.Test(req3)
+	resp3, err := app.Test(req3, fiber.TestConfig{Timeout: 10 * time.Second})
 	if err != nil {
 		t.Fatalf("app.Test: %v", err)
 	}
@@ -400,7 +402,11 @@ func TestChatAnalyze_TimeoutReturns504AITimeout(t *testing.T) {
 
 	analyzer := &mockAnalyzer{
 		fn: func(_ context.Context, _ AnalyzeRequest) (*RawAIResponse, error) {
-			return nil, context.DeadlineExceeded
+			return nil, mapGeminiError(genai.APIError{
+				Code:    http.StatusGatewayTimeout,
+				Message: "Deadline expired before operation could complete.",
+				Status:  "DEADLINE_EXCEEDED",
+			})
 		},
 	}
 
@@ -420,6 +426,53 @@ func TestChatAnalyze_TimeoutReturns504AITimeout(t *testing.T) {
 	_ = json.NewDecoder(resp.Body).Decode(&errBody)
 	if errBody["code"] != "AI_TIMEOUT" {
 		t.Fatalf("expected AI_TIMEOUT, got %q", errBody["code"])
+	}
+}
+
+func TestMapGeminiError(t *testing.T) {
+	deadlineErr := mapGeminiError(genai.APIError{
+		Code:    504,
+		Message: "Deadline expired before operation could complete.",
+		Status:  "DEADLINE_EXCEEDED",
+	})
+	if !errors.Is(deadlineErr, context.DeadlineExceeded) {
+		t.Fatalf("expected context.DeadlineExceeded, got %v", deadlineErr)
+	}
+
+	quotaErr := mapGeminiError(genai.APIError{
+		Code:    429,
+		Message: "Quota exceeded.",
+		Status:  "RESOURCE_EXHAUSTED",
+	})
+	if !errors.Is(quotaErr, ErrUnavailable) {
+		t.Fatalf("expected ErrUnavailable, got %v", quotaErr)
+	}
+
+	unavailErr := mapGeminiError(&genai.APIError{
+		Code:    503,
+		Message: "Model overloaded.",
+		Status:  "UNAVAILABLE",
+	})
+	if !errors.Is(unavailErr, ErrUnavailable) {
+		t.Fatalf("expected ErrUnavailable for pointer APIError, got %v", unavailErr)
+	}
+}
+
+func TestResolveThinkingLevel(t *testing.T) {
+	if got := resolveThinkingLevel(""); got != genai.ThinkingLevelMinimal {
+		t.Fatalf("expected default MINIMAL for gemini-3.5-flash-lite, got %q", got)
+	}
+	if got := resolveThinkingLevel("minimal"); got != genai.ThinkingLevelMinimal {
+		t.Fatalf("expected MINIMAL, got %q", got)
+	}
+	if got := resolveThinkingLevel("low"); got != genai.ThinkingLevelLow {
+		t.Fatalf("expected LOW, got %q", got)
+	}
+	if got := resolveThinkingLevel("medium"); got != genai.ThinkingLevelMedium {
+		t.Fatalf("expected MEDIUM, got %q", got)
+	}
+	if got := resolveThinkingLevel("high"); got != genai.ThinkingLevelHigh {
+		t.Fatalf("expected HIGH, got %q", got)
 	}
 }
 

@@ -161,7 +161,7 @@ func doProfileJSONReq(t *testing.T, app *fiber.App, method, path, bearer string,
 	if bearer != "" {
 		req.Header.Set("Authorization", "Bearer "+bearer)
 	}
-	resp, err := app.Test(req)
+	resp, err := app.Test(req, fiber.TestConfig{Timeout: 10 * time.Second})
 	if err != nil {
 		t.Fatalf("%s %s: %v", method, path, err)
 	}

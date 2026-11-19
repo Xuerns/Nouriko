@@ -558,4 +558,14 @@ func TestSecurityRegression_LLMCannotSpoofFoodAPIMacroSource(t *testing.T) {
 	if _, ok := mealProps["is_macro_estimated"]; ok {
 		t.Fatal("is_macro_estimated must not be exposed in Gemini mealSchema")
 	}
+
+	jsonSchema := chatResponseJSONSchema()
+	jsonMeals := jsonSchema["properties"].(map[string]any)["meals"].(map[string]any)
+	jsonMealProps := jsonMeals["items"].(map[string]any)["properties"].(map[string]any)
+	if _, ok := jsonMealProps["macro_source"]; ok {
+		t.Fatal("macro_source must not be exposed in Gemini ResponseJsonSchema")
+	}
+	if _, ok := jsonMealProps["is_macro_estimated"]; ok {
+		t.Fatal("is_macro_estimated must not be exposed in Gemini ResponseJsonSchema")
+	}
 }

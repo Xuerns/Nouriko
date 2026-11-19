@@ -94,10 +94,20 @@ func (h *Handler) Analyze(c fiber.Ctx) error {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUnavailable):
+			h.logger.Warn("chat analyze unavailable",
+				"request_id", requestid.FromContext(c),
+				"path", c.Path(),
+				"error", err,
+			)
 			return httpx.WriteError(c, fiber.StatusServiceUnavailable, httpx.CodeAIUnavailable)
 		case errors.Is(err, ErrPhotoUnrecognized):
 			return httpx.WriteError(c, fiber.StatusUnprocessableEntity, httpx.CodePhotoUnrecognized)
 		case errors.Is(err, context.DeadlineExceeded):
+			h.logger.Warn("chat analyze timeout",
+				"request_id", requestid.FromContext(c),
+				"path", c.Path(),
+				"error", err,
+			)
 			return httpx.WriteError(c, fiber.StatusGatewayTimeout, httpx.CodeAITimeout)
 		default:
 			h.logger.Error("chat analyze failed",

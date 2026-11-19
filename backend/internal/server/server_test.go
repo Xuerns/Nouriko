@@ -14,6 +14,8 @@ import (
 
 	"Nouriko/internal/auth"
 	"Nouriko/internal/config"
+
+	"github.com/gofiber/fiber/v3"
 )
 
 type stubPinger struct {
@@ -210,7 +212,7 @@ func TestAuthStrictRateLimiterAppliedToSensitiveEndpoints(t *testing.T) {
 				if tc.withAuth {
 					req.Header.Set("Authorization", "Bearer "+token)
 				}
-				resp, err := app.Test(req)
+				resp, err := app.Test(req, fiber.TestConfig{Timeout: 10 * time.Second})
 				if err != nil {
 					t.Fatalf("attempt %d app.Test: %v", i+1, err)
 				}

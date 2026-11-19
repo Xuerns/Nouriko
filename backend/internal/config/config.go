@@ -74,9 +74,10 @@ func (s Supabase) AuthAPIKey() string {
 
 // Gemini configures the Gemini API client.
 type Gemini struct {
-	APIKey  string        `env:"GEMINI_API_KEY"`
-	Model   string        `env:"GEMINI_MODEL" envDefault:"gemini-2.5-flash"`
-	Timeout time.Duration `env:"GEMINI_TIMEOUT" envDefault:"15s"`
+	APIKey        string        `env:"GEMINI_API_KEY"`
+	Model         string        `env:"GEMINI_MODEL" envDefault:"gemini-3.5-flash-lite"`
+	ThinkingLevel string        `env:"GEMINI_THINKING_LEVEL" envDefault:"minimal"`
+	Timeout       time.Duration `env:"GEMINI_TIMEOUT" envDefault:"60s"`
 }
 
 // FoodAPI configures the nutrition data provider (provider not decided yet).

@@ -560,7 +560,7 @@ func doJSONReq(t *testing.T, app *fiber.App, method, path, bearer string, body a
 	if bearer != "" {
 		req.Header.Set("Authorization", "Bearer "+bearer)
 	}
-	resp, err := app.Test(req)
+	resp, err := app.Test(req, fiber.TestConfig{Timeout: 10 * time.Second})
 	if err != nil {
 		t.Fatalf("%s %s: %v", method, path, err)
 	}
@@ -606,7 +606,7 @@ func doAuthedJSON(t *testing.T, app *fiber.App, method, target, token, body stri
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
-	resp, err := app.Test(req)
+	resp, err := app.Test(req, fiber.TestConfig{Timeout: 10 * time.Second})
 	if err != nil {
 		t.Fatalf("app.Test %s %s: %v", method, target, err)
 	}
