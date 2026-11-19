@@ -147,3 +147,107 @@ export interface ChatMessage {
   hasPhoto?: boolean;
   createdAt: number;
 }
+
+export type MealTime = "breakfast" | "lunch" | "dinner" | "snack";
+
+export interface SavedMealDTO {
+  id: string;
+  meal_date: string;
+  meal_time: MealTime;
+  name: string;
+  health_score: number;
+  health_label: HealthLabel;
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  fiber_g: number;
+  price_idr: number | null;
+  input_source: InputSource;
+  created_at: string;
+}
+
+export interface CreateSavedMealRequest {
+  meal_date?: string;
+  meal_time?: MealTime;
+  name: string;
+  health_score: number;
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  fiber_g: number;
+  price_idr?: number | null;
+  input_source: InputSource;
+}
+
+export interface CreateSavedMealResponse {
+  meal: SavedMealDTO;
+}
+
+export interface DeleteSavedMealResponse {
+  deleted: boolean;
+}
+
+export interface DailyTotals {
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  fiber_g: number;
+  total_spending_idr: number;
+  meal_count: number;
+  average_health_score: number;
+  health_label: HealthLabel | null;
+}
+
+export interface DailyTargets {
+  daily_calorie_target: number;
+  target_protein_g: number;
+  target_carbs_g: number;
+  target_fat_g: number;
+  target_fiber_g: number;
+}
+
+export interface DailyProgressPercent {
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  fiber_g: number;
+}
+
+export interface DailySummaryResponse {
+  date: string;
+  meals: SavedMealDTO[];
+  totals: DailyTotals;
+  targets: DailyTargets;
+  progress_percent: DailyProgressPercent;
+}
+
+export interface HistoryDaySummary {
+  date: string;
+  meal_count: number;
+  total_calories: number;
+  total_protein_g: number;
+  total_carbs_g: number;
+  total_fat_g: number;
+  total_fiber_g: number;
+  total_spending_idr: number;
+  average_health_score: number;
+  health_label: HealthLabel;
+  meals: SavedMealDTO[];
+}
+
+export interface WeeklyHealthTrendPoint {
+  date: string;
+  average_health_score: number | null;
+  meal_count: number;
+}
+
+export interface MealHistoryResponse {
+  from: string;
+  to: string;
+  days: HistoryDaySummary[];
+  weekly_trend: WeeklyHealthTrendPoint[];
+}

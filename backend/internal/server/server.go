@@ -178,6 +178,12 @@ func New(deps Dependencies) *fiber.App {
 		chatService := ai.NewChatService(activeAnalyzer, deps.Repo, deps.FoodLookup, logger)
 		chatHandler := handler.NewChatHandler(deps.Repo, chatService, logger)
 		api.Post("/chat/analyze", authMW, aiUserLimiter, chatHandler.Analyze)
+
+		mealHandler := handler.NewMealHandler(deps.Repo, logger)
+		api.Post("/meals", authMW, mealHandler.CreateMeal)
+		api.Get("/meals/summary", authMW, mealHandler.GetDailySummary)
+		api.Get("/meals/history", authMW, mealHandler.GetMealHistory)
+		api.Delete("/meals/:id", authMW, mealHandler.DeleteMeal)
 	}
 
 	return app

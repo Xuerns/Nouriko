@@ -13,12 +13,14 @@ import { MealResultCard } from "@/components/chat/MealResultCard";
 import { PhotoCorrectionBar } from "@/components/chat/PhotoCorrectionBar";
 import { ShoppingListCard } from "@/components/chat/ShoppingListCard";
 import { apiClient, ApiError } from "@/lib/api";
+import { getLocalDateString } from "@/lib/date";
 import { getFriendlyErrorMessage } from "@/lib/errors";
 import type {
   ChatAnalyzeResponse,
   ChatMessage,
   ConversationTurn,
   MealOption,
+  MealTime,
 } from "@/lib/types";
 
 interface PendingSubmission {
@@ -84,11 +86,15 @@ export default function ChatPage() {
     null
   );
   const [savedMeals, setSavedMeals] = useState<Record<string, boolean>>({});
-  const [saveNotice, setSaveNotice] = useState<string | null>(null);
+  const [savingMeals, setSavingMeals] = useState<Record<string, boolean>>({});
+  const [saveErrors, setSaveErrors] = useState<Record<string, string>>({});
+  const [saveNotice, setSaveNotice] = useState(false);
   const [hasRetryableSubmission, setHasRetryableSubmission] = useState(false);
 
   const lastSubmissionRef = useRef<PendingSubmission | null>(null);
   const messagesRef = useRef<ChatMessage[]>([]);
+  const savingMealsRef = useRef<Record<string, boolean>>({});
+  const savedMealsRef = useRef<Record<string, boolean>>({});
   const bottomAnchorRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -264,22 +270,81 @@ export default function ChatPage() {
       }
     }
     lastSubmissionRef.current = null;
+    savingMealsRef.current = {};
+    savedMealsRef.current = {};
     setHasRetryableSubmission(false);
     setMessages([]);
     setSavedMeals({});
-    setSaveNotice(null);
+    setSavingMeals({});
+    setSaveErrors({});
+    setSaveNotice(false);
     setComposerErrorCode(null);
   }, [isSending]);
 
-  const handleToggleSaveMeal = useCallback(
-    (key: string) => {
-      setSavedMeals((prev) => {
-        const nextSaved = !prev[key];
-        setSaveNotice(nextSaved ? t.chat.saveMealFeedback : null);
-        return { ...prev, [key]: nextSaved };
+  const handleSaveMeal = useCallback(
+    async (key: string, meal: MealOption, mealTime?: MealTime) => {
+      if (!token || savingMealsRef.current[key] || savedMealsRef.current[key]) {
+        return;
+      }
+
+      savingMealsRef.current[key] = true;
+      setSavingMeals((prev) => ({ ...prev, [key]: true }));
+      setSaveErrors((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
       });
+
+      try {
+        await apiClient.saveMeal(token, {
+          meal_date: getLocalDateString(),
+          ...(mealTime ? { meal_time: mealTime } : {}),
+          name: meal.name,
+          health_score: Math.max(
+            0,
+            Math.min(100, Math.round(meal.health_score))
+          ),
+          calories: Math.max(0, Math.round(meal.calories)),
+          protein_g: Math.max(0, meal.protein_g),
+          carbs_g: Math.max(0, meal.carbs_g),
+          fat_g: Math.max(0, meal.fat_g),
+          fiber_g: Math.max(0, meal.fiber_g),
+          price_idr:
+            meal.estimated_price_idr > 0
+              ? Math.round(meal.estimated_price_idr)
+              : null,
+          input_source: meal.input_source,
+        });
+
+        savedMealsRef.current[key] = true;
+        setSavedMeals((prev) => ({ ...prev, [key]: true }));
+        setSaveNotice(true);
+      } catch (err) {
+        if (handleUnauthorized(err)) {
+          return;
+        }
+        if (err instanceof ApiError && err.code === "ONBOARDING_REQUIRED") {
+          router.replace("/onboarding");
+          return;
+        }
+        const errorCode =
+          err instanceof ApiError && err.code === "TOO_MANY_REQUESTS"
+            ? "TOO_MANY_REQUESTS"
+            : "MEAL_SAVE_FAILED";
+        setSaveErrors((prev) => ({
+          ...prev,
+          [key]: getFriendlyErrorMessage(errorCode, language),
+        }));
+      } finally {
+        delete savingMealsRef.current[key];
+        setSavingMeals((prev) => {
+          const next = { ...prev };
+          delete next[key];
+          return next;
+        });
+      }
     },
-    [t.chat.saveMealFeedback]
+    [handleUnauthorized, language, router, token]
   );
 
   if (
@@ -334,7 +399,19 @@ export default function ChatPage() {
         </div>
       </section>
 
-      {saveNotice ? <Alert variant="info">{saveNotice}</Alert> : null}
+      {saveNotice ? (
+        <Alert variant="success">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span>{t.chat.saveMealFeedback}</span>
+            <Link
+              href="/summary"
+              className="text-xs font-medium underline underline-offset-4 text-neutral-900 dark:text-neutral-100"
+            >
+              {t.chat.viewSummaryLink}
+            </Link>
+          </div>
+        </Alert>
+      ) : null}
 
       <section
         aria-label={t.chat.title}
@@ -455,7 +532,11 @@ export default function ChatPage() {
                             key={key}
                             meal={meal}
                             saved={Boolean(savedMeals[key])}
-                            onSave={() => handleToggleSaveMeal(key)}
+                            isSaving={Boolean(savingMeals[key])}
+                            saveError={saveErrors[key] ?? null}
+                            onSave={(selectedMeal, mealTime) =>
+                              handleSaveMeal(key, selectedMeal, mealTime)
+                            }
                           />
                         );
                       })}

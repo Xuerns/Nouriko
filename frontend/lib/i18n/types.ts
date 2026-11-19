@@ -36,6 +36,8 @@ export interface Dictionary {
   };
   nav: {
     chat: string;
+    summary: string;
+    history: string;
     profile: string;
     logout: string;
     login: string;
@@ -204,7 +206,10 @@ export interface Dictionary {
     hideDetailsButton: string;
     saveMealButton: string;
     savedMealButton: string;
+    savingMealButton: string;
     saveMealFeedback: string;
+    viewSummaryLink: string;
+    mealTimeSelectLabel: string;
     shoppingListHeading: string;
     shoppingItemCol: string;
     shoppingUnitCol: string;
@@ -223,6 +228,63 @@ export interface Dictionary {
     photoPortionPlaceholder: string;
     photoCorrectionSubmit: string;
     detectedItemsLabel: string;
+  };
+  meals: {
+    mealTimeAuto: string;
+    mealTimes: {
+      breakfast: string;
+      lunch: string;
+      dinner: string;
+      snack: string;
+    };
+    inputSources: {
+      ingredients: string;
+      budget: string;
+      photo: string;
+    };
+    deleteButton: string;
+    deletingButton: string;
+    mealCountUnit: string;
+  };
+  summary: {
+    title: string;
+    dateInputLabel: string;
+    prevDayLabel: string;
+    nextDayLabel: string;
+    todayButton: string;
+    caloriesHeading: string;
+    spendingHeading: string;
+    healthScoreHeading: string;
+    macrosHeading: string;
+    savedMealsHeading: string;
+    ofTarget: string;
+    noMealsCount: string;
+    emptyTitle: string;
+    emptyDescription: string;
+    goToChatButton: string;
+    retryButton: string;
+  };
+  history: {
+    title: string;
+    subtitle: string;
+    rangeLabel: string;
+    range7Days: string;
+    range14Days: string;
+    range30Days: string;
+    weeklyChartHeading: string;
+    weeklyChartCaption: string;
+    noDataLabel: string;
+    dailyListHeading: string;
+    expandMealsButton: string;
+    collapseMealsButton: string;
+    viewSummaryLink: string;
+    totalCaloriesLabel: string;
+    totalSpendingLabel: string;
+    averageScoreLabel: string;
+    emptyTitle: string;
+    emptyDescription: string;
+    goToChatButton: string;
+    retryButton: string;
   };
   notFound: {
     title: string;

@@ -1,8 +1,13 @@
 import type {
   AnalyzeChatParams,
   ChatAnalyzeResponse,
+  CreateSavedMealRequest,
+  CreateSavedMealResponse,
+  DailySummaryResponse,
+  DeleteSavedMealResponse,
   Language,
   LoginResponse,
+  MealHistoryResponse,
   OnboardingPayload,
   ProfileResponse,
   RegisterResponse,
@@ -294,5 +299,56 @@ export const apiClient = {
     }
 
     return data as ChatAnalyzeResponse;
+  },
+
+  saveMeal(
+    token: string,
+    payload: CreateSavedMealRequest
+  ): Promise<CreateSavedMealResponse> {
+    return request<CreateSavedMealResponse>({
+      method: "POST",
+      path: "/api/v1/meals",
+      token,
+      body: payload,
+    });
+  },
+
+  deleteMeal(token: string, mealId: string): Promise<DeleteSavedMealResponse> {
+    return request<DeleteSavedMealResponse>({
+      method: "DELETE",
+      path: `/api/v1/meals/${encodeURIComponent(mealId)}`,
+      token,
+    });
+  },
+
+  getDailySummary(token: string, date?: string): Promise<DailySummaryResponse> {
+    const query = date ? `?date=${encodeURIComponent(date)}` : "";
+    return request<DailySummaryResponse>({
+      method: "GET",
+      path: `/api/v1/meals/summary${query}`,
+      token,
+    });
+  },
+
+  getMealHistory(
+    token: string,
+    params?: { from?: string; to?: string; days?: number }
+  ): Promise<MealHistoryResponse> {
+    const search = new URLSearchParams();
+    if (params?.from) {
+      search.set("from", params.from);
+    }
+    if (params?.to) {
+      search.set("to", params.to);
+    }
+    if (params?.days !== undefined) {
+      search.set("days", String(params.days));
+    }
+    const qs = search.toString();
+    return request<MealHistoryResponse>({
+      method: "GET",
+      path: `/api/v1/meals/history${qs ? `?${qs}` : ""}`,
+      token,
+    });
   },
 };

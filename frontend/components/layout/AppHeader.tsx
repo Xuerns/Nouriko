@@ -39,6 +39,12 @@ export function AppHeader() {
                 <Link href="/chat" className={navLinkClass("/chat")}>
                   {t.nav.chat}
                 </Link>
+                <Link href="/summary" className={navLinkClass("/summary")}>
+                  {t.nav.summary}
+                </Link>
+                <Link href="/history" className={navLinkClass("/history")}>
+                  {t.nav.history}
+                </Link>
                 <Link href="/profile" className={navLinkClass("/profile")}>
                   {t.nav.profile}
                 </Link>

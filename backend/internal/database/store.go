@@ -55,6 +55,15 @@ type FoodPriceStore interface {
 	ListAllFoodPrices(ctx context.Context, category string, limit int) ([]FoodPrice, error)
 }
 
+// SavedMealStore defines persistence operations for the saved_meals table.
+type SavedMealStore interface {
+	CreateSavedMeal(ctx context.Context, params CreateSavedMealParams) (SavedMeal, error)
+	DeleteSavedMeal(ctx context.Context, userID, mealID string) error
+	ListSavedMealsByDate(ctx context.Context, userID, date string) ([]SavedMeal, error)
+	ListMealHistory(ctx context.Context, userID, fromDate, toDate string, limit, offset int) ([]SavedMeal, error)
+	GetWeeklyHealthScores(ctx context.Context, userID, fromDate, toDate string) ([]DailyHealthScorePoint, error)
+}
+
 // Repository aggregates all persistence interfaces and atomic multi-table
 // transaction helpers.
 type Repository interface {
@@ -62,6 +71,7 @@ type Repository interface {
 	LocalAuthTokenStore
 	ProfileStore
 	FoodPriceStore
+	SavedMealStore
 	VerifyEmailWithToken(ctx context.Context, tokenHash string) (string, error)
 	ResetPasswordWithToken(ctx context.Context, tokenHash, newPasswordHash string) (string, error)
 	DeleteLocalAccount(ctx context.Context, userID string) error

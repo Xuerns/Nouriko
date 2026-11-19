@@ -348,6 +348,26 @@ func (m *memRepo) ListAllFoodPrices(_ context.Context, _ string, _ int) ([]datab
 	return []database.FoodPrice{}, nil
 }
 
+func (m *memRepo) CreateSavedMeal(_ context.Context, _ database.CreateSavedMealParams) (database.SavedMeal, error) {
+	return database.SavedMeal{}, nil
+}
+
+func (m *memRepo) DeleteSavedMeal(_ context.Context, _, _ string) error {
+	return database.ErrNotFound
+}
+
+func (m *memRepo) ListSavedMealsByDate(_ context.Context, _, _ string) ([]database.SavedMeal, error) {
+	return []database.SavedMeal{}, nil
+}
+
+func (m *memRepo) ListMealHistory(_ context.Context, _, _, _ string, _, _ int) ([]database.SavedMeal, error) {
+	return []database.SavedMeal{}, nil
+}
+
+func (m *memRepo) GetWeeklyHealthScores(_ context.Context, _, _, _ string) ([]database.DailyHealthScorePoint, error) {
+	return []database.DailyHealthScorePoint{}, nil
+}
+
 func TestLocalServiceFullLifecycle(t *testing.T) {
 	ctx := context.Background()
 	repo := newMemRepo()

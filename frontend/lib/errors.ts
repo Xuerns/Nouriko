@@ -13,6 +13,8 @@ export type ErrorCode =
   | "AI_UNAVAILABLE"
   | "AI_TIMEOUT"
   | "ONBOARDING_REQUIRED"
+  | "MEAL_SAVE_FAILED"
+  | "MEAL_DELETE_FAILED"
   | "TOO_MANY_REQUESTS"
   | "UNAUTHORIZED"
   | "NOT_FOUND"
@@ -45,6 +47,10 @@ const ERROR_MESSAGES: Record<Language, Record<ErrorCode, string>> = {
       "Permintaan membutuhkan waktu terlalu lama. Periksa koneksi kamu, lalu coba kirim ulang.",
     ONBOARDING_REQUIRED:
       "Lengkapi data profil kamu terlebih dahulu sebelum menggunakan chat nutrisi.",
+    MEAL_SAVE_FAILED:
+      "Makanan belum berhasil disimpan. Tekan Simpan sekali lagi.",
+    MEAL_DELETE_FAILED:
+      "Makanan belum berhasil dihapus. Coba tekan Hapus sekali lagi.",
     TOO_MANY_REQUESTS:
       "Kamu mengirim terlalu banyak permintaan. Tunggu sebentar, lalu coba lagi.",
     UNAUTHORIZED: "Sesi kamu sudah berakhir. Silakan masuk kembali.",
@@ -78,6 +84,10 @@ const ERROR_MESSAGES: Record<Language, Record<ErrorCode, string>> = {
       "The request took too long to complete. Please check your connection and try sending again.",
     ONBOARDING_REQUIRED:
       "Please complete your profile details first before using the nutrition chat.",
+    MEAL_SAVE_FAILED:
+      "The meal could not be saved. Press Save once more.",
+    MEAL_DELETE_FAILED:
+      "The meal could not be removed. Please try pressing Delete again.",
     TOO_MANY_REQUESTS:
       "You have made too many requests. Please wait a moment and try again.",
     UNAUTHORIZED: "Your session has ended. Please sign in again.",

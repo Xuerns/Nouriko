@@ -7,17 +7,25 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  Loader2,
   ShoppingBasket,
   Utensils,
 } from "lucide-react";
 import { useI18n } from "@/components/providers/I18nProvider";
 import { formatIDR, formatMacro } from "@/components/chat/format";
-import type { HealthLabel, InputSource, MealOption } from "@/lib/types";
+import type {
+  HealthLabel,
+  InputSource,
+  MealOption,
+  MealTime,
+} from "@/lib/types";
 
 interface MealResultCardProps {
   meal: MealOption;
-  onSave?: (meal: MealOption) => void;
+  onSave?: (meal: MealOption, mealTime?: MealTime) => void | Promise<void>;
   saved?: boolean;
+  isSaving?: boolean;
+  saveError?: string | null;
 }
 
 function SourceIcon({ source }: { source: InputSource }) {
@@ -45,9 +53,12 @@ export function MealResultCard({
   meal,
   onSave,
   saved = false,
+  isSaving = false,
+  saveError = null,
 }: MealResultCardProps) {
   const { t } = useI18n();
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [selectedMealTime, setSelectedMealTime] = useState<"" | MealTime>("");
 
   const hasMissing =
     Array.isArray(meal.missing_ingredients) &&
@@ -206,20 +217,91 @@ export function MealResultCard({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-neutral-300 dark:border-neutral-700 pt-3">
-        <button
-          type="button"
-          onClick={() => onSave?.(meal)}
-          aria-pressed={saved}
-          className="inline-flex items-center gap-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 px-3 py-1.5 text-xs font-medium text-neutral-900 dark:text-neutral-100 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900"
-        >
-          {saved ? (
-            <Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          ) : (
-            <Bookmark className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          )}
-          <span>{saved ? t.chat.savedMealButton : t.chat.saveMealButton}</span>
-        </button>
+      <div className="space-y-2 border-t border-neutral-300 dark:border-neutral-700 pt-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-neutral-600 dark:text-neutral-400">
+              <span>{t.chat.mealTimeSelectLabel}</span>
+              <select
+                value={selectedMealTime}
+                disabled={saved || isSaving}
+                onChange={(e) =>
+                  setSelectedMealTime(e.target.value as "" | MealTime)
+                }
+                aria-label={t.chat.mealTimeSelectLabel}
+                className="ml-2 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent px-2 py-1 text-xs text-neutral-900 dark:text-neutral-100 disabled:opacity-50"
+              >
+                <option
+                  value=""
+                  className="bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100"
+                >
+                  {t.meals.mealTimeAuto}
+                </option>
+                <option
+                  value="breakfast"
+                  className="bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100"
+                >
+                  {t.meals.mealTimes.breakfast}
+                </option>
+                <option
+                  value="lunch"
+                  className="bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100"
+                >
+                  {t.meals.mealTimes.lunch}
+                </option>
+                <option
+                  value="dinner"
+                  className="bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100"
+                >
+                  {t.meals.mealTimes.dinner}
+                </option>
+                <option
+                  value="snack"
+                  className="bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100"
+                >
+                  {t.meals.mealTimes.snack}
+                </option>
+              </select>
+            </label>
+          </div>
+
+          <button
+            type="button"
+            disabled={saved || isSaving}
+            onClick={() =>
+              void onSave?.(
+                meal,
+                selectedMealTime === "" ? undefined : selectedMealTime
+              )
+            }
+            aria-pressed={saved}
+            className="inline-flex items-center gap-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 px-3 py-1.5 text-xs font-medium text-neutral-900 dark:text-neutral-100 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900 disabled:opacity-60"
+          >
+            {isSaving ? (
+              <Loader2
+                className="h-3.5 w-3.5 shrink-0 animate-spin"
+                aria-hidden="true"
+              />
+            ) : saved ? (
+              <Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            ) : (
+              <Bookmark className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            )}
+            <span>
+              {isSaving
+                ? t.chat.savingMealButton
+                : saved
+                  ? t.chat.savedMealButton
+                  : t.chat.saveMealButton}
+            </span>
+          </button>
+        </div>
+
+        {saveError ? (
+          <p role="alert" className="text-xs text-red-700 dark:text-red-400">
+            {saveError}
+          </p>
+        ) : null}
       </div>
     </article>
   );

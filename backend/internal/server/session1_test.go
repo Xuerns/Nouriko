@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"io"
 	"log/slog"
+	"math"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -24,17 +26,20 @@ import (
 const testLocalSecret = "0123456789abcdef0123456789abcdef"
 
 type fakeRepo struct {
-	mu       sync.Mutex
-	users    map[string]*database.LocalUser
-	tokens   map[string]*database.LocalAuthToken
-	profiles map[string]*database.Profile
+	mu         sync.Mutex
+	users      map[string]*database.LocalUser
+	tokens     map[string]*database.LocalAuthToken
+	profiles   map[string]*database.Profile
+	savedMeals map[string]database.SavedMeal
+	mealSeq    int64
 }
 
 func newFakeRepo() *fakeRepo {
 	return &fakeRepo{
-		users:    make(map[string]*database.LocalUser),
-		tokens:   make(map[string]*database.LocalAuthToken),
-		profiles: make(map[string]*database.Profile),
+		users:      make(map[string]*database.LocalUser),
+		tokens:     make(map[string]*database.LocalAuthToken),
+		profiles:   make(map[string]*database.Profile),
+		savedMeals: make(map[string]database.SavedMeal),
 	}
 }
 
@@ -322,6 +327,137 @@ func (f *fakeRepo) SearchFoodPrices(_ context.Context, _ string, _ string, _ int
 
 func (f *fakeRepo) ListAllFoodPrices(_ context.Context, _ string, _ int) ([]database.FoodPrice, error) {
 	return []database.FoodPrice{}, nil
+}
+
+func (f *fakeRepo) CreateSavedMeal(_ context.Context, p database.CreateSavedMealParams) (database.SavedMeal, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.mealSeq++
+	var priceCopy *int
+	if p.PriceIDR != nil {
+		v := *p.PriceIDR
+		priceCopy = &v
+	}
+	meal := database.SavedMeal{
+		ID:          uuid.NewString(),
+		UserID:      p.UserID,
+		MealDate:    p.MealDate,
+		MealTime:    p.MealTime,
+		Name:        p.Name,
+		HealthScore: p.HealthScore,
+		Calories:    p.Calories,
+		ProteinG:    p.ProteinG,
+		CarbsG:      p.CarbsG,
+		FatG:        p.FatG,
+		FiberG:      p.FiberG,
+		PriceIDR:    priceCopy,
+		InputSource: p.InputSource,
+		CreatedAt:   time.Now().UTC().Add(time.Duration(f.mealSeq) * time.Millisecond),
+	}
+	f.savedMeals[meal.ID] = meal
+	return meal, nil
+}
+
+func (f *fakeRepo) DeleteSavedMeal(_ context.Context, userID, mealID string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	meal, ok := f.savedMeals[mealID]
+	if !ok || meal.UserID != userID {
+		return database.ErrNotFound
+	}
+	delete(f.savedMeals, mealID)
+	return nil
+}
+
+func (f *fakeRepo) ListSavedMealsByDate(_ context.Context, userID, date string) ([]database.SavedMeal, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	out := make([]database.SavedMeal, 0)
+	for _, m := range f.savedMeals {
+		if m.UserID == userID && m.MealDate == date {
+			out = append(out, m)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if !out[i].CreatedAt.Equal(out[j].CreatedAt) {
+			return out[i].CreatedAt.Before(out[j].CreatedAt)
+		}
+		return out[i].ID < out[j].ID
+	})
+	return out, nil
+}
+
+func (f *fakeRepo) ListMealHistory(_ context.Context, userID, fromDate, toDate string, limit, offset int) ([]database.SavedMeal, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if limit <= 0 {
+		limit = 500
+	}
+	if limit > 1000 {
+		limit = 1000
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	out := make([]database.SavedMeal, 0)
+	for _, m := range f.savedMeals {
+		if m.UserID == userID && m.MealDate >= fromDate && m.MealDate <= toDate {
+			out = append(out, m)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].MealDate != out[j].MealDate {
+			return out[i].MealDate > out[j].MealDate
+		}
+		if !out[i].CreatedAt.Equal(out[j].CreatedAt) {
+			return out[i].CreatedAt.Before(out[j].CreatedAt)
+		}
+		return out[i].ID < out[j].ID
+	})
+	if offset >= len(out) {
+		return []database.SavedMeal{}, nil
+	}
+	end := offset + limit
+	if end > len(out) {
+		end = len(out)
+	}
+	return out[offset:end], nil
+}
+
+func (f *fakeRepo) GetWeeklyHealthScores(_ context.Context, userID, fromDate, toDate string) ([]database.DailyHealthScorePoint, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	type agg struct {
+		sum   int
+		count int
+	}
+	byDate := make(map[string]*agg)
+	for _, m := range f.savedMeals {
+		if m.UserID == userID && m.MealDate >= fromDate && m.MealDate <= toDate {
+			a, ok := byDate[m.MealDate]
+			if !ok {
+				a = &agg{}
+				byDate[m.MealDate] = a
+			}
+			a.sum += int(m.HealthScore)
+			a.count++
+		}
+	}
+	dates := make([]string, 0, len(byDate))
+	for d := range byDate {
+		dates = append(dates, d)
+	}
+	sort.Strings(dates)
+	out := make([]database.DailyHealthScorePoint, 0, len(dates))
+	for _, d := range dates {
+		a := byDate[d]
+		out = append(out, database.DailyHealthScorePoint{
+			Date:               d,
+			AverageHealthScore: int(math.Round(float64(a.sum) / float64(a.count))),
+			MealCount:          a.count,
+		})
+	}
+	return out, nil
 }
 
 func newSession1TestApp(t *testing.T) (*fiber.App, *fakeRepo) {
