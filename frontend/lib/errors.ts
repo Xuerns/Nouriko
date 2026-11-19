@@ -7,6 +7,12 @@ export type ErrorCode =
   | "WEAK_PASSWORD"
   | "INVALID_OR_EXPIRED_TOKEN"
   | "INVALID_INPUT"
+  | "PHOTO_INVALID"
+  | "PHOTO_UNRECOGNIZED"
+  | "PAYLOAD_TOO_LARGE"
+  | "AI_UNAVAILABLE"
+  | "AI_TIMEOUT"
+  | "ONBOARDING_REQUIRED"
   | "TOO_MANY_REQUESTS"
   | "UNAUTHORIZED"
   | "NOT_FOUND"
@@ -27,6 +33,18 @@ const ERROR_MESSAGES: Record<Language, Record<ErrorCode, string>> = {
       "Tautan sudah tidak berlaku atau kedaluwarsa. Minta tautan baru untuk melanjutkan.",
     INVALID_INPUT:
       "Periksa kembali isian formulir kamu, lalu coba kirim lagi.",
+    PHOTO_INVALID:
+      "Foto tidak dapat diproses. Pilih gambar JPG, PNG, atau WebP dengan ukuran maksimal 5 MB.",
+    PHOTO_UNRECOGNIZED:
+      "Makanan atau bahan pada foto belum bisa dikenali. Coba ambil foto yang lebih jelas atau tulis nama makanannya di chat.",
+    PAYLOAD_TOO_LARGE:
+      "Ukuran foto atau pesan terlalu besar. Pilih foto yang lebih kecil lalu coba kirim lagi.",
+    AI_UNAVAILABLE:
+      "Layanan rekomendasi sedang sibuk atau belum tersedia saat ini. Coba kirim ulang sebentar lagi.",
+    AI_TIMEOUT:
+      "Permintaan membutuhkan waktu terlalu lama. Periksa koneksi kamu, lalu coba kirim ulang.",
+    ONBOARDING_REQUIRED:
+      "Lengkapi data profil kamu terlebih dahulu sebelum menggunakan chat nutrisi.",
     TOO_MANY_REQUESTS:
       "Kamu mengirim terlalu banyak permintaan. Tunggu sebentar, lalu coba lagi.",
     UNAUTHORIZED: "Sesi kamu sudah berakhir. Silakan masuk kembali.",
@@ -48,6 +66,18 @@ const ERROR_MESSAGES: Record<Language, Record<ErrorCode, string>> = {
     INVALID_OR_EXPIRED_TOKEN:
       "This link is invalid or has expired. Please request a new link to continue.",
     INVALID_INPUT: "Please check your form inputs and try submitting again.",
+    PHOTO_INVALID:
+      "This photo could not be processed. Please choose a JPG, PNG, or WebP image up to 5 MB.",
+    PHOTO_UNRECOGNIZED:
+      "The food or ingredients in this photo could not be recognized. Try a clearer photo or type the food name in chat.",
+    PAYLOAD_TOO_LARGE:
+      "The photo or message is too large. Please choose a smaller photo and try again.",
+    AI_UNAVAILABLE:
+      "The recommendation service is temporarily unavailable. Please try sending your message again shortly.",
+    AI_TIMEOUT:
+      "The request took too long to complete. Please check your connection and try sending again.",
+    ONBOARDING_REQUIRED:
+      "Please complete your profile details first before using the nutrition chat.",
     TOO_MANY_REQUESTS:
       "You have made too many requests. Please wait a moment and try again.",
     UNAUTHORIZED: "Your session has ended. Please sign in again.",

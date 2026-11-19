@@ -67,3 +67,83 @@ export interface UpdateProfilePayload {
   language?: Language;
   theme?: Theme;
 }
+
+export type ChatIntent =
+  | "ingredients"
+  | "budget_meals"
+  | "budget_ingredients"
+  | "photo_food"
+  | "photo_ingredients"
+  | "off_topic";
+
+export type HealthLabel = "low" | "fair" | "good";
+export type InputSource = "ingredients" | "budget" | "photo";
+export type MacroSource = "food_api" | "estimated";
+
+export interface ConversationTurn {
+  role: "user" | "assistant";
+  summary: string;
+}
+
+export interface MealOption {
+  name: string;
+  portion: string;
+  health_score: number;
+  health_label: HealthLabel;
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  fiber_g: number;
+  estimated_price_idr: number;
+  is_price_estimated: boolean;
+  is_macro_estimated: boolean;
+  macro_source: MacroSource;
+  note: string;
+  cooking_steps: string[];
+  missing_ingredients: string[];
+  input_source: InputSource;
+}
+
+export interface ShoppingListItem {
+  name: string;
+  unit: string;
+  estimated_price_idr: number;
+  is_price_estimated: boolean;
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  fiber_g: number;
+}
+
+export interface ChatAnalyzeResponse {
+  intent: ChatIntent;
+  intro: string;
+  off_topic_notice?: string;
+  detected_items: string[];
+  needs_clarification: boolean;
+  budget_idr?: number;
+  budget_exceeded_notice?: string;
+  meals: MealOption[];
+  shopping_list: ShoppingListItem[];
+}
+
+export interface AnalyzeChatParams {
+  message?: string;
+  photo?: File | null;
+  language: Language;
+  conversationContext?: ConversationTurn[];
+}
+
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  text: string;
+  photoPreviewUrl?: string;
+  photoName?: string;
+  response?: ChatAnalyzeResponse;
+  errorCode?: string;
+  hasPhoto?: boolean;
+  createdAt: number;
+}

@@ -13,6 +13,7 @@ import (
 	"Nouriko/internal/config"
 	"Nouriko/internal/database"
 	"Nouriko/internal/handler"
+	"Nouriko/internal/nutrition"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
@@ -37,6 +38,8 @@ type Dependencies struct {
 	AuthAdmin   *auth.AdminClient
 	AuthService auth.Service
 	Gemini      *ai.Client
+	Analyzer    ai.Analyzer
+	FoodLookup  nutrition.FoodLookup
 }
 
 // New builds and configures the Fiber v3 application.
@@ -96,11 +99,18 @@ func New(deps Dependencies) *fiber.App {
 		},
 	}))
 
+	var activeAnalyzer ai.Analyzer
+	if deps.Analyzer != nil {
+		activeAnalyzer = deps.Analyzer
+	} else if deps.Gemini != nil {
+		activeAnalyzer = deps.Gemini
+	}
+
 	api.Get("/status", func(c fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"status":     "ok",
 			"mode":       deps.Config.Mode,
-			"ai_enabled": deps.Gemini != nil,
+			"ai_enabled": activeAnalyzer != nil,
 		})
 	})
 
@@ -142,6 +152,32 @@ func New(deps Dependencies) *fiber.App {
 		api.Get("/profile", authMW, profileHandler.GetProfile)
 		api.Put("/profile/onboarding", authMW, profileHandler.CompleteOnboarding)
 		api.Patch("/profile", authMW, profileHandler.UpdateProfile)
+
+		aiMax := deps.Config.AILimits.Max
+		aiWindow := deps.Config.AILimits.Window
+		if aiMax < 1 {
+			aiMax = 20
+		}
+		if aiWindow <= 0 {
+			aiWindow = time.Minute
+		}
+		aiUserLimiter := limiter.New(limiter.Config{
+			Max:        aiMax,
+			Expiration: aiWindow,
+			KeyGenerator: func(c fiber.Ctx) string {
+				if claims, ok := auth.ClaimsFromContext(c); ok && claims.UserID != "" {
+					return "ai:" + claims.UserID
+				}
+				return "ai:ip:" + c.IP()
+			},
+			LimitReached: func(c fiber.Ctx) error {
+				return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{"code": "TOO_MANY_REQUESTS"})
+			},
+		})
+
+		chatService := ai.NewChatService(activeAnalyzer, deps.Repo, deps.FoodLookup, logger)
+		chatHandler := handler.NewChatHandler(deps.Repo, chatService, logger)
+		api.Post("/chat/analyze", authMW, aiUserLimiter, chatHandler.Analyze)
 	}
 
 	return app

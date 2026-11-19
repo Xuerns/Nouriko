@@ -20,6 +20,12 @@ const (
 	TokenPurposeResetPassword = "reset_password"
 )
 
+// Supported food_prices category values.
+const (
+	FoodPriceCategoryMeal       = "meal"
+	FoodPriceCategoryIngredient = "ingredient"
+)
+
 // pgUniqueViolationCode is PostgreSQL SQLSTATE 23505 (unique_violation).
 const pgUniqueViolationCode = "23505"
 
@@ -141,4 +147,15 @@ type UpdateProfileParams struct {
 	TargetFiberG       *float64
 	Language           *string
 	Theme              *string
+}
+
+// FoodPrice represents a row in the food_prices reference table.
+type FoodPrice struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	PriceIDR  int       `json:"price_idr"`
+	Unit      string    `json:"unit"`
+	Category  string    `json:"category"` // "meal" | "ingredient"
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }

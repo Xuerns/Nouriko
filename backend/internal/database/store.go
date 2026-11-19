@@ -48,12 +48,20 @@ type ProfileStore interface {
 	DeleteProfile(ctx context.Context, userID string) error
 }
 
-// Repository aggregates all Session 1 persistence interfaces and atomic
-// multi-table transaction helpers.
+// FoodPriceStore defines read operations for the food_prices reference table.
+type FoodPriceStore interface {
+	ListFoodPricesByBudget(ctx context.Context, maxBudgetIDR int, category string, limit int) ([]FoodPrice, error)
+	SearchFoodPrices(ctx context.Context, query string, category string, limit int) ([]FoodPrice, error)
+	ListAllFoodPrices(ctx context.Context, category string, limit int) ([]FoodPrice, error)
+}
+
+// Repository aggregates all persistence interfaces and atomic multi-table
+// transaction helpers.
 type Repository interface {
 	LocalUserStore
 	LocalAuthTokenStore
 	ProfileStore
+	FoodPriceStore
 	VerifyEmailWithToken(ctx context.Context, tokenHash string) (string, error)
 	ResetPasswordWithToken(ctx context.Context, tokenHash, newPasswordHash string) (string, error)
 	DeleteLocalAccount(ctx context.Context, userID string) error

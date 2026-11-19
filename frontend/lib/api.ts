@@ -1,4 +1,6 @@
 import type {
+  AnalyzeChatParams,
+  ChatAnalyzeResponse,
   Language,
   LoginResponse,
   OnboardingPayload,
@@ -197,5 +199,100 @@ export const apiClient = {
       token,
       body: { password },
     });
+  },
+
+  async analyzeChat(
+    token: string,
+    params: AnalyzeChatParams
+  ): Promise<ChatAnalyzeResponse> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25_000);
+
+    const trimmedMessage = (params.message ?? "").trim();
+    const cleanContext = (params.conversationContext ?? [])
+      .slice(-6)
+      .map((turn) => ({
+        role: turn.role,
+        summary: turn.summary.trim().slice(0, 300),
+      }))
+      .filter((turn) => turn.summary.length > 0);
+
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+    };
+
+    let body: BodyInit;
+    if (params.photo) {
+      const formData = new FormData();
+      if (trimmedMessage) {
+        formData.append("message", trimmedMessage);
+      }
+      formData.append("language", params.language);
+      if (cleanContext.length > 0) {
+        formData.append("conversation_context", JSON.stringify(cleanContext));
+      }
+      formData.append("photo", params.photo, params.photo.name || "photo.jpg");
+      body = formData;
+    } else {
+      headers["Content-Type"] = "application/json";
+      body = JSON.stringify({
+        message: trimmedMessage,
+        language: params.language,
+        conversation_context: cleanContext,
+      });
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(`${API_BASE_URL}/api/v1/chat/analyze`, {
+        method: "POST",
+        headers,
+        body,
+        cache: "no-store",
+        signal: controller.signal,
+      });
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        throw new ApiError("AI_TIMEOUT", 0);
+      }
+      throw new ApiError("NETWORK_ERROR", 0);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    let data: unknown = null;
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+
+    if (!response.ok) {
+      const code =
+        typeof data === "object" &&
+        data !== null &&
+        "code" in data &&
+        typeof (data as { code: unknown }).code === "string"
+          ? (data as { code: string }).code
+          : response.status === 401
+            ? "UNAUTHORIZED"
+            : response.status === 403
+              ? "ONBOARDING_REQUIRED"
+              : response.status === 413
+                ? "PAYLOAD_TOO_LARGE"
+                : response.status === 422
+                  ? "PHOTO_UNRECOGNIZED"
+                  : response.status === 429
+                    ? "TOO_MANY_REQUESTS"
+                    : response.status === 503
+                      ? "AI_UNAVAILABLE"
+                      : response.status === 504
+                        ? "AI_TIMEOUT"
+                        : "INTERNAL_ERROR";
+      throw new ApiError(code, response.status);
+    }
+
+    return data as ChatAnalyzeResponse;
   },
 };

@@ -336,6 +336,18 @@ func (m *memRepo) DeleteLocalAccount(ctx context.Context, userID string) error {
 	return m.DeleteLocalUser(ctx, userID)
 }
 
+func (m *memRepo) ListFoodPricesByBudget(_ context.Context, _ int, _ string, _ int) ([]database.FoodPrice, error) {
+	return []database.FoodPrice{}, nil
+}
+
+func (m *memRepo) SearchFoodPrices(_ context.Context, _ string, _ string, _ int) ([]database.FoodPrice, error) {
+	return []database.FoodPrice{}, nil
+}
+
+func (m *memRepo) ListAllFoodPrices(_ context.Context, _ string, _ int) ([]database.FoodPrice, error) {
+	return []database.FoodPrice{}, nil
+}
+
 func TestLocalServiceFullLifecycle(t *testing.T) {
 	ctx := context.Background()
 	repo := newMemRepo()

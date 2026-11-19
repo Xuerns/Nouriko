@@ -40,6 +40,9 @@ func TestLoadLocalDefaults(t *testing.T) {
 	if cfg.AuthLimits.Max != 15 {
 		t.Fatalf("expected default AuthLimits.Max=15, got %d", cfg.AuthLimits.Max)
 	}
+	if cfg.AILimits.Max != 20 {
+		t.Fatalf("expected default AILimits.Max=20, got %d", cfg.AILimits.Max)
+	}
 }
 
 func TestLoadLocalRejectsShortSecret(t *testing.T) {

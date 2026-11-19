@@ -37,6 +37,7 @@ type Config struct {
 	Food       FoodAPI
 	Limits     RateLimit
 	AuthLimits AuthRateLimit
+	AILimits   AIRateLimit
 }
 
 // Database configures the PostgreSQL connection pool.
@@ -96,6 +97,12 @@ type AuthRateLimit struct {
 	Window time.Duration `env:"AUTH_RATE_LIMIT_WINDOW" envDefault:"1m"`
 }
 
+// AIRateLimit configures per-user limits for AI analysis endpoints.
+type AIRateLimit struct {
+	Max    int           `env:"AI_RATE_LIMIT_MAX" envDefault:"20"`
+	Window time.Duration `env:"AI_RATE_LIMIT_WINDOW" envDefault:"1m"`
+}
+
 // Load reads configuration from the environment and validates it.
 func Load() (*Config, error) {
 	cfg := &Config{}
@@ -136,6 +143,9 @@ func (c *Config) Validate() error {
 	}
 	if c.AuthLimits.Max < 1 || c.AuthLimits.Window <= 0 {
 		errs = append(errs, errors.New("AUTH_RATE_LIMIT_MAX and AUTH_RATE_LIMIT_WINDOW must be positive"))
+	}
+	if c.AILimits.Max < 1 || c.AILimits.Window <= 0 {
+		errs = append(errs, errors.New("AI_RATE_LIMIT_MAX and AI_RATE_LIMIT_WINDOW must be positive"))
 	}
 
 	switch c.Mode {

@@ -312,6 +312,18 @@ func (f *fakeRepo) DeleteLocalAccount(ctx context.Context, userID string) error 
 	return f.DeleteLocalUser(ctx, userID)
 }
 
+func (f *fakeRepo) ListFoodPricesByBudget(_ context.Context, _ int, _ string, _ int) ([]database.FoodPrice, error) {
+	return []database.FoodPrice{}, nil
+}
+
+func (f *fakeRepo) SearchFoodPrices(_ context.Context, _ string, _ string, _ int) ([]database.FoodPrice, error) {
+	return []database.FoodPrice{}, nil
+}
+
+func (f *fakeRepo) ListAllFoodPrices(_ context.Context, _ string, _ int) ([]database.FoodPrice, error) {
+	return []database.FoodPrice{}, nil
+}
+
 func newSession1TestApp(t *testing.T) (*fiber.App, *fakeRepo) {
 	t.Helper()
 	cfg := &config.Config{

@@ -15,6 +15,7 @@ import (
 	"Nouriko/internal/auth"
 	"Nouriko/internal/config"
 	"Nouriko/internal/database"
+	"Nouriko/internal/nutrition"
 	"Nouriko/internal/server"
 
 	"github.com/gofiber/fiber/v3"
@@ -78,6 +79,11 @@ func run(cfg *config.Config, logger *slog.Logger) error {
 		return err
 	}
 
+	foodClient, err := nutrition.NewOpenFoodFactsClient(cfg, logger)
+	if err != nil {
+		return err
+	}
+
 	store := database.NewStore(db.Pool)
 	adminClient := auth.NewAdminClient(cfg)
 	authService := auth.NewService(cfg, store, adminClient, logger)
@@ -91,6 +97,7 @@ func run(cfg *config.Config, logger *slog.Logger) error {
 		AuthAdmin:   adminClient,
 		AuthService: authService,
 		Gemini:      geminiClient,
+		FoodLookup:  foodClient,
 	})
 
 	errCh := make(chan error, 1)
