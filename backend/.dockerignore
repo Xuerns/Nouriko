@@ -1,0 +1,22 @@
+# VCS and editor files
+.git
+.gitignore
+.vscode
+.idea
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Environment and secrets
+.env
+.env.*
+*.pem
+
+# Build output and test artifacts
+bin/
+dist/
+tmp/
+coverage.out
+*.test
+*.log

@@ -19,7 +19,7 @@
 - Always use **Tailwind CSS** as the styling
 - Never use emoji in the code
 - Always make the code clean and readable
-- Always follow the **SvelteKit** guidelines
+- Always follow the **Next.js** guidelines
 - Never use shadow drop
 - Never use pulse animation
 - Makesure the library save
