@@ -25,16 +25,18 @@ const (
 type Config struct {
 	Mode            Mode          `env:"APP_ENV" envDefault:"local"`
 	Port            string        `env:"PORT" envDefault:"8080"`
+	AppBaseURL      string        `env:"APP_BASE_URL" envDefault:"http://localhost:3000"`
 	LogLevel        string        `env:"LOG_LEVEL" envDefault:"info"`
 	ShutdownTimeout time.Duration `env:"SHUTDOWN_TIMEOUT" envDefault:"10s"`
 	CORSOrigins     []string      `env:"CORS_ALLOWED_ORIGINS" envSeparator:"," envDefault:"http://localhost:3000"`
 
-	Database Database
-	Auth     Auth
-	Supabase Supabase
-	Gemini   Gemini
-	Food     FoodAPI
-	Limits   RateLimit
+	Database   Database
+	Auth       Auth
+	Supabase   Supabase
+	Gemini     Gemini
+	Food       FoodAPI
+	Limits     RateLimit
+	AuthLimits AuthRateLimit
 }
 
 // Database configures the PostgreSQL connection pool.
@@ -56,7 +58,17 @@ type Auth struct {
 // Supabase holds project settings used in production mode.
 type Supabase struct {
 	URL       string `env:"SUPABASE_URL"`
+	AnonKey   string `env:"SUPABASE_ANON_KEY"`
 	SecretKey string `env:"SUPABASE_SECRET_KEY"`
+}
+
+// AuthAPIKey returns the key used for user-scoped Supabase Auth REST calls,
+// preferring SUPABASE_ANON_KEY and falling back to SUPABASE_SECRET_KEY.
+func (s Supabase) AuthAPIKey() string {
+	if s.AnonKey != "" {
+		return s.AnonKey
+	}
+	return s.SecretKey
 }
 
 // Gemini configures the Gemini API client.
@@ -78,6 +90,12 @@ type RateLimit struct {
 	Window time.Duration `env:"RATE_LIMIT_WINDOW" envDefault:"1m"`
 }
 
+// AuthRateLimit configures stricter per-client limits for sensitive auth endpoints.
+type AuthRateLimit struct {
+	Max    int           `env:"AUTH_RATE_LIMIT_MAX" envDefault:"15"`
+	Window time.Duration `env:"AUTH_RATE_LIMIT_WINDOW" envDefault:"1m"`
+}
+
 // Load reads configuration from the environment and validates it.
 func Load() (*Config, error) {
 	cfg := &Config{}
@@ -92,6 +110,7 @@ func Load() (*Config, error) {
 }
 
 func (c *Config) applyDefaults() {
+	c.AppBaseURL = strings.TrimRight(c.AppBaseURL, "/")
 	c.Supabase.URL = strings.TrimRight(c.Supabase.URL, "/")
 	if c.Auth.Issuer == "" && c.Mode == ModeProduction && c.Supabase.URL != "" {
 		c.Auth.Issuer = c.Supabase.URL + "/auth/v1"
@@ -114,6 +133,9 @@ func (c *Config) Validate() error {
 	}
 	if c.Limits.Max < 1 || c.Limits.Window <= 0 {
 		errs = append(errs, errors.New("RATE_LIMIT_MAX and RATE_LIMIT_WINDOW must be positive"))
+	}
+	if c.AuthLimits.Max < 1 || c.AuthLimits.Window <= 0 {
+		errs = append(errs, errors.New("AUTH_RATE_LIMIT_MAX and AUTH_RATE_LIMIT_WINDOW must be positive"))
 	}
 
 	switch c.Mode {

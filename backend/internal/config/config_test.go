@@ -34,6 +34,12 @@ func TestLoadLocalDefaults(t *testing.T) {
 	if cfg.IsProduction() {
 		t.Fatal("local mode must not report production")
 	}
+	if cfg.AppBaseURL != "http://localhost:3000" {
+		t.Fatalf("expected default AppBaseURL, got %q", cfg.AppBaseURL)
+	}
+	if cfg.AuthLimits.Max != 15 {
+		t.Fatalf("expected default AuthLimits.Max=15, got %d", cfg.AuthLimits.Max)
+	}
 }
 
 func TestLoadLocalRejectsShortSecret(t *testing.T) {
@@ -99,5 +105,37 @@ func TestLoadRejectsUnknownMode(t *testing.T) {
 
 	if _, err := Load(); err == nil || !strings.Contains(err.Error(), "APP_ENV") {
 		t.Fatalf("expected APP_ENV error, got %v", err)
+	}
+}
+
+func TestSupabaseAuthAPIKeyFallbackAndAppBaseURLTrim(t *testing.T) {
+	setEnv(t, map[string]string{
+		"APP_ENV":              "production",
+		"APP_BASE_URL":         "https://nouriko.app/",
+		"DATABASE_URL":         "postgres://u:p@pooler.supabase.com:6543/postgres?sslmode=require",
+		"SUPABASE_URL":         "https://abc.supabase.co/",
+		"SUPABASE_SECRET_KEY":  "sb_secret_x",
+		"GEMINI_API_KEY":       "key",
+		"CORS_ALLOWED_ORIGINS": "https://nouriko.app",
+	})
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.AppBaseURL != "https://nouriko.app" {
+		t.Fatalf("expected trimmed AppBaseURL, got %q", cfg.AppBaseURL)
+	}
+	if cfg.Supabase.AuthAPIKey() != "sb_secret_x" {
+		t.Fatalf("expected fallback to SecretKey, got %q", cfg.Supabase.AuthAPIKey())
+	}
+
+	t.Setenv("SUPABASE_ANON_KEY", "sb_anon_y")
+	cfg, err = Load()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Supabase.AuthAPIKey() != "sb_anon_y" {
+		t.Fatalf("expected AnonKey preference, got %q", cfg.Supabase.AuthAPIKey())
 	}
 }

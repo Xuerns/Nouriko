@@ -78,13 +78,19 @@ func run(cfg *config.Config, logger *slog.Logger) error {
 		return err
 	}
 
+	store := database.NewStore(db.Pool)
+	adminClient := auth.NewAdminClient(cfg)
+	authService := auth.NewService(cfg, store, adminClient, logger)
+
 	app := server.New(server.Dependencies{
-		Config:    cfg,
-		Logger:    logger,
-		DB:        db,
-		Auth:      verifier,
-		AuthAdmin: auth.NewAdminClient(cfg),
-		Gemini:    geminiClient,
+		Config:      cfg,
+		Logger:      logger,
+		DB:          db,
+		Repo:        store,
+		Auth:        verifier,
+		AuthAdmin:   adminClient,
+		AuthService: authService,
+		Gemini:      geminiClient,
 	})
 
 	errCh := make(chan error, 1)

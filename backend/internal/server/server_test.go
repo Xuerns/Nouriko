@@ -8,9 +8,11 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
+	"Nouriko/internal/auth"
 	"Nouriko/internal/config"
 )
 
@@ -100,5 +102,134 @@ func TestNotFoundUsesGenericCode(t *testing.T) {
 	}
 	if body["code"] != "NOT_FOUND" {
 		t.Fatalf("expected generic NOT_FOUND code, got %+v", body)
+	}
+}
+
+type stubAuthService struct{}
+
+func (stubAuthService) Register(context.Context, auth.RegisterInput) (*auth.RegisterResult, error) {
+	return &auth.RegisterResult{Status: "verification_required"}, nil
+}
+
+func (stubAuthService) VerifyEmail(context.Context, string) error {
+	return auth.ErrInvalidOrExpiredToken
+}
+
+func (stubAuthService) Login(context.Context, string, string) (*auth.LoginResult, error) {
+	return nil, auth.ErrInvalidCredentials
+}
+
+func (stubAuthService) Logout(context.Context, string) error {
+	return nil
+}
+
+func (stubAuthService) ForgotPassword(context.Context, string) error {
+	return nil
+}
+
+func (stubAuthService) ResetPassword(context.Context, string, string) error {
+	return auth.ErrInvalidOrExpiredToken
+}
+
+func (stubAuthService) ChangePassword(context.Context, string, string, string, string, string) error {
+	return auth.ErrInvalidCredentials
+}
+
+func (stubAuthService) DeleteAccount(context.Context, string, string, string) error {
+	return auth.ErrInvalidCredentials
+}
+
+func TestAuthStrictRateLimiterAppliedToSensitiveEndpoints(t *testing.T) {
+	const testSecret = "0123456789abcdef0123456789abcdef"
+	token, err := auth.SignLocalToken(testSecret, "550e8400-e29b-41d4-a716-446655440000", "raka@example.com", "authenticated", time.Hour)
+	if err != nil {
+		t.Fatalf("SignLocalToken: %v", err)
+	}
+
+	endpoints := []struct {
+		name     string
+		method   string
+		path     string
+		payload  string
+		withAuth bool
+	}{
+		{
+			name:    "verify-email",
+			method:  http.MethodPost,
+			path:    "/api/v1/auth/verify-email",
+			payload: `{"token":"bad-token"}`,
+		},
+		{
+			name:    "reset-password",
+			method:  http.MethodPost,
+			path:    "/api/v1/auth/reset-password",
+			payload: `{"token":"bad-token","new_password":"kopisusupagi"}`,
+		},
+		{
+			name:     "change-password",
+			method:   http.MethodPost,
+			path:     "/api/v1/auth/change-password",
+			payload:  `{"current_password":"wrong","new_password":"kopisusupagi"}`,
+			withAuth: true,
+		},
+		{
+			name:     "delete-account",
+			method:   http.MethodDelete,
+			path:     "/api/v1/account",
+			payload:  `{"password":"wrong"}`,
+			withAuth: true,
+		},
+	}
+
+	for _, tc := range endpoints {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := testConfig()
+			cfg.Auth = config.Auth{
+				JWTSecret: testSecret,
+				Audience:  "authenticated",
+			}
+			cfg.Limits = config.RateLimit{Max: 60, Window: time.Minute}
+			cfg.AuthLimits = config.AuthRateLimit{Max: 2, Window: time.Minute}
+
+			verifier, err := auth.NewVerifier(context.Background(), cfg)
+			if err != nil {
+				t.Fatalf("NewVerifier: %v", err)
+			}
+
+			app := New(Dependencies{
+				Config:      cfg,
+				Logger:      slog.New(slog.NewJSONHandler(io.Discard, nil)),
+				DB:          stubPinger{},
+				Auth:        verifier,
+				AuthService: stubAuthService{},
+			})
+
+			for i := 0; i < 3; i++ {
+				req := httptest.NewRequest(tc.method, tc.path, strings.NewReader(tc.payload))
+				req.Header.Set("Content-Type", "application/json")
+				if tc.withAuth {
+					req.Header.Set("Authorization", "Bearer "+token)
+				}
+				resp, err := app.Test(req)
+				if err != nil {
+					t.Fatalf("attempt %d app.Test: %v", i+1, err)
+				}
+				if i < 2 && resp.StatusCode == http.StatusTooManyRequests {
+					t.Fatalf("attempt %d unexpectedly rate limited", i+1)
+				}
+				if i == 2 {
+					if resp.StatusCode != http.StatusTooManyRequests {
+						t.Fatalf("attempt 3 expected 429 Too Many Requests, got %d", resp.StatusCode)
+					}
+					var body map[string]string
+					if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+						t.Fatalf("decode 429 body: %v", err)
+					}
+					if body["code"] != "TOO_MANY_REQUESTS" {
+						t.Fatalf("expected TOO_MANY_REQUESTS code, got %+v", body)
+					}
+				}
+			}
+		})
 	}
 }

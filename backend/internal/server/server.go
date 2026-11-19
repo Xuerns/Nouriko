@@ -11,6 +11,8 @@ import (
 	"Nouriko/internal/ai"
 	"Nouriko/internal/auth"
 	"Nouriko/internal/config"
+	"Nouriko/internal/database"
+	"Nouriko/internal/handler"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
@@ -27,12 +29,14 @@ type Pinger interface {
 
 // Dependencies groups runtime collaborators injected into the HTTP server.
 type Dependencies struct {
-	Config    *config.Config
-	Logger    *slog.Logger
-	DB        Pinger
-	Auth      *auth.Verifier
-	AuthAdmin *auth.AdminClient
-	Gemini    *ai.Client
+	Config      *config.Config
+	Logger      *slog.Logger
+	DB          Pinger
+	Repo        database.Repository
+	Auth        *auth.Verifier
+	AuthAdmin   *auth.AdminClient
+	AuthService auth.Service
+	Gemini      *ai.Client
 }
 
 // New builds and configures the Fiber v3 application.
@@ -99,6 +103,46 @@ func New(deps Dependencies) *fiber.App {
 			"ai_enabled": deps.Gemini != nil,
 		})
 	})
+
+	authMax := deps.Config.AuthLimits.Max
+	authWindow := deps.Config.AuthLimits.Window
+	if authMax < 1 {
+		authMax = 15
+	}
+	if authWindow <= 0 {
+		authWindow = time.Minute
+	}
+	authStrictLimiter := limiter.New(limiter.Config{
+		Max:        authMax,
+		Expiration: authWindow,
+		LimitReached: func(c fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{"code": "TOO_MANY_REQUESTS"})
+		},
+	})
+
+	if deps.AuthService != nil {
+		authHandler := handler.NewAuthHandler(deps.AuthService, logger)
+		api.Post("/auth/register", authStrictLimiter, authHandler.Register)
+		api.Post("/auth/verify-email", authStrictLimiter, authHandler.VerifyEmail)
+		api.Post("/auth/login", authStrictLimiter, authHandler.Login)
+		api.Post("/auth/forgot-password", authStrictLimiter, authHandler.ForgotPassword)
+		api.Post("/auth/reset-password", authStrictLimiter, authHandler.ResetPassword)
+
+		if deps.Auth != nil {
+			authMW := auth.Middleware(deps.Auth)
+			api.Post("/auth/logout", authMW, authHandler.Logout)
+			api.Post("/auth/change-password", authStrictLimiter, authMW, authHandler.ChangePassword)
+			api.Delete("/account", authStrictLimiter, authMW, authHandler.DeleteAccount)
+		}
+	}
+
+	if deps.Repo != nil && deps.Auth != nil {
+		profileHandler := handler.NewProfileHandler(deps.Repo, logger)
+		authMW := auth.Middleware(deps.Auth)
+		api.Get("/profile", authMW, profileHandler.GetProfile)
+		api.Put("/profile/onboarding", authMW, profileHandler.CompleteOnboarding)
+		api.Patch("/profile", authMW, profileHandler.UpdateProfile)
+	}
 
 	return app
 }
