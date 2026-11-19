@@ -313,6 +313,18 @@ func (f *fakeRepo) ResetPasswordWithToken(ctx context.Context, tokenHash, newPas
 }
 
 func (f *fakeRepo) DeleteLocalAccount(ctx context.Context, userID string) error {
+	f.mu.Lock()
+	for id, meal := range f.savedMeals {
+		if meal.UserID == userID {
+			delete(f.savedMeals, id)
+		}
+	}
+	for hash, tok := range f.tokens {
+		if tok.UserID == userID {
+			delete(f.tokens, hash)
+		}
+	}
+	f.mu.Unlock()
 	_ = f.DeleteProfile(ctx, userID)
 	return f.DeleteLocalUser(ctx, userID)
 }

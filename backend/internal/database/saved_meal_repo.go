@@ -166,7 +166,7 @@ func (s *Store) DeleteSavedMeal(ctx context.Context, userID, mealID string) erro
 }
 
 // ListSavedMealsByDate lists all saved meals for a user on a specific YYYY-MM-DD calendar date,
-// ordered by created_at ASC, id ASC.
+// ordered by created_at ASC, id ASC (capped defensively at 500 rows).
 func (s *Store) ListSavedMealsByDate(ctx context.Context, userID, date string) ([]SavedMeal, error) {
 	if s == nil || s.q == nil {
 		return nil, fmt.Errorf("database store is not initialized")
@@ -177,6 +177,7 @@ func (s *Store) ListSavedMealsByDate(ctx context.Context, userID, date string) (
 		FROM saved_meals
 		WHERE user_id = $1::UUID AND meal_date = $2::DATE
 		ORDER BY created_at ASC, id ASC
+		LIMIT 500
 	`
 	rows, err := s.q.Query(ctx, query, userID, date)
 	if err != nil {

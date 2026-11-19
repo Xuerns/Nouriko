@@ -101,7 +101,7 @@ type DailySummaryTotals struct {
 	CarbsG             float64 `json:"carbs_g"`
 	FatG               float64 `json:"fat_g"`
 	FiberG             float64 `json:"fiber_g"`
-	TotalSpendingIDR   int     `json:"total_spending_idr"`
+	TotalSpendingIDR   int64   `json:"total_spending_idr"`
 	MealCount          int     `json:"meal_count"`
 	AverageHealthScore int     `json:"average_health_score"`
 	HealthLabel        *string `json:"health_label"`
@@ -143,7 +143,7 @@ type HistoryDaySummary struct {
 	TotalCarbsG        float64        `json:"total_carbs_g"`
 	TotalFatG          float64        `json:"total_fat_g"`
 	TotalFiberG        float64        `json:"total_fiber_g"`
-	TotalSpendingIDR   int            `json:"total_spending_idr"`
+	TotalSpendingIDR   int64          `json:"total_spending_idr"`
 	AverageHealthScore int            `json:"average_health_score"`
 	HealthLabel        string         `json:"health_label"`
 	Meals              []SavedMealDTO `json:"meals"`
@@ -241,8 +241,11 @@ func (h *MealHandler) GetDailySummary(c fiber.Ctx) error {
 	dateParam := strings.TrimSpace(c.Query("date"))
 	if dateParam == "" {
 		dateParam = h.now().In(wibZone).Format(dateLayout)
-	} else if _, valid := parseStrictDate(dateParam); !valid {
-		return writeErrorCode(c, fiber.StatusBadRequest, "INVALID_INPUT")
+	} else {
+		parsed, valid := parseStrictDate(dateParam)
+		if !valid || parsed.Before(minMealDate) {
+			return writeErrorCode(c, fiber.StatusBadRequest, "INVALID_INPUT")
+		}
 	}
 
 	meals, err := h.repo.ListSavedMealsByDate(c.Context(), claims.UserID, dateParam)
@@ -257,7 +260,7 @@ func (h *MealHandler) GetDailySummary(c fiber.Ctx) error {
 		totalCarbs    float64
 		totalFat      float64
 		totalFiber    float64
-		totalSpending int
+		totalSpending int64
 		sumScore      int
 	)
 
@@ -269,7 +272,7 @@ func (h *MealHandler) GetDailySummary(c fiber.Ctx) error {
 		totalFat += m.FatG
 		totalFiber += m.FiberG
 		if m.PriceIDR != nil {
-			totalSpending += *m.PriceIDR
+			totalSpending += int64(*m.PriceIDR)
 		}
 		sumScore += int(m.HealthScore)
 	}
@@ -335,7 +338,7 @@ func (h *MealHandler) GetMealHistory(c fiber.Ctx) error {
 		toParam = todayWIBStr
 	} else {
 		parsed, valid := parseStrictDate(toParam)
-		if !valid {
+		if !valid || parsed.Before(minMealDate) {
 			return writeErrorCode(c, fiber.StatusBadRequest, "INVALID_INPUT")
 		}
 		toTime = parsed
@@ -358,7 +361,7 @@ func (h *MealHandler) GetMealHistory(c fiber.Ctx) error {
 		fromParam = fromTime.Format(dateLayout)
 	} else {
 		parsed, valid := parseStrictDate(fromParam)
-		if !valid {
+		if !valid || parsed.Before(minMealDate) {
 			return writeErrorCode(c, fiber.StatusBadRequest, "INVALID_INPUT")
 		}
 		fromTime = parsed
@@ -503,7 +506,7 @@ func groupMealsByDate(meals []database.SavedMeal) []HistoryDaySummary {
 		totalCarbs    float64
 		totalFat      float64
 		totalFiber    float64
-		totalSpending int
+		totalSpending int64
 		sumScore      int
 	}
 
@@ -527,7 +530,7 @@ func groupMealsByDate(meals []database.SavedMeal) []HistoryDaySummary {
 		b.totalFat += m.FatG
 		b.totalFiber += m.FiberG
 		if m.PriceIDR != nil {
-			b.totalSpending += *m.PriceIDR
+			b.totalSpending += int64(*m.PriceIDR)
 		}
 		b.sumScore += int(m.HealthScore)
 	}

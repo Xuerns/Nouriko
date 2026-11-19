@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"errors"
 	"log/slog"
 
 	"Nouriko/internal/auth"
@@ -95,20 +94,7 @@ func (h *ProfileHandler) CompleteOnboarding(c fiber.Ctx) error {
 
 	updated, err := h.repo.UpdateOnboarding(c.Context(), params)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			if _, upsertErr := h.repo.UpsertProfile(c.Context(), database.UpsertProfileParams{
-				ID:         claims.UserID,
-				ProfileURL: auth.DiceBearAvatarURL(claims.UserID),
-				Language:   "id",
-				Theme:      "light",
-			}); upsertErr != nil {
-				return handleServiceError(c, h.logger, upsertErr)
-			}
-			updated, err = h.repo.UpdateOnboarding(c.Context(), params)
-		}
-		if err != nil {
-			return handleServiceError(c, h.logger, err)
-		}
+		return handleServiceError(c, h.logger, err)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
