@@ -11,11 +11,13 @@ import (
 	"syscall"
 	"time"
 
-	"Nouriko/internal/ai"
 	"Nouriko/internal/auth"
+	"Nouriko/internal/chat"
 	"Nouriko/internal/config"
 	"Nouriko/internal/database"
+	"Nouriko/internal/meals"
 	"Nouriko/internal/nutrition"
+	"Nouriko/internal/profile"
 	"Nouriko/internal/server"
 
 	"github.com/gofiber/fiber/v3"
@@ -74,7 +76,7 @@ func run(cfg *config.Config, logger *slog.Logger) error {
 		return err
 	}
 
-	geminiClient, err := ai.NewGeminiClient(ctx, cfg)
+	geminiClient, err := chat.NewGeminiClient(ctx, cfg)
 	if err != nil {
 		return err
 	}
@@ -84,20 +86,26 @@ func run(cfg *config.Config, logger *slog.Logger) error {
 		return err
 	}
 
-	store := database.NewStore(db.Pool)
+	profileRepo := profile.NewStore(db.Pool)
+	localAuthRepo := auth.NewLocalAuthRepo(db.Pool)
+	foodPriceRepo := chat.NewFoodPriceRepo(db.Pool)
+	mealRepo := meals.NewStore(db.Pool)
+
 	adminClient := auth.NewAdminClient(cfg)
-	authService := auth.NewService(cfg, store, adminClient, logger)
+	authService := auth.NewService(cfg, localAuthRepo, profileRepo, adminClient, logger)
 
 	app := server.New(server.Dependencies{
-		Config:      cfg,
-		Logger:      logger,
-		DB:          db,
-		Repo:        store,
-		Auth:        verifier,
-		AuthAdmin:   adminClient,
-		AuthService: authService,
-		Gemini:      geminiClient,
-		FoodLookup:  foodClient,
+		Config:        cfg,
+		Logger:        logger,
+		DB:            db,
+		ProfileRepo:   profileRepo,
+		Auth:          verifier,
+		AuthAdmin:     adminClient,
+		AuthService:   authService,
+		FoodPriceRepo: foodPriceRepo,
+		Gemini:        geminiClient,
+		FoodLookup:    foodClient,
+		MealRepo:      mealRepo,
 	})
 
 	errCh := make(chan error, 1)

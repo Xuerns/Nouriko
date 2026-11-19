@@ -85,6 +85,30 @@ func (d *DB) Close() {
 	}
 }
 
+// WithTx executes fn inside a PostgreSQL transaction on pool. If fn returns an
+// error, the transaction is rolled back.
+func WithTx(ctx context.Context, pool *pgxpool.Pool, fn func(tx pgx.Tx) error) error {
+	if pool == nil {
+		return fmt.Errorf("database pool is not initialized")
+	}
+
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+
+	if err := fn(tx); err != nil {
+		_ = tx.Rollback(ctx)
+		return err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit transaction: %w", err)
+	}
+
+	return nil
+}
+
 // RunMigrations applies embedded SQL migrations using goose.
 func (d *DB) RunMigrations(ctx context.Context) error {
 	if d == nil || d.Pool == nil {

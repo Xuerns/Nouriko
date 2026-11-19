@@ -1,5 +1,5 @@
 // Package server configures the Fiber v3 HTTP server, middleware stack,
-// health endpoints, and PRD-compliant error handling.
+// health endpoints, context route wiring, and PRD-compliant error handling.
 package server
 
 import (
@@ -8,12 +8,13 @@ import (
 	"log/slog"
 	"time"
 
-	"Nouriko/internal/ai"
 	"Nouriko/internal/auth"
+	"Nouriko/internal/chat"
 	"Nouriko/internal/config"
-	"Nouriko/internal/database"
-	"Nouriko/internal/handler"
+	"Nouriko/internal/httpx"
+	"Nouriko/internal/meals"
 	"Nouriko/internal/nutrition"
+	"Nouriko/internal/profile"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
@@ -28,18 +29,20 @@ type Pinger interface {
 	Ping(ctx context.Context) error
 }
 
-// Dependencies groups runtime collaborators injected into the HTTP server.
+// Dependencies groups runtime collaborators injected into the HTTP server per domain context.
 type Dependencies struct {
-	Config      *config.Config
-	Logger      *slog.Logger
-	DB          Pinger
-	Repo        database.Repository
-	Auth        *auth.Verifier
-	AuthAdmin   *auth.AdminClient
-	AuthService auth.Service
-	Gemini      *ai.Client
-	Analyzer    ai.Analyzer
-	FoodLookup  nutrition.FoodLookup
+	Config        *config.Config
+	Logger        *slog.Logger
+	DB            Pinger
+	ProfileRepo   profile.Repository
+	Auth          *auth.Verifier
+	AuthAdmin     *auth.AdminClient
+	AuthService   auth.Service
+	FoodPriceRepo chat.FoodPriceStore
+	Gemini        *chat.Client
+	Analyzer      chat.Analyzer
+	FoodLookup    nutrition.FoodLookup
+	MealRepo      meals.SavedMealStore
 }
 
 // New builds and configures the Fiber v3 application.
@@ -79,13 +82,13 @@ func New(deps Dependencies) *fiber.App {
 
 	app.Get("/readyz", func(c fiber.Ctx) error {
 		if deps.DB == nil {
-			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"code": "SERVICE_UNAVAILABLE"})
+			return httpx.WriteError(c, fiber.StatusServiceUnavailable, httpx.CodeServiceUnavailable)
 		}
 		ctx, cancel := context.WithTimeout(c.Context(), 3*time.Second)
 		defer cancel()
 		if err := deps.DB.Ping(ctx); err != nil {
 			logger.Warn("readiness check failed", "error", err)
-			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"code": "SERVICE_UNAVAILABLE"})
+			return httpx.WriteError(c, fiber.StatusServiceUnavailable, httpx.CodeServiceUnavailable)
 		}
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "ready"})
 	})
@@ -95,11 +98,11 @@ func New(deps Dependencies) *fiber.App {
 		Max:        deps.Config.Limits.Max,
 		Expiration: deps.Config.Limits.Window,
 		LimitReached: func(c fiber.Ctx) error {
-			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{"code": "TOO_MANY_REQUESTS"})
+			return httpx.WriteError(c, fiber.StatusTooManyRequests, httpx.CodeTooManyRequests)
 		},
 	}))
 
-	var activeAnalyzer ai.Analyzer
+	var activeAnalyzer chat.Analyzer
 	if deps.Analyzer != nil {
 		activeAnalyzer = deps.Analyzer
 	} else if deps.Gemini != nil {
@@ -126,12 +129,12 @@ func New(deps Dependencies) *fiber.App {
 		Max:        authMax,
 		Expiration: authWindow,
 		LimitReached: func(c fiber.Ctx) error {
-			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{"code": "TOO_MANY_REQUESTS"})
+			return httpx.WriteError(c, fiber.StatusTooManyRequests, httpx.CodeTooManyRequests)
 		},
 	})
 
 	if deps.AuthService != nil {
-		authHandler := handler.NewAuthHandler(deps.AuthService, logger)
+		authHandler := auth.NewHandler(deps.AuthService, logger)
 		api.Post("/auth/register", authStrictLimiter, authHandler.Register)
 		api.Post("/auth/verify-email", authStrictLimiter, authHandler.VerifyEmail)
 		api.Post("/auth/login", authStrictLimiter, authHandler.Login)
@@ -146,44 +149,49 @@ func New(deps Dependencies) *fiber.App {
 		}
 	}
 
-	if deps.Repo != nil && deps.Auth != nil {
-		profileHandler := handler.NewProfileHandler(deps.Repo, logger)
+	if deps.Auth != nil {
 		authMW := auth.Middleware(deps.Auth)
-		api.Get("/profile", authMW, profileHandler.GetProfile)
-		api.Put("/profile/onboarding", authMW, profileHandler.CompleteOnboarding)
-		api.Patch("/profile", authMW, profileHandler.UpdateProfile)
 
-		aiMax := deps.Config.AILimits.Max
-		aiWindow := deps.Config.AILimits.Window
-		if aiMax < 1 {
-			aiMax = 20
+		if deps.ProfileRepo != nil {
+			profileHandler := profile.NewHandler(deps.ProfileRepo, logger)
+			api.Get("/profile", authMW, profileHandler.GetProfile)
+			api.Put("/profile/onboarding", authMW, profileHandler.CompleteOnboarding)
+			api.Patch("/profile", authMW, profileHandler.UpdateProfile)
+
+			aiMax := deps.Config.AILimits.Max
+			aiWindow := deps.Config.AILimits.Window
+			if aiMax < 1 {
+				aiMax = 20
+			}
+			if aiWindow <= 0 {
+				aiWindow = time.Minute
+			}
+			aiUserLimiter := limiter.New(limiter.Config{
+				Max:        aiMax,
+				Expiration: aiWindow,
+				KeyGenerator: func(c fiber.Ctx) string {
+					if claims, ok := httpx.ClaimsFromContext(c); ok && claims.UserID != "" {
+						return "ai:" + claims.UserID
+					}
+					return "ai:ip:" + c.IP()
+				},
+				LimitReached: func(c fiber.Ctx) error {
+					return httpx.WriteError(c, fiber.StatusTooManyRequests, httpx.CodeTooManyRequests)
+				},
+			})
+
+			chatService := chat.NewChatService(activeAnalyzer, deps.FoodPriceRepo, deps.FoodLookup, logger)
+			chatHandler := chat.NewHandler(deps.ProfileRepo, chatService, logger)
+			api.Post("/chat/analyze", authMW, aiUserLimiter, chatHandler.Analyze)
+
+			if deps.MealRepo != nil {
+				mealHandler := meals.NewHandler(deps.MealRepo, deps.ProfileRepo, logger)
+				api.Post("/meals", authMW, mealHandler.CreateMeal)
+				api.Get("/meals/summary", authMW, mealHandler.GetDailySummary)
+				api.Get("/meals/history", authMW, mealHandler.GetMealHistory)
+				api.Delete("/meals/:id", authMW, mealHandler.DeleteMeal)
+			}
 		}
-		if aiWindow <= 0 {
-			aiWindow = time.Minute
-		}
-		aiUserLimiter := limiter.New(limiter.Config{
-			Max:        aiMax,
-			Expiration: aiWindow,
-			KeyGenerator: func(c fiber.Ctx) string {
-				if claims, ok := auth.ClaimsFromContext(c); ok && claims.UserID != "" {
-					return "ai:" + claims.UserID
-				}
-				return "ai:ip:" + c.IP()
-			},
-			LimitReached: func(c fiber.Ctx) error {
-				return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{"code": "TOO_MANY_REQUESTS"})
-			},
-		})
-
-		chatService := ai.NewChatService(activeAnalyzer, deps.Repo, deps.FoodLookup, logger)
-		chatHandler := handler.NewChatHandler(deps.Repo, chatService, logger)
-		api.Post("/chat/analyze", authMW, aiUserLimiter, chatHandler.Analyze)
-
-		mealHandler := handler.NewMealHandler(deps.Repo, logger)
-		api.Post("/meals", authMW, mealHandler.CreateMeal)
-		api.Get("/meals/summary", authMW, mealHandler.GetDailySummary)
-		api.Get("/meals/history", authMW, mealHandler.GetMealHistory)
-		api.Delete("/meals/:id", authMW, mealHandler.DeleteMeal)
 	}
 
 	return app
@@ -209,28 +217,28 @@ func requestLogger(logger *slog.Logger) fiber.Handler {
 func newErrorHandler(logger *slog.Logger) fiber.ErrorHandler {
 	return func(c fiber.Ctx, err error) error {
 		status := fiber.StatusInternalServerError
-		code := "INTERNAL_ERROR"
+		code := httpx.CodeInternalError
 
 		var fiberErr *fiber.Error
 		if errors.As(err, &fiberErr) {
 			status = fiberErr.Code
 			switch status {
 			case fiber.StatusBadRequest:
-				code = "INVALID_INPUT"
+				code = httpx.CodeInvalidInput
 			case fiber.StatusUnauthorized:
-				code = "UNAUTHORIZED"
+				code = httpx.CodeUnauthorized
 			case fiber.StatusForbidden:
-				code = "FORBIDDEN"
+				code = httpx.CodeForbidden
 			case fiber.StatusNotFound:
-				code = "NOT_FOUND"
+				code = httpx.CodeNotFound
 			case fiber.StatusMethodNotAllowed:
-				code = "METHOD_NOT_ALLOWED"
+				code = httpx.CodeMethodNotAllowed
 			case fiber.StatusRequestEntityTooLarge:
-				code = "PAYLOAD_TOO_LARGE"
+				code = httpx.CodePayloadTooLarge
 			case fiber.StatusTooManyRequests:
-				code = "TOO_MANY_REQUESTS"
+				code = httpx.CodeTooManyRequests
 			default:
-				code = "INTERNAL_ERROR"
+				code = httpx.CodeInternalError
 			}
 		}
 
@@ -243,6 +251,6 @@ func newErrorHandler(logger *slog.Logger) fiber.ErrorHandler {
 			)
 		}
 
-		return c.Status(status).JSON(fiber.Map{"code": code})
+		return httpx.WriteError(c, status, code)
 	}
 }

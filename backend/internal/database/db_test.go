@@ -1,11 +1,14 @@
 package database
 
 import (
+	"context"
+	"errors"
 	"testing"
 
 	"Nouriko/internal/config"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 func TestBuildPoolConfigLocal(t *testing.T) {
@@ -44,5 +47,23 @@ func TestBuildPoolConfigProductionSupavisor(t *testing.T) {
 	}
 	if poolCfg.ConnConfig.DefaultQueryExecMode != pgx.QueryExecModeExec {
 		t.Fatalf("expected QueryExecModeExec for production Supabase, got %v", poolCfg.ConnConfig.DefaultQueryExecMode)
+	}
+}
+
+func TestIsUniqueViolation(t *testing.T) {
+	if !IsUniqueViolation(&pgconn.PgError{Code: "23505"}) {
+		t.Fatal("expected SQLSTATE 23505 to be recognized as unique violation")
+	}
+	if IsUniqueViolation(&pgconn.PgError{Code: "23503"}) {
+		t.Fatal("expected SQLSTATE 23503 not to be recognized as unique violation")
+	}
+	if IsUniqueViolation(errors.New("generic error")) {
+		t.Fatal("expected generic error not to be recognized as unique violation")
+	}
+}
+
+func TestWithTxNilPool(t *testing.T) {
+	if err := WithTx(context.Background(), nil, func(_ pgx.Tx) error { return nil }); err == nil {
+		t.Fatal("expected error when pool is nil")
 	}
 }
