@@ -21,6 +21,7 @@ export default function OnboardingPage() {
   } = useAuth();
   const { language, t } = useI18n();
 
+  const [displayName, setDisplayName] = useState("");
   const [heightCm, setHeightCm] = useState("");
   const [weightKg, setWeightKg] = useState("");
   const [age, setAge] = useState("");
@@ -60,7 +61,9 @@ export default function OnboardingPage() {
 
     setSubmitting(true);
     try {
+      const trimmedName = displayName.trim();
       const res = await apiClient.completeOnboarding(token, {
+        ...(trimmedName ? { display_name: trimmedName } : {}),
         height_cm: parsedHeight,
         weight_kg: parsedWeight,
         age: parsedAge,
@@ -95,6 +98,27 @@ export default function OnboardingPage() {
       {error ? <Alert variant="error">{error}</Alert> : null}
 
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+        <div className="space-y-1.5">
+          <label
+            htmlFor="onboarding-display-name"
+            className="block text-sm font-medium text-neutral-900 dark:text-neutral-100"
+          >
+            {t.onboarding.displayNameLabel}
+          </label>
+          <input
+            id="onboarding-display-name"
+            name="display_name"
+            type="text"
+            maxLength={50}
+            autoComplete="nickname"
+            disabled={submitting}
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder={t.onboarding.displayNamePlaceholder}
+            className="w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-neutral-100 disabled:opacity-60"
+          />
+        </div>
+
         <div className="space-y-1.5">
           <label
             htmlFor="onboarding-height"

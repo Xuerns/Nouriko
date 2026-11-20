@@ -421,7 +421,7 @@ export default function ChatPage() {
         className="min-h-0 flex-1 overflow-y-auto space-y-4 pr-1"
       >
         {messages.length === 0 && !isSending ? (
-          <EmptyChatState />
+          <EmptyChatState displayName={profile.display_name} />
         ) : (
           <div className="space-y-4">
             {messages.map((msg, msgIdx) => {
@@ -430,7 +430,7 @@ export default function ChatPage() {
                   <div key={msg.id} className="flex justify-end">
                     <div className="w-full max-w-2xl rounded-lg border border-neutral-400 dark:border-neutral-600 p-4 space-y-2.5">
                       <p className="font-mono text-xs uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                        {t.chat.youLabel}
+                        {profile.display_name.trim() || t.chat.youLabel}
                       </p>
                       {msg.photoPreviewUrl ? (
                         <div>

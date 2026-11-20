@@ -10,10 +10,56 @@
 
 html {
   color-scheme: light;
+  --scrollbar-thumb: #737373;
+  --scrollbar-track: #f5f5f5;
 }
 
 html.dark {
   color-scheme: dark;
+  --scrollbar-thumb: #737373;
+  --scrollbar-track: #171717;
+}
+
+@media (prefers-contrast: more) {
+  html {
+    --scrollbar-thumb: #000000;
+    --scrollbar-track: #ffffff;
+  }
+
+  html.dark {
+    --scrollbar-thumb: #ffffff;
+    --scrollbar-track: #000000;
+  }
+}
+
+html,
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+@supports not (scrollbar-color: auto) {
+  html,
+  * {
+    scrollbar-width: auto;
+  }
+
+  html::-webkit-scrollbar,
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  html::-webkit-scrollbar-thumb,
+  *::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 4px;
+  }
+
+  html::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
 }
 
 body {

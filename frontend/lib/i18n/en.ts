@@ -142,6 +142,8 @@ export const enDictionary: Dictionary = {
   },
   onboarding: {
     title: "Profile Details",
+    displayNameLabel: "Display Name",
+    displayNamePlaceholder: "e.g. Raka",
     heightLabel: "Height (cm)",
     weightLabel: "Weight (kg)",
     ageLabel: "Age (years)",
@@ -172,11 +174,17 @@ export const enDictionary: Dictionary = {
     saveProfileButton: "Save Changes",
     profileSaved: "Profile updated successfully.",
     changePasswordHeading: "Change Password",
+    changePasswordDescription:
+      "Update your account password to keep your access secure. After saving, use your new password the next time you sign in.",
     changePasswordButton: "Update Password",
     passwordChanged: "Password updated successfully.",
     privacyHeading: "Privacy & Data",
+    privacyDescription:
+      "Learn what data Nouriko stores, how it is used for nutrition calculations, and your rights to control your data.",
     privacyLinkText: "Read Nouriko Privacy Policy",
     deleteAccountHeading: "Delete Account",
+    deleteAccountDescription:
+      "Deleting your account permanently removes your profile, nutrition targets, and all saved meal history. You will be asked to enter your password to confirm before this action takes effect.",
     deleteAccountButton: "Delete Account",
     deleteDialogTitle: "Delete Account",
     deleteDialogQuestion: "Are you sure you want to delete this account?",
@@ -251,6 +259,7 @@ export const enDictionary: Dictionary = {
     ephemeralNotice:
       "Chat history is temporary and clears when you reload this page.",
     emptyHeading: "What would you like to eat or cook today?",
+    emptyHeadingNamed: "Hi {name}, what would you like to eat or cook today?",
     emptyDescription:
       "Ask for meal ideas from ingredients you have, budget-friendly meals, a grocery shopping list, or upload a photo of food or raw ingredients.",
     examplesHeading: "Example prompts to try",

@@ -98,7 +98,7 @@ func TestNormalizeAndValidateEmail(t *testing.T) {
 
 func TestDiceBearAvatarURL(t *testing.T) {
 	id := "550e8400-e29b-41d4-a716-446655440000"
-	want := "https://api.dicebear.com/10.x/slice/svg?seed=550e8400-e29b-41d4-a716-446655440000"
+	want := "https://api.dicebear.com/10.x/waves/svg?seed=550e8400-e29b-41d4-a716-446655440000"
 	if got := DiceBearAvatarURL(id); got != want {
 		t.Fatalf("got %q, want %q", got, want)
 	}

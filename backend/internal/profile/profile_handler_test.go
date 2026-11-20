@@ -185,7 +185,7 @@ func TestProfileHandler_GetOnboardingAndPatch(t *testing.T) {
 	userID := uuid.NewString()
 	_, _ = repo.UpsertProfile(context.Background(), UpsertProfileParams{
 		ID:         userID,
-		ProfileURL: "https://api.dicebear.com/10.x/slice/svg?seed=" + userID,
+		ProfileURL: "https://api.dicebear.com/10.x/waves/svg?seed=" + userID,
 		Language:   "id",
 		Theme:      "light",
 	})

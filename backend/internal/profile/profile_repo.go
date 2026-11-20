@@ -39,7 +39,7 @@ func NewStoreWithDBTX(q database.DBTX) *Store {
 	return &Store{q: q}
 }
 
-const profileColumns = `id, profile_url, height_cm, weight_kg, age, gender, activity_level, daily_calorie_target, target_protein_g, target_carbs_g, target_fat_g, target_fiber_g, language, theme, created_at, updated_at`
+const profileColumns = `id, profile_url, height_cm, weight_kg, age, gender, activity_level, daily_calorie_target, target_protein_g, target_carbs_g, target_fat_g, target_fiber_g, language, theme, created_at, updated_at, display_name`
 
 func scanProfile(row pgx.Row) (*Profile, error) {
 	var p Profile
@@ -60,6 +60,7 @@ func scanProfile(row pgx.Row) (*Profile, error) {
 		&p.Theme,
 		&p.CreatedAt,
 		&p.UpdatedAt,
+		&p.DisplayName,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -143,6 +144,7 @@ func (s *Store) UpdateOnboarding(ctx context.Context, params UpdateOnboardingPar
 			target_carbs_g = $9::NUMERIC(6, 2),
 			target_fat_g = $10::NUMERIC(6, 2),
 			target_fiber_g = $11::NUMERIC(6, 2),
+			display_name = COALESCE($12::TEXT, display_name),
 			updated_at = NOW()
 		WHERE id = $1::UUID
 		RETURNING ` + profileColumns
@@ -161,6 +163,7 @@ func (s *Store) UpdateOnboarding(ctx context.Context, params UpdateOnboardingPar
 		params.TargetCarbsG,
 		params.TargetFatG,
 		params.TargetFiberG,
+		params.DisplayName,
 	))
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
@@ -194,6 +197,7 @@ func (s *Store) UpdateProfile(ctx context.Context, params UpdateProfileParams) (
 			target_fiber_g = COALESCE($12::NUMERIC(6, 2), target_fiber_g),
 			language = COALESCE($13::TEXT, language),
 			theme = COALESCE($14::TEXT, theme),
+			display_name = COALESCE($15::TEXT, display_name),
 			updated_at = NOW()
 		WHERE id = $1::UUID
 		RETURNING ` + profileColumns
@@ -215,6 +219,7 @@ func (s *Store) UpdateProfile(ctx context.Context, params UpdateProfileParams) (
 		params.TargetFiberG,
 		params.Language,
 		params.Theme,
+		params.DisplayName,
 	))
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {

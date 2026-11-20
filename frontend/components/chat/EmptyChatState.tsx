@@ -2,14 +2,22 @@
 
 import { useI18n } from "@/components/providers/I18nProvider";
 
-export function EmptyChatState() {
+interface EmptyChatStateProps {
+  displayName?: string;
+}
+
+export function EmptyChatState({ displayName }: EmptyChatStateProps) {
   const { t } = useI18n();
+  const trimmedName = displayName?.trim() ?? "";
+  const heading = trimmedName
+    ? t.chat.emptyHeadingNamed.replace("{name}", trimmedName)
+    : t.chat.emptyHeading;
 
   return (
     <div className="flex h-full flex-col items-center justify-center px-4 text-center">
       <div className="max-w-lg space-y-1.5">
         <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-          {t.chat.emptyHeading}
+          {heading}
         </h2>
         <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
           {t.chat.emptyDescription}

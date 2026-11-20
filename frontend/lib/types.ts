@@ -7,6 +7,7 @@ export interface ProfileDTO {
   id: string;
   email: string;
   profile_url: string;
+  display_name: string;
   height_cm: number | null;
   weight_kg: number | null;
   age: number | null;
@@ -46,6 +47,7 @@ export interface ProfileResponse {
 }
 
 export interface OnboardingPayload {
+  display_name?: string;
   height_cm: number;
   weight_kg: number;
   age: number;
@@ -54,6 +56,7 @@ export interface OnboardingPayload {
 }
 
 export interface UpdateProfilePayload {
+  display_name?: string;
   height_cm?: number;
   weight_kg?: number;
   age?: number;

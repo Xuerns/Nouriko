@@ -114,6 +114,8 @@ export interface Dictionary {
   };
   onboarding: {
     title: string;
+    displayNameLabel: string;
+    displayNamePlaceholder: string;
     heightLabel: string;
     weightLabel: string;
     ageLabel: string;
@@ -143,11 +145,14 @@ export interface Dictionary {
     saveProfileButton: string;
     profileSaved: string;
     changePasswordHeading: string;
+    changePasswordDescription: string;
     changePasswordButton: string;
     passwordChanged: string;
     privacyHeading: string;
+    privacyDescription: string;
     privacyLinkText: string;
     deleteAccountHeading: string;
+    deleteAccountDescription: string;
     deleteAccountButton: string;
     deleteDialogTitle: string;
     deleteDialogQuestion: string;
@@ -171,6 +176,7 @@ export interface Dictionary {
     clearChatButton: string;
     ephemeralNotice: string;
     emptyHeading: string;
+    emptyHeadingNamed: string;
     emptyDescription: string;
     examplesHeading: string;
     examples: {

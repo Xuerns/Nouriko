@@ -18,6 +18,7 @@ import type {
 } from "@/lib/types";
 
 interface ProfileFormState {
+  displayName: string;
   heightCm: string;
   weightKg: string;
   age: string;
@@ -32,6 +33,7 @@ interface ProfileFormState {
 
 function profileToFormState(p: ProfileDTO): ProfileFormState {
   return {
+    displayName: p.display_name ?? "",
     heightCm: p.height_cm !== null ? String(p.height_cm) : "",
     weightKg: p.weight_kg !== null ? String(p.weight_kg) : "",
     age: p.age !== null ? String(p.age) : "",
@@ -142,6 +144,10 @@ export default function ProfilePage() {
       return;
     }
 
+    const trimmedDisplayName = form.displayName.trim();
+    if (trimmedDisplayName !== (profile.display_name ?? "")) {
+      payload.display_name = trimmedDisplayName;
+    }
     if (parsedHeight !== profile.height_cm) payload.height_cm = parsedHeight;
     if (parsedWeight !== profile.weight_kg) payload.weight_kg = parsedWeight;
     if (parsedAge !== profile.age) payload.age = parsedAge;
@@ -287,7 +293,7 @@ export default function ProfilePage() {
           ) : null}
           <div className="space-y-1">
             <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
-              {t.profile.summaryHeading}
+              {profile.display_name.trim() || t.profile.summaryHeading}
             </h2>
             <p className="text-sm text-neutral-600 dark:text-neutral-400">
               {profile.email}
@@ -350,6 +356,26 @@ export default function ProfilePage() {
         ) : null}
 
         <form onSubmit={(e) => void handleProfileSubmit(e)} className="space-y-6">
+          <div className="space-y-1.5">
+            <label
+              htmlFor="profile-display-name"
+              className="block text-sm font-medium text-neutral-900 dark:text-neutral-100"
+            >
+              {t.onboarding.displayNameLabel}
+            </label>
+            <input
+              id="profile-display-name"
+              type="text"
+              maxLength={50}
+              autoComplete="nickname"
+              disabled={profileSaving}
+              value={form.displayName}
+              onChange={(e) => updateField("displayName", e.target.value)}
+              placeholder={t.onboarding.displayNamePlaceholder}
+              className="w-full max-w-sm rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-neutral-100 disabled:opacity-60"
+            />
+          </div>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
               <label
@@ -582,9 +608,14 @@ export default function ProfilePage() {
       </section>
 
       <section className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 space-y-5">
-        <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-          {t.profile.changePasswordHeading}
-        </h2>
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+            {t.profile.changePasswordHeading}
+          </h2>
+          <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
+            {t.profile.changePasswordDescription}
+          </p>
+        </div>
 
         {passwordError ? <Alert variant="error">{passwordError}</Alert> : null}
         {passwordSuccess ? (
@@ -642,9 +673,14 @@ export default function ProfilePage() {
       </section>
 
       <section className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 space-y-3">
-        <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-          {t.profile.privacyHeading}
-        </h2>
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+            {t.profile.privacyHeading}
+          </h2>
+          <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
+            {t.profile.privacyDescription}
+          </p>
+        </div>
         <Link
           href="/privacy"
           className="inline-block text-sm font-medium text-neutral-900 dark:text-neutral-100 underline underline-offset-4"
@@ -654,9 +690,14 @@ export default function ProfilePage() {
       </section>
 
       <section className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 space-y-3">
-        <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-          {t.profile.deleteAccountHeading}
-        </h2>
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+            {t.profile.deleteAccountHeading}
+          </h2>
+          <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
+            {t.profile.deleteAccountDescription}
+          </p>
+        </div>
         <button
           type="button"
           onClick={() => {

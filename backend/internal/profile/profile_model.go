@@ -6,7 +6,12 @@ import (
 	"errors"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 )
+
+// MaxDisplayNameRunes is the maximum allowed rune length for a profile display name.
+const MaxDisplayNameRunes = 50
 
 // ErrInvalidInput indicates a malformed or out-of-range profile field.
 var ErrInvalidInput = errors.New("invalid input")
@@ -15,6 +20,7 @@ var ErrInvalidInput = errors.New("invalid input")
 type Profile struct {
 	ID                 string
 	ProfileURL         string
+	DisplayName        string
 	HeightCM           *float64
 	WeightKG           *float64
 	Age                *int16
@@ -56,6 +62,7 @@ type UpsertProfileParams struct {
 // UpdateOnboardingParams defines inputs for completing user onboarding.
 type UpdateOnboardingParams struct {
 	UserID             string
+	DisplayName        *string
 	HeightCM           float64
 	WeightKG           float64
 	Age                int16
@@ -73,6 +80,7 @@ type UpdateOnboardingParams struct {
 type UpdateProfileParams struct {
 	UserID             string
 	ProfileURL         *string
+	DisplayName        *string
 	HeightCM           *float64
 	WeightKG           *float64
 	Age                *int16
@@ -93,6 +101,7 @@ type DTO struct {
 	ID                  string   `json:"id"`
 	Email               string   `json:"email"`
 	ProfileURL          string   `json:"profile_url"`
+	DisplayName         string   `json:"display_name"`
 	HeightCM            *float64 `json:"height_cm"`
 	WeightKG            *float64 `json:"weight_kg"`
 	Age                 *int16   `json:"age"`
@@ -117,6 +126,7 @@ func ToDTO(p *Profile, email string) DTO {
 		ID:                  p.ID,
 		Email:               email,
 		ProfileURL:          p.ProfileURL,
+		DisplayName:         p.DisplayName,
 		HeightCM:            p.HeightCM,
 		WeightKG:            p.WeightKG,
 		Age:                 p.Age,
@@ -153,6 +163,20 @@ func ValidateTheme(raw string, defaultIfEmpty bool) (string, error) {
 	}
 	if v != "light" && v != "dark" {
 		return "", ErrInvalidInput
+	}
+	return v, nil
+}
+
+// ValidateDisplayName normalizes and validates an optional user display name.
+func ValidateDisplayName(raw string) (string, error) {
+	v := strings.TrimSpace(raw)
+	if utf8.RuneCountInString(v) > MaxDisplayNameRunes {
+		return "", ErrInvalidInput
+	}
+	for _, r := range v {
+		if unicode.IsControl(r) {
+			return "", ErrInvalidInput
+		}
 	}
 	return v, nil
 }

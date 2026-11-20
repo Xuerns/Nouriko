@@ -34,6 +34,8 @@ func TestEmbeddedMigrationsValidAndPortable(t *testing.T) {
 		"00001_initial_schema.sql",
 		"00002_auth_local.sql",
 		"00003_seed_food_prices.sql",
+		"00004_profile_display_name.sql",
+		"00005_profile_avatar_waves.sql",
 	}
 	for _, name := range requiredFiles {
 		content, ok := found[name]

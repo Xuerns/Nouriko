@@ -202,9 +202,9 @@ func NormalizeAndValidateEmail(raw string) (string, error) {
 	return email, nil
 }
 
-// DiceBearAvatarURL builds the deterministic DiceBear Slice SVG avatar URL (PRD F0).
+// DiceBearAvatarURL builds the deterministic DiceBear Waves SVG avatar URL (PRD F0).
 func DiceBearAvatarURL(userID string) string {
-	return "https://api.dicebear.com/10.x/slice/svg?seed=" + url.QueryEscape(userID)
+	return "https://api.dicebear.com/10.x/waves/svg?seed=" + url.QueryEscape(userID)
 }
 
 // ValidateLanguage normalizes and validates UI language ("id" or "en").

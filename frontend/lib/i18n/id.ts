@@ -142,6 +142,8 @@ export const idDictionary: Dictionary = {
   },
   onboarding: {
     title: "Data Profil",
+    displayNameLabel: "Nama Panggilan",
+    displayNamePlaceholder: "Contoh: Raka",
     heightLabel: "Tinggi Badan (cm)",
     weightLabel: "Berat Badan (kg)",
     ageLabel: "Usia (tahun)",
@@ -172,11 +174,17 @@ export const idDictionary: Dictionary = {
     saveProfileButton: "Simpan Perubahan",
     profileSaved: "Profil berhasil diperbarui.",
     changePasswordHeading: "Ganti Kata Sandi",
+    changePasswordDescription:
+      "Perbarui kata sandi akun kamu secara berkala untuk menjaga keamanan akses. Setelah berhasil diubah, gunakan kata sandi baru saat masuk kembali.",
     changePasswordButton: "Perbarui Kata Sandi",
     passwordChanged: "Kata sandi berhasil diperbarui.",
     privacyHeading: "Privasi & Data",
+    privacyDescription:
+      "Pelajari data apa saja yang disimpan Nouriko, cara penggunaannya untuk perhitungan nutrisi, serta hak kontrol penuh atas datamu.",
     privacyLinkText: "Baca Kebijakan Privasi Nouriko",
     deleteAccountHeading: "Hapus Akun",
+    deleteAccountDescription:
+      "Menghapus akun akan menghapus permanen seluruh data profil, target nutrisi, dan riwayat menu tersimpan. Kamu akan diminta memasukkan kata sandi untuk konfirmasi sebelum tindakan ini dijalankan.",
     deleteAccountButton: "Hapus Akun",
     deleteDialogTitle: "Hapus Akun",
     deleteDialogQuestion: "Apakah kamu yakin ingin menghapus akun ini?",
@@ -251,6 +259,7 @@ export const idDictionary: Dictionary = {
     ephemeralNotice:
       "Riwayat chat bersifat sementara dan tidak disimpan saat halaman dimuat ulang.",
     emptyHeading: "Mau makan atau masak apa hari ini?",
+    emptyHeadingNamed: "Halo {name}, mau makan atau masak apa hari ini?",
     emptyDescription:
       "Kamu bisa menanyakan menu dari bahan yang ada, rekomendasi sesuai budget, daftar belanja hemat, atau kirim foto makanan dan bahan.",
     examplesHeading: "Contoh pertanyaan yang bisa langsung dicoba",

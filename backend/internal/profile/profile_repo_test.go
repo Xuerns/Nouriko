@@ -91,7 +91,7 @@ func TestStoreProfileRepository(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now().UTC().Truncate(time.Second)
 	userID := "550e8400-e29b-41d4-a716-446655440000"
-	avatarURL := "https://api.dicebear.com/10.x/slice/svg?seed=" + userID
+	avatarURL := "https://api.dicebear.com/10.x/waves/svg?seed=" + userID
 
 	t.Run("UpsertProfile applies defaults for language and theme", func(t *testing.T) {
 		db := &fakeDBTX{
@@ -126,13 +126,14 @@ func TestStoreProfileRepository(t *testing.T) {
 	t.Run("UpdateProfile uses explicit PostgreSQL casts for COALESCE compatibility with Supavisor", func(t *testing.T) {
 		lang := "en"
 		theme := "dark"
+		displayName := "Raka"
 		db := &fakeDBTX{
 			queryRowFn: func(_ context.Context, sql string, args ...any) pgx.Row {
-				if !strings.Contains(sql, "COALESCE($13::TEXT, language)") || !strings.Contains(sql, "COALESCE($14::TEXT, theme)") {
+				if !strings.Contains(sql, "COALESCE($13::TEXT, language)") || !strings.Contains(sql, "COALESCE($14::TEXT, theme)") || !strings.Contains(sql, "COALESCE($15::TEXT, display_name)") {
 					t.Errorf("expected explicit type casts in UpdateProfile SQL: %s", sql)
 				}
-				if len(args) != 14 {
-					t.Errorf("expected 14 args for UpdateProfile, got %d", len(args))
+				if len(args) != 15 {
+					t.Errorf("expected 15 args for UpdateProfile, got %d", len(args))
 				}
 				return fakeRow{scanFn: func(dest ...any) error {
 					*(dest[0].(*string)) = userID
@@ -141,21 +142,23 @@ func TestStoreProfileRepository(t *testing.T) {
 					*(dest[13].(*string)) = theme
 					*(dest[14].(*time.Time)) = now
 					*(dest[15].(*time.Time)) = now
+					*(dest[16].(*string)) = displayName
 					return nil
 				}}
 			},
 		}
 		store := NewStoreWithDBTX(db)
 		p, err := store.UpdateProfile(ctx, UpdateProfileParams{
-			UserID:   userID,
-			Language: &lang,
-			Theme:    &theme,
+			UserID:      userID,
+			DisplayName: &displayName,
+			Language:    &lang,
+			Theme:       &theme,
 		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if p.Language != "en" || p.Theme != "dark" {
-			t.Fatalf("expected updated language/theme, got %+v", p)
+		if p.Language != "en" || p.Theme != "dark" || p.DisplayName != "Raka" {
+			t.Fatalf("expected updated language/theme/display_name, got %+v", p)
 		}
 	})
 

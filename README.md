@@ -1,6 +1,6 @@
 <div align="center">
   <a href="#" target="_blank">
-    <img src="assets/Logo.png" alt="Nouriko Logo" width="120" />
+    <img src="assets/Logo.png" alt="Nouriko Logo" width="110" />
   </a>
   <h1 style="border:none; margin-top: 10px; margin-bottom: 6px;">Nouriko</h1>
   <p><strong>Chatbot AI yang membantu anak kos memilih makanan bergizi dari bahan dan uang yang mereka punya</strong></p>

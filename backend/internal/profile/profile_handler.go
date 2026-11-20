@@ -44,6 +44,7 @@ func (h *Handler) GetProfile(c fiber.Ctx) error {
 }
 
 type onboardingRequest struct {
+	DisplayName   *string  `json:"display_name"`
 	HeightCM      *float64 `json:"height_cm"`
 	WeightKG      *float64 `json:"weight_kg"`
 	Age           *int16   `json:"age"`
@@ -77,8 +78,18 @@ func (h *Handler) CompleteOnboarding(c fiber.Ctx) error {
 		return httpx.WriteError(c, fiber.StatusBadRequest, httpx.CodeInvalidInput)
 	}
 
+	var displayName *string
+	if req.DisplayName != nil {
+		cleaned, nameErr := ValidateDisplayName(*req.DisplayName)
+		if nameErr != nil {
+			return httpx.WriteError(c, fiber.StatusBadRequest, httpx.CodeInvalidInput)
+		}
+		displayName = &cleaned
+	}
+
 	params := UpdateOnboardingParams{
 		UserID:             claims.UserID,
+		DisplayName:        displayName,
 		HeightCM:           *req.HeightCM,
 		WeightKG:           *req.WeightKG,
 		Age:                *req.Age,
@@ -102,6 +113,7 @@ func (h *Handler) CompleteOnboarding(c fiber.Ctx) error {
 }
 
 type updateProfileRequest struct {
+	DisplayName        *string  `json:"display_name"`
 	HeightCM           *float64 `json:"height_cm"`
 	WeightKG           *float64 `json:"weight_kg"`
 	Age                *int16   `json:"age"`
@@ -203,6 +215,13 @@ func validateProfilePatch(userID string, req *updateProfileRequest) (UpdateProfi
 		ActivityLevel: req.ActivityLevel,
 	}
 
+	if req.DisplayName != nil {
+		cleaned, err := ValidateDisplayName(*req.DisplayName)
+		if err != nil {
+			return UpdateProfileParams{}, ErrInvalidInput
+		}
+		params.DisplayName = &cleaned
+	}
 	if req.HeightCM != nil && !nutrition.ValidateHeightCM(*req.HeightCM) {
 		return UpdateProfileParams{}, ErrInvalidInput
 	}

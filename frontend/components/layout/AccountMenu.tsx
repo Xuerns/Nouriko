@@ -325,6 +325,7 @@ export function AccountMenu() {
   }
 
   const isProfileActive = pathname === "/profile";
+  const displayName = profile?.display_name?.trim() ?? "";
 
   return (
     <div className="flex items-center">
@@ -334,8 +335,8 @@ export function AccountMenu() {
         type="button"
         aria-haspopup="menu"
         aria-expanded={isOpen}
-        aria-label={t.nav.profile}
-        title={t.nav.profile}
+        aria-label={displayName || t.nav.profile}
+        title={displayName || t.nav.profile}
         onPointerDown={handleTriggerPointerDown}
         onClick={handleTriggerClick}
         onKeyDown={handleTriggerKeyDown}
@@ -360,6 +361,11 @@ export function AccountMenu() {
         ) : (
           <User className="h-4 w-4 shrink-0" aria-hidden="true" />
         )}
+        {displayName ? (
+          <span className="hidden sm:inline max-w-28 truncate">
+            {displayName}
+          </span>
+        ) : null}
         <ChevronDown className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
       </button>
 
@@ -369,6 +375,19 @@ export function AccountMenu() {
         popover="auto"
         className="account-menu-popover min-w-48 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-1 text-neutral-900 dark:text-neutral-100"
       >
+        {profile ? (
+          <div className="border-b border-neutral-200 dark:border-neutral-800 px-2.5 py-2 mb-1">
+            {displayName ? (
+              <p className="truncate text-xs font-semibold text-neutral-900 dark:text-neutral-100">
+                {displayName}
+              </p>
+            ) : null}
+            <p className="truncate text-[11px] text-neutral-500 dark:text-neutral-400">
+              {profile.email}
+            </p>
+          </div>
+        ) : null}
+
         <div
           ref={menuGroupRef}
           aria-labelledby={triggerId}
