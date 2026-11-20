@@ -8,6 +8,7 @@ export type ErrorCode =
   | "INVALID_OR_EXPIRED_TOKEN"
   | "INVALID_INPUT"
   | "PHOTO_INVALID"
+  | "PHOTO_TOO_LARGE"
   | "PHOTO_UNRECOGNIZED"
   | "PAYLOAD_TOO_LARGE"
   | "AI_UNAVAILABLE"
@@ -37,6 +38,8 @@ const ERROR_MESSAGES: Record<Language, Record<ErrorCode, string>> = {
       "Periksa kembali isian formulir kamu, lalu coba kirim lagi.",
     PHOTO_INVALID:
       "Foto tidak dapat diproses. Pilih gambar JPG, PNG, atau WebP dengan ukuran maksimal 5 MB.",
+    PHOTO_TOO_LARGE:
+      "Ukuran foto melebihi 5 MB. Pilih foto dengan ukuran maksimal 5 MB.",
     PHOTO_UNRECOGNIZED:
       "Makanan atau bahan pada foto belum bisa dikenali. Coba ambil foto yang lebih jelas atau tulis nama makanannya di chat.",
     PAYLOAD_TOO_LARGE:
@@ -74,6 +77,8 @@ const ERROR_MESSAGES: Record<Language, Record<ErrorCode, string>> = {
     INVALID_INPUT: "Please check your form inputs and try submitting again.",
     PHOTO_INVALID:
       "This photo could not be processed. Please choose a JPG, PNG, or WebP image up to 5 MB.",
+    PHOTO_TOO_LARGE:
+      "Photo size exceeds 5 MB. Please choose a photo up to 5 MB.",
     PHOTO_UNRECOGNIZED:
       "The food or ingredients in this photo could not be recognized. Try a clearer photo or type the food name in chat.",
     PAYLOAD_TOO_LARGE:

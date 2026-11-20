@@ -60,8 +60,11 @@ export async function preparePhotoForUpload(file: File): Promise<File> {
   if (!file || !isAcceptedMimeType(file.type)) {
     throw new ApiError("PHOTO_INVALID", 400);
   }
-  if (file.size === 0 || file.size > MAX_INPUT_PHOTO_BYTES) {
+  if (file.size === 0) {
     throw new ApiError("PHOTO_INVALID", 400);
+  }
+  if (file.size > MAX_PHOTO_BYTES) {
+    throw new ApiError("PHOTO_TOO_LARGE", 413);
   }
 
   const objectUrl = URL.createObjectURL(file);
@@ -98,8 +101,11 @@ export async function preparePhotoForUpload(file: File): Promise<File> {
     if (blob.size > MAX_PHOTO_BYTES) {
       blob = await canvasToJpegBlob(canvas, FALLBACK_JPEG_QUALITY);
     }
-    if (blob.size === 0 || blob.size > MAX_PHOTO_BYTES) {
+    if (blob.size === 0) {
       throw new ApiError("PHOTO_INVALID", 400);
+    }
+    if (blob.size > MAX_PHOTO_BYTES) {
+      throw new ApiError("PHOTO_TOO_LARGE", 413);
     }
 
     return new File([blob], buildJpegFilename(file.name), {

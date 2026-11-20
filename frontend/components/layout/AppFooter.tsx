@@ -3,12 +3,24 @@
 import Link from "next/link";
 import { useI18n } from "@/components/providers/I18nProvider";
 
-export function AppFooter() {
+interface AppFooterProps {
+  maxWidthClass?: string;
+  className?: string;
+}
+
+export function AppFooter({
+  maxWidthClass = "max-w-4xl",
+  className = "",
+}: AppFooterProps) {
   const { t } = useI18n();
 
   return (
-    <footer className="w-full border-t border-neutral-300 dark:border-neutral-700">
-      <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-between gap-2 px-4 py-4 text-xs text-neutral-600 dark:text-neutral-400">
+    <footer
+      className={`w-full border-t border-neutral-300 dark:border-neutral-700 ${className}`.trim()}
+    >
+      <div
+        className={`mx-auto flex w-full ${maxWidthClass} flex-wrap items-center justify-between gap-2 px-4 py-4 text-xs text-neutral-600 dark:text-neutral-400`}
+      >
         <p>{t.footer.copyright}</p>
         <Link
           href="/privacy"

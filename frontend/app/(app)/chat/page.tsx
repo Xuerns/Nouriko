@@ -8,7 +8,10 @@ import { useAuth } from "@/components/providers/AuthProvider";
 import { useI18n } from "@/components/providers/I18nProvider";
 import { Alert } from "@/components/ui/Alert";
 import { ChatComposer } from "@/components/chat/ChatComposer";
-import { EmptyChatState } from "@/components/chat/EmptyChatState";
+import {
+  EmptyChatState,
+  PromptSuggestions,
+} from "@/components/chat/EmptyChatState";
 import { MealResultCard } from "@/components/chat/MealResultCard";
 import { PhotoCorrectionBar } from "@/components/chat/PhotoCorrectionBar";
 import { ShoppingListCard } from "@/components/chat/ShoppingListCard";
@@ -361,8 +364,8 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <section className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
+    <div className="flex h-full min-h-0 flex-col gap-4">
+      <section className="shrink-0 rounded-lg border border-neutral-300 dark:border-neutral-700 p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
             {t.chat.title}
@@ -415,13 +418,10 @@ export default function ChatPage() {
 
       <section
         aria-label={t.chat.title}
-        className="space-y-4 min-h-64"
+        className="min-h-0 flex-1 overflow-y-auto space-y-4 pr-1"
       >
         {messages.length === 0 && !isSending ? (
-          <EmptyChatState
-            onSelectPrompt={handlePromptSelect}
-            disabled={isSending}
-          />
+          <EmptyChatState />
         ) : (
           <div className="space-y-4">
             {messages.map((msg, msgIdx) => {
@@ -580,17 +580,26 @@ export default function ChatPage() {
         )}
       </section>
 
-      {composerErrorCode ? (
-        <Alert variant="error">
-          {getFriendlyErrorMessage(composerErrorCode, language)}
-        </Alert>
-      ) : null}
+      <div className="shrink-0 space-y-2">
+        {messages.length === 0 && !isSending ? (
+          <PromptSuggestions
+            onSelectPrompt={handlePromptSelect}
+            disabled={isSending}
+          />
+        ) : null}
 
-      <ChatComposer
-        onSend={handleSend}
-        disabled={isSending}
-        onPhotoError={(code) => setComposerErrorCode(code)}
-      />
+        {composerErrorCode ? (
+          <Alert variant="error">
+            {getFriendlyErrorMessage(composerErrorCode, language)}
+          </Alert>
+        ) : null}
+
+        <ChatComposer
+          onSend={handleSend}
+          disabled={isSending}
+          onPhotoError={(code) => setComposerErrorCode(code)}
+        />
+      </div>
     </div>
   );
 }

@@ -311,7 +311,7 @@ export default function HistoryPage() {
                       </div>
 
                       {isExpanded ? (
-                        <div className="space-y-3 border-t border-neutral-300 dark:border-neutral-700 pt-3">
+                        <div className="grid grid-cols-1 gap-3 border-t border-neutral-300 dark:border-neutral-700 pt-3 sm:grid-cols-2">
                           {day.meals.map((meal) => (
                             <SavedMealItem key={meal.id} meal={meal} />
                           ))}

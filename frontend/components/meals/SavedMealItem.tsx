@@ -43,41 +43,41 @@ export function SavedMealItem({
   const macros = [
     {
       label: t.chat.caloriesLabel,
-      value: `${Math.round(meal.calories)} ${t.profile.kcalUnit}`,
+      value: `${Math.round(meal.calories)}`,
+      unit: t.profile.kcalUnit,
     },
     {
       label: t.chat.proteinLabel,
-      value: `${formatMacro(meal.protein_g)} ${t.profile.gramUnit}`,
+      value: formatMacro(meal.protein_g),
+      unit: t.profile.gramUnit,
     },
     {
       label: t.chat.carbsLabel,
-      value: `${formatMacro(meal.carbs_g)} ${t.profile.gramUnit}`,
+      value: formatMacro(meal.carbs_g),
+      unit: t.profile.gramUnit,
     },
     {
       label: t.chat.fatLabel,
-      value: `${formatMacro(meal.fat_g)} ${t.profile.gramUnit}`,
+      value: formatMacro(meal.fat_g),
+      unit: t.profile.gramUnit,
     },
     {
       label: t.chat.fiberLabel,
-      value: `${formatMacro(meal.fiber_g)} ${t.profile.gramUnit}`,
+      value: formatMacro(meal.fiber_g),
+      unit: t.profile.gramUnit,
     },
   ];
 
   return (
-    <article className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-4 space-y-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0 space-y-1">
-          <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100 leading-snug">
+    <article className="flex flex-col justify-between gap-2.5 rounded-lg border border-neutral-300 dark:border-neutral-700 p-3.5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 space-y-0.5">
+          <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 leading-snug line-clamp-2">
             {meal.name}
           </h3>
-          <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
-            <span className="rounded border border-neutral-300 dark:border-neutral-700 px-2 py-0.5 font-medium text-neutral-800 dark:text-neutral-200">
-              {mealTimeLabel}
-            </span>
-            <span className="rounded border border-neutral-300 dark:border-neutral-700 px-2 py-0.5 font-mono text-neutral-700 dark:text-neutral-300">
-              {sourceLabel}
-            </span>
-          </div>
+          <p className="font-mono text-[11px] text-neutral-500 dark:text-neutral-400">
+            {mealTimeLabel} / {sourceLabel}
+          </p>
         </div>
 
         {onDelete ? (
@@ -86,7 +86,8 @@ export function SavedMealItem({
             disabled={isDeleting}
             onClick={() => void onDelete(meal.id)}
             aria-label={`${t.meals.deleteButton} ${meal.name}`}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 px-2.5 py-1.5 text-xs font-medium text-red-700 dark:text-red-400 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900 disabled:opacity-50"
+            title={isDeleting ? t.meals.deletingButton : t.meals.deleteButton}
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-neutral-300 dark:border-neutral-700 text-red-700 dark:text-red-400 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900 disabled:opacity-50"
           >
             {isDeleting ? (
               <Loader2
@@ -96,51 +97,49 @@ export function SavedMealItem({
             ) : (
               <Trash2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             )}
-            <span>
-              {isDeleting ? t.meals.deletingButton : t.meals.deleteButton}
-            </span>
           </button>
         ) : null}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm">
-        <div className="flex items-center gap-2">
-          <span className="text-neutral-600 dark:text-neutral-400">
-            {t.chat.healthScoreLabel}:
-          </span>
-          <span className="font-mono font-semibold text-neutral-900 dark:text-neutral-100">
-            {meal.health_score}/100
-          </span>
-          <span
-            className={`font-medium ${getHealthLabelTextClass(meal.health_label)}`}
-          >
-            ({healthLabelText})
-          </span>
-        </div>
-
-        {meal.price_idr !== null && meal.price_idr > 0 ? (
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-xs">
           <div className="flex items-center gap-1.5">
-            <span className="text-neutral-600 dark:text-neutral-400">
-              {t.chat.priceLabel}:
+            <span className="text-neutral-500 dark:text-neutral-400">
+              {t.chat.healthScoreLabel}
             </span>
+            <span className="font-mono font-semibold text-neutral-900 dark:text-neutral-100">
+              {meal.health_score}/100
+            </span>
+            <span
+              className={`font-medium ${getHealthLabelTextClass(meal.health_label)}`}
+            >
+              ({healthLabelText})
+            </span>
+          </div>
+
+          {meal.price_idr !== null && meal.price_idr > 0 ? (
             <span className="font-mono font-semibold text-neutral-900 dark:text-neutral-100">
               {formatIDR(meal.price_idr)}
             </span>
-          </div>
-        ) : null}
-      </div>
+          ) : null}
+        </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-5 rounded-md border border-neutral-300 dark:border-neutral-700 divide-y sm:divide-y-0 sm:divide-x divide-neutral-300 dark:divide-neutral-700">
-        {macros.map((macro) => (
-          <div key={macro.label} className="p-2.5">
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              {macro.label}
-            </p>
-            <p className="mt-0.5 font-mono text-sm font-medium text-neutral-900 dark:text-neutral-100">
-              {macro.value}
-            </p>
-          </div>
-        ))}
+        <div className="grid grid-cols-5 rounded-md border border-neutral-200 dark:border-neutral-800 divide-x divide-neutral-200 dark:divide-neutral-800">
+          {macros.map((macro) => (
+            <div key={macro.label} className="px-1.5 py-1.5 text-center">
+              <p className="truncate text-[10px] text-neutral-500 dark:text-neutral-400">
+                {macro.label}
+              </p>
+              <p className="mt-0.5 font-mono text-[11px] font-medium text-neutral-900 dark:text-neutral-100 whitespace-nowrap">
+                {macro.value}
+                <span className="text-[10px] text-neutral-500 dark:text-neutral-400">
+                  {" "}
+                  {macro.unit}
+                </span>
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
     </article>
   );
