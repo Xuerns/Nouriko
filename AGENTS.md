@@ -27,6 +27,7 @@
 # Important Notes
 - Never hardcode any API keys and creditials, use environment variables (.env) instead
 - Never manipulate the test just to make it PASS, if test failed fix the logic not the test
+- Read the DESIGN.md, you can combine the DESIGN.md color to component shacdcn, react bits, and etc
 
 # Important for components
 - NEVER build standard UI primitives (Button, Input, Dialog/Modal, Select, Dropdown, Tabs, Card, Table, Toast, Accordion, Tooltip, etc.) or common animated UI effects from scratch.

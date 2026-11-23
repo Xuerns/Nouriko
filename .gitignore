@@ -16,5 +16,4 @@ backend/tmp/
 *.test
 coverage.out
 *.exe
-docs/DESIGN.md
 .orchestrator/
