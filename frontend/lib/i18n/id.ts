@@ -94,9 +94,15 @@ export const idDictionary: Dictionary = {
   },
   register: {
     title: "Daftar Akun",
-    submitButton: "Daftar",
+    subtitle: "Lengkapi data di bawah ini untuk mulai.",
+    heroTitle: "Bergabung dengan",
+    heroBrand: "Nouriko",
+    heroAccent: "Sekarang!",
+    heroSubtitle:
+      "Mulai perjalanan menuju pola makan yang lebih sehat dan bergizi.",
+    submitButton: "Daftar Akun",
     hasAccount: "Sudah punya akun?",
-    loginLink: "Masuk",
+    loginLink: "Masuk di sini",
     privacyPrefix: "Dengan mendaftar, kamu dapat membaca ketentuan data di",
     successTitle: "Periksa Email Kamu",
     successMessage:
@@ -117,19 +123,39 @@ export const idDictionary: Dictionary = {
   },
   login: {
     title: "Masuk",
+    subtitle: "Selamat datang kembali di Nouriko!",
+    heroTitle: "Makan Sehat,",
+    heroAccent: "Hidup Lebih Baik",
+    heroSubtitle:
+      "Temukan rekomendasi makanan bergizi yang sesuai dengan kebutuhanmu.",
+    feature1: "Rekomendasi cerdas dengan AI",
+    feature2: "Pantau nutrisi harian",
+    feature3: "Kelola menu dengan mudah",
+    rememberMe: "Ingat saya",
+    orDivider: "atau",
+    socialGoogle: "Google",
+    socialGithub: "GitHub",
     submitButton: "Masuk",
     forgotPasswordLink: "Lupa kata sandi?",
     noAccount: "Belum punya akun?",
-    registerLink: "Daftar",
+    registerLink: "Daftar sekarang",
     sessionExpired: "Sesi kamu sudah berakhir. Silakan masuk kembali.",
   },
   forgotPassword: {
-    title: "Lupa Kata Sandi",
-    submitButton: "Kirim Tautan Reset",
+    title: "Reset Kata Sandi",
+    subtitle: "Kami akan mengirimkan link reset ke email kamu.",
+    heroTitle: "Lupa Kata Sandi?",
+    heroSubtitle:
+      "Tenang! Masukkan email kamu, dan kami akan mengirimkan link untuk mereset kata sandi.",
+    successTitle: "Link Reset Terkirim!",
+    successSubtitle:
+      "Kami telah mengirimkan link untuk mereset kata sandi ke email kamu.",
+    backToLoginBtn: "Kembali ke Login",
+    submitButton: "Kirim Link Reset",
     successMessage:
       "Jika email tersebut terdaftar, kami telah mengirimkan tautan untuk mengatur ulang kata sandi.",
     devResetLink: "Buka Halaman Reset Kata Sandi",
-    backToLogin: "Kembali ke Masuk",
+    backToLogin: "Kembali ke Login",
   },
   resetPassword: {
     title: "Atur Ulang Kata Sandi",

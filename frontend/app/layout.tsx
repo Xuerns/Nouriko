@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   title: "Nouriko",
   description:
     "Daily nutrition assistant for meal recommendations based on ingredients, budget, and food photos.",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 const themeInitScript = `
@@ -38,12 +41,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="id"
       suppressHydrationWarning
-      className={`${plusJakartaSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${plusJakartaSans.variable} ${geistMono.variable} h-full antialiased font-sans`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className="min-h-full bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+      <body className="min-h-full bg-background text-foreground">
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { Eye, EyeOff, Lock } from "lucide-react";
 import { useI18n } from "@/components/providers/I18nProvider";
+import { Label } from "@/components/ui/label";
 import { evaluatePasswordStrength } from "@/lib/password";
+import { cn } from "@/lib/utils";
 
 interface PasswordInputProps {
   id: string;
@@ -16,6 +19,7 @@ interface PasswordInputProps {
   disabled?: boolean;
   showStrength?: boolean;
   hint?: string;
+  placeholder?: string;
 }
 
 export function PasswordInput({
@@ -30,6 +34,7 @@ export function PasswordInput({
   disabled = false,
   showStrength = false,
   hint,
+  placeholder,
 }: PasswordInputProps) {
   const { t } = useI18n();
   const [visible, setVisible] = useState(false);
@@ -53,15 +58,24 @@ export function PasswordInput({
           ? 3
           : 0;
 
+  const segmentColorClass =
+    strength === "weak"
+      ? "bg-[var(--brand-accent)]"
+      : strength === "fair"
+        ? "bg-[#C78A3B]"
+        : "bg-[var(--brand-primary)]";
+
   return (
     <div className="space-y-1.5">
-      <label
-        htmlFor={id}
-        className="block text-sm font-medium text-neutral-900 dark:text-neutral-100"
-      >
+      <Label htmlFor={id} className="text-sm font-medium text-foreground">
         {label}
-      </label>
-      <div className="flex items-stretch gap-2">
+      </Label>
+      <div className="relative">
+        <Lock
+          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
+          strokeWidth={1.75}
+          aria-hidden="true"
+        />
         <input
           id={id}
           name={name}
@@ -72,40 +86,46 @@ export function PasswordInput({
           required={required}
           minLength={minLength}
           disabled={disabled}
-          className="w-full min-w-0 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-neutral-100 disabled:opacity-60"
+          placeholder={placeholder}
+          className="h-12 w-full rounded-2xl border border-border bg-card pl-10 pr-11 text-sm text-foreground placeholder:text-muted-foreground shadow-none transition-colors outline-none focus-visible:border-[var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/20 disabled:pointer-events-none disabled:opacity-50"
         />
         <button
           type="button"
           onClick={() => setVisible((prev) => !prev)}
           disabled={disabled}
-          aria-pressed={visible}
-          className="shrink-0 rounded-md border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-xs font-medium text-neutral-800 dark:text-neutral-200 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-neutral-100 disabled:opacity-60"
+          aria-label={visible ? t.common.hidePassword : t.common.showPassword}
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] disabled:pointer-events-none"
         >
-          {visible ? t.common.hidePassword : t.common.showPassword}
+          {visible ? (
+            <EyeOff className="h-4 w-4" strokeWidth={1.75} />
+          ) : (
+            <Eye className="h-4 w-4" strokeWidth={1.75} />
+          )}
         </button>
       </div>
 
       {hint ? (
-        <p className="text-xs text-neutral-600 dark:text-neutral-400">{hint}</p>
+        <p className="text-xs text-muted-foreground">{hint}</p>
       ) : null}
 
       {showStrength && strength !== "empty" ? (
-        <div className="space-y-1 pt-0.5" aria-live="polite">
-          <div className="grid grid-cols-3 gap-1.5" aria-hidden="true">
+        <div className="space-y-1.5 pt-1" aria-live="polite">
+          <div className="grid grid-cols-3 gap-2" aria-hidden="true">
             {[1, 2, 3].map((segment) => (
               <div
                 key={segment}
-                className={`h-1.5 rounded-sm border border-neutral-300 dark:border-neutral-700 ${
+                className={cn(
+                  "h-1.5 rounded-full transition-colors duration-150",
                   segment <= filledSegments
-                    ? "bg-neutral-900 dark:bg-neutral-100"
-                    : "bg-transparent"
-                }`}
+                    ? segmentColorClass
+                    : "bg-muted"
+                )}
               />
             ))}
           </div>
-          <p className="text-xs text-neutral-600 dark:text-neutral-400">
+          <p className="text-xs text-muted-foreground">
             {t.common.passwordStrengthLabel}:{" "}
-            <span className="font-medium text-neutral-900 dark:text-neutral-100">
+            <span className="font-medium text-foreground">
               {strengthText}
             </span>
           </p>

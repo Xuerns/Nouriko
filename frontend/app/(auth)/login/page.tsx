@@ -3,9 +3,16 @@
 import { Suspense, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowRight, Check, Mail } from "lucide-react";
+import { LoginMealIllustration } from "@/components/auth/AuthIllustrations";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useI18n } from "@/components/providers/I18nProvider";
 import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { ApiError } from "@/lib/api";
 import { getFriendlyErrorMessage } from "@/lib/errors";
@@ -18,6 +25,7 @@ function LoginContent() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -49,92 +57,162 @@ function LoginContent() {
 
   if (isLoading || isAuthenticated) {
     return (
-      <div className="mx-auto max-w-md rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 text-sm text-neutral-600 dark:text-neutral-400">
+      <div className="mx-auto w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center text-sm text-muted-foreground shadow-none">
         {t.common.loading}
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-md rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 space-y-6">
-      <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
-        {t.login.title}
-      </h1>
-
-      {sessionExpired && !error ? (
-        <Alert variant="info">{t.login.sessionExpired}</Alert>
-      ) : null}
-
-      {error ? <Alert variant="error">{error}</Alert> : null}
-
-      <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
-        <div className="space-y-1.5">
-          <label
-            htmlFor="login-email"
-            className="block text-sm font-medium text-neutral-900 dark:text-neutral-100"
-          >
-            {t.common.emailLabel}
-          </label>
-          <input
-            id="login-email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            disabled={submitting}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder={t.common.emailPlaceholder}
-            className="w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-neutral-100 disabled:opacity-60"
-          />
+    <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-14 py-4">
+      {/* Left Column: Inspiring Hero & Meal Illustration */}
+      <div className="flex flex-col items-center text-center lg:col-span-7 lg:items-start lg:text-left space-y-6">
+        <div className="space-y-3">
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl lg:text-5xl leading-[1.15]">
+            {t.login.heroTitle}{" "}
+            <span className="text-[var(--brand-accent)]">{t.login.heroAccent}</span>
+          </h1>
+          <p className="max-w-md text-sm text-muted-foreground sm:text-base leading-relaxed">
+            {t.login.heroSubtitle}
+          </p>
         </div>
 
-        <PasswordInput
-          id="login-password"
-          name="password"
-          label={t.common.passwordLabel}
-          value={password}
-          onChange={setPassword}
-          autoComplete="current-password"
-          disabled={submitting}
-        />
-
-        <div className="text-right">
-          <Link
-            href="/forgot-password"
-            className="text-xs font-medium text-neutral-700 dark:text-neutral-300 underline underline-offset-4 hover:text-neutral-900 dark:hover:text-neutral-100"
-          >
-            {t.login.forgotPasswordLink}
-          </Link>
+        {/* Feature Checkmarks */}
+        <div className="flex flex-col space-y-2.5 pt-1 text-sm font-medium text-foreground">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--brand-tint)] text-[var(--brand-primary)]">
+              <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+            </span>
+            <span>{t.login.feature1}</span>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--brand-tint)] text-[var(--brand-primary)]">
+              <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+            </span>
+            <span>{t.login.feature2}</span>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--brand-tint)] text-[var(--brand-primary)]">
+              <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+            </span>
+            <span>{t.login.feature3}</span>
+          </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-950 dark:hover:bg-neutral-200 disabled:opacity-60"
-        >
-          {submitting ? t.common.submitting : t.login.submitButton}
-        </button>
-      </form>
+        {/* Meal Illustration */}
+        <div className="pt-2 w-full flex justify-center lg:justify-start">
+          <LoginMealIllustration />
+        </div>
+      </div>
 
-      <div className="space-y-2 border-t border-neutral-300 dark:border-neutral-700 pt-4 text-sm text-neutral-600 dark:text-neutral-400">
-        <p>
-          {t.login.noAccount}{" "}
-          <Link
-            href="/register"
-            className="font-medium text-neutral-900 dark:text-neutral-100 underline underline-offset-4"
-          >
-            {t.login.registerLink}
-          </Link>
-        </p>
-        <p className="text-xs">
-          <Link
-            href="/privacy"
-            className="underline underline-offset-4 hover:text-neutral-900 dark:hover:text-neutral-100"
-          >
-            {t.common.privacyPolicy}
-          </Link>
-        </p>
+      {/* Right Column: Form Card */}
+      <div className="w-full lg:col-span-5">
+        <Card className="w-full rounded-3xl border border-border/80 bg-card p-6 sm:p-9 shadow-none space-y-6">
+          <div className="space-y-1">
+            <h2 className="text-2xl font-bold tracking-tight text-foreground">
+              {t.login.title}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {t.login.subtitle}
+            </p>
+          </div>
+
+          {sessionExpired && !error ? (
+            <Alert variant="info">{t.login.sessionExpired}</Alert>
+          ) : null}
+
+          {error ? <Alert variant="error">{error}</Alert> : null}
+
+          <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+            {/* Email with Mail prefix icon */}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="login-email"
+                className="text-sm font-medium text-foreground"
+              >
+                {t.common.emailLabel}
+              </Label>
+              <div className="relative">
+                <Mail
+                  className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
+                  strokeWidth={1.75}
+                  aria-hidden="true"
+                />
+                <Input
+                  id="login-email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  disabled={submitting}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t.common.emailPlaceholder}
+                  className="h-12 w-full rounded-2xl border-border bg-card pl-10 pr-4 text-sm shadow-none focus-visible:border-[var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/20"
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <PasswordInput
+              id="login-password"
+              name="password"
+              label={t.common.passwordLabel}
+              value={password}
+              onChange={setPassword}
+              autoComplete="current-password"
+              disabled={submitting}
+              placeholder={t.common.passwordLabel}
+            />
+
+            {/* Remember me & Forgot Password */}
+            <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="remember-me"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(Boolean(checked))}
+                  disabled={submitting}
+                />
+                <Label
+                  htmlFor="remember-me"
+                  className="cursor-pointer text-xs font-normal text-muted-foreground select-none"
+                >
+                  {t.login.rememberMe}
+                </Label>
+              </div>
+              <Link
+                href="/forgot-password"
+                className="text-xs font-medium text-[var(--brand-primary)] hover:underline underline-offset-4 transition-colors"
+              >
+                {t.login.forgotPasswordLink}
+              </Link>
+            </div>
+
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              disabled={submitting}
+              className="h-12 w-full rounded-full font-medium text-base shadow-none transition-all duration-150 bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)] text-white flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>{submitting ? t.common.submitting : t.login.submitButton}</span>
+              <ArrowRight className="h-4 w-4" strokeWidth={2} />
+            </Button>
+          </form>
+
+          {/* Footer switcher */}
+          <div className="border-t border-border pt-4 text-center text-sm text-muted-foreground">
+            <p>
+              {t.login.noAccount}{" "}
+              <Link
+                href="/register"
+                className="font-semibold text-foreground underline underline-offset-4 hover:text-[var(--brand-primary)] transition-colors"
+              >
+                {t.login.registerLink}
+              </Link>
+            </p>
+          </div>
+        </Card>
       </div>
     </div>
   );
@@ -144,7 +222,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="mx-auto max-w-md rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 text-sm text-neutral-600 dark:text-neutral-400">
+        <div className="mx-auto w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center text-sm text-muted-foreground shadow-none">
           ...
         </div>
       }

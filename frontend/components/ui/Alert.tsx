@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 interface AlertProps {
   variant: "error" | "success" | "info";
@@ -9,18 +10,22 @@ interface AlertProps {
 }
 
 export function Alert({ variant, children, className = "" }: AlertProps) {
-  const accentClass =
+  const variantStyles =
     variant === "error"
-      ? "border-l-4 border-l-red-700 dark:border-l-red-500 text-red-800 dark:text-red-300"
+      ? "bg-[var(--error-bg)] text-[var(--error-text)]"
       : variant === "success"
-        ? "border-l-4 border-l-neutral-900 dark:border-l-neutral-100 text-neutral-900 dark:text-neutral-100"
-        : "border-l-4 border-l-neutral-500 dark:border-l-neutral-400 text-neutral-800 dark:text-neutral-200";
+        ? "bg-[var(--success-bg)] text-[var(--success-text)]"
+        : "bg-[var(--info-bg)] text-[var(--info-text)]";
 
   return (
     <div
       role="alert"
       aria-live="polite"
-      className={`rounded-md border border-neutral-300 dark:border-neutral-700 px-3.5 py-2.5 text-sm leading-relaxed ${accentClass} ${className}`}
+      className={cn(
+        "rounded-2xl border-0 px-4 py-3 text-sm leading-relaxed shadow-none transition-colors",
+        variantStyles,
+        className
+      )}
     >
       {children}
     </div>

@@ -6,6 +6,126 @@
     var(--font-plus-jakarta-sans), "Plus Jakarta Sans", "Inter", "Segoe UI",
     Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: var(--font-geist-mono);
+  --font-heading:
+    var(--font-plus-jakarta-sans), "Plus Jakarta Sans", "Inter", "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: #FAF8F5;
+  --foreground: #1F2622;
+  --card: #FFFFFF;
+  --card-foreground: #1F2622;
+  --popover: #FFFFFF;
+  --popover-foreground: #1F2622;
+  --primary: #2F7D60;
+  --primary-foreground: #FAF8F5;
+  --secondary: #F2EFE9;
+  --secondary-foreground: #1F2622;
+  --muted: #F2EFE9;
+  --muted-foreground: #5A635D;
+  --accent: #EAE6DE;
+  --accent-foreground: #1F2622;
+  --destructive: #9E2F26;
+  --destructive-foreground: #FAF8F5;
+  --border: #E6E2D9;
+  --input: #E6E2D9;
+  --ring: #CFC9BC;
+  --radius: 1rem;
+
+  /* Custom DESIGN.md tokens */
+  --bg-canvas: #FAF8F5;
+  --bg-surface: #FFFFFF;
+  --bg-subtle: #F2EFE9;
+  --bg-hover: #EAE6DE;
+  --border-default: #E6E2D9;
+  --border-strong: #CFC9BC;
+  --text-primary: #1F2622;
+  --text-secondary: #5A635D;
+  --text-muted: #848D87;
+  --brand-primary: #2F7D60;
+  --brand-primary-hover: #26674F;
+  --brand-primary-text: #FAF8F5;
+  --brand-tint: #E6F3ED;
+  --brand-accent: #D4723C;
+  --brand-accent-tint: #FBEFE8;
+  --error-bg: #F9E8E6;
+  --error-text: #9E2F26;
+  --success-bg: #E6F3ED;
+  --success-text: #1E5C45;
+  --info-bg: #F2EFE9;
+  --info-text: #5A635D;
+}
+
+.dark {
+  --background: #141715;
+  --foreground: #F0EFEA;
+  --card: #1B1F1C;
+  --card-foreground: #F0EFEA;
+  --popover: #1B1F1C;
+  --popover-foreground: #F0EFEA;
+  --primary: #5BB58E;
+  --primary-foreground: #101A15;
+  --secondary: #232824;
+  --secondary-foreground: #F0EFEA;
+  --muted: #232824;
+  --muted-foreground: #A4ADA6;
+  --accent: #2B312C;
+  --accent-foreground: #F0EFEA;
+  --destructive: #F08A82;
+  --destructive-foreground: #101A15;
+  --border: #2C322D;
+  --input: #2C322D;
+  --ring: #3E4740;
+
+  /* Custom DESIGN.md tokens */
+  --bg-canvas: #141715;
+  --bg-surface: #1B1F1C;
+  --bg-subtle: #232824;
+  --bg-hover: #2B312C;
+  --border-default: #2C322D;
+  --border-strong: #3E4740;
+  --text-primary: #F0EFEA;
+  --text-secondary: #A4ADA6;
+  --text-muted: #747E77;
+  --brand-primary: #5BB58E;
+  --brand-primary-hover: #6EC29E;
+  --brand-primary-text: #101A15;
+  --brand-tint: #1E332A;
+  --brand-accent: #E59160;
+  --brand-accent-tint: #33231A;
+  --error-bg: #36201E;
+  --error-text: #F08A82;
+  --success-bg: #1C3329;
+  --success-text: #7ED4AE;
+  --info-bg: #232824;
+  --info-text: #A4ADA6;
 }
 
 html {
@@ -156,5 +276,17 @@ dialog::backdrop {
       opacity: 0;
       translate: 0 -0.25rem;
     }
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
   }
 }
