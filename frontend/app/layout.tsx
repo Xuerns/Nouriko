@@ -7,6 +7,7 @@ import "./globals.css";
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -17,7 +18,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Nouriko",
   description:
-    "Daily nutrition assistant for meal recommendations based on ingredients, budget, and food photos.",
+    "Asisten nutrisi harian berbasis AI untuk memilih makanan bergizi dari bahan yang ada, anggaran makan, atau foto makanan.",
 };
 
 const themeInitScript = `
@@ -40,7 +41,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="id"
       suppressHydrationWarning
       className={cn(
-        "h-full antialiased font-sans",
+        "h-full font-sans antialiased",
         plusJakartaSans.variable,
         geistMono.variable
       )}

@@ -1,59 +1,91 @@
 "use client";
 
 import { useI18n } from "@/components/providers/I18nProvider";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+
+const SECTION_HEADING_PREFIX = /^\d+\.\s*/;
+
+function parseSectionHeading(heading: string, index: number) {
+  const number = String(index + 1).padStart(2, "0");
+  const title = heading.replace(SECTION_HEADING_PREFIX, "").trim();
+  return { number, title };
+}
+
+function splitLeadItem(text: string): { lead: string | null; body: string } {
+  const separatorIndex = text.indexOf(":");
+  if (separatorIndex > 0 && separatorIndex < 42) {
+    return {
+      lead: text.slice(0, separatorIndex).trim(),
+      body: text.slice(separatorIndex + 1).trim(),
+    };
+  }
+  return { lead: null, body: text };
+}
 
 export default function PrivacyPage() {
   const { t } = useI18n();
 
   return (
-    <article className="mx-auto max-w-2xl space-y-6">
-      <Card className="rounded-3xl border border-border bg-card p-6 shadow-none ring-0">
-        <header className="space-y-2">
-          <h1 className="text-[22px] font-semibold tracking-[-0.015em] text-foreground sm:text-[26px]">
-            {t.privacy.title}
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            {t.privacy.updatedLabel}
-          </p>
-        </header>
-      </Card>
+    <article className="mx-auto w-full max-w-2xl">
+      <header className="space-y-1.5 border-b border-border pb-5">
+        <h1 className="text-[clamp(1.5rem,1.25rem+1.1vw,2rem)] font-semibold leading-[1.2] tracking-[-0.02em] text-foreground text-balance">
+          {t.privacy.title}
+        </h1>
+        <p className="text-[13px] tabular-nums text-muted-foreground">
+          {t.privacy.updatedLabel}
+        </p>
+      </header>
 
-      <div className="space-y-4">
-        {t.privacy.sections.map((section) => (
-          <Card
-            key={section.heading}
-            className="rounded-3xl border border-border bg-card py-6 shadow-none ring-0"
-          >
-            <CardHeader className="px-6">
-              <CardTitle className="text-base font-semibold text-foreground">
-                {section.heading}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-6 space-y-3">
+      <div className="divide-y divide-border">
+        {t.privacy.sections.map((section, index) => {
+          const { number, title } = parseSectionHeading(section.heading, index);
+
+          return (
+            <section
+              key={section.heading}
+              className="space-y-3 py-6 last:pb-0"
+            >
+              <div className="flex items-baseline gap-2.5">
+                <span className="font-mono text-xs font-semibold tabular-nums text-[var(--brand-primary)]">
+                  {number}
+                </span>
+                <h2 className="text-base sm:text-[17px] font-semibold leading-[1.35] tracking-[-0.01em] text-foreground">
+                  {title}
+                </h2>
+              </div>
+
               {section.paragraphs.map((paragraph) => (
                 <p
                   key={paragraph}
-                  className="text-[15px] leading-[1.6] text-muted-foreground"
+                  className="text-[15px] leading-[1.68] text-muted-foreground text-pretty"
                 >
                   {paragraph}
                 </p>
               ))}
+
               {section.items && section.items.length > 0 ? (
-                <ul className="list-disc space-y-1.5 pl-5 text-[15px] leading-[1.6] text-muted-foreground">
-                  {section.items.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
+                <ul className="list-disc space-y-2 pl-5 text-[15px] leading-[1.65] text-muted-foreground marker:text-muted-foreground/60">
+                  {section.items.map((item) => {
+                    const { lead, body } = splitLeadItem(item);
+                    return (
+                      <li key={item} className="text-pretty">
+                        {lead ? (
+                          <>
+                            <span className="font-medium text-foreground">
+                              {lead}:
+                            </span>{" "}
+                            {body}
+                          </>
+                        ) : (
+                          body
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : null}
-            </CardContent>
-          </Card>
-        ))}
+            </section>
+          );
+        })}
       </div>
     </article>
   );

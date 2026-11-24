@@ -214,9 +214,9 @@ const FadeContent = ({
   const ref = useRef<HTMLDivElement>(null);
   const callbacksRef = useRef({ onStart, onComplete, onDisappearanceComplete });
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     callbacksRef.current = { onStart, onComplete, onDisappearanceComplete };
-  }, [onStart, onComplete, onDisappearanceComplete]);
+  });
 
   useIsomorphicLayoutEffect(() => {
     const el = ref.current;
