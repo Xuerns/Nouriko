@@ -196,17 +196,29 @@ export interface Dictionary {
   onboarding: {
     title: string;
     displayNameLabel: string;
+    displayNameOptional: string;
     displayNamePlaceholder: string;
     heightLabel: string;
     weightLabel: string;
     ageLabel: string;
+    cmUnit: string;
+    kgUnit: string;
+    yearUnit: string;
     genderLabel: string;
     genderMale: string;
     genderFemale: string;
     activityLabel: string;
     activityLight: string;
+    activityLightDesc: string;
     activityModerate: string;
+    activityModerateDesc: string;
     activityHeavy: string;
+    activityHeavyDesc: string;
+    heightRangeError: string;
+    weightRangeError: string;
+    ageRangeError: string;
+    previewHeading: string;
+    previewEmptyHint: string;
     submitButton: string;
   };
   profile: {
