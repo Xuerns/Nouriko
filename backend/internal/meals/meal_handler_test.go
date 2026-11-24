@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"math"
@@ -606,9 +607,11 @@ func TestMealHandler_IDORProtectionAcrossAllEndpoints(t *testing.T) {
 	uidA := seedOnboardedMealsUser(store)
 	uidB := seedOnboardedMealsUser(store)
 
-	targetDate := "2026-11-18"
-	payload := `{
-		"meal_date": "2026-11-18",
+	nowWIB := time.Now().In(wibZone)
+	targetDate := nowWIB.Format(dateLayout)
+	fromDate := nowWIB.AddDate(0, 0, -6).Format(dateLayout)
+	payload := fmt.Sprintf(`{
+		"meal_date": %q,
 		"meal_time": "lunch",
 		"name": "Ayam Bakar User A",
 		"health_score": 82,
@@ -619,7 +622,7 @@ func TestMealHandler_IDORProtectionAcrossAllEndpoints(t *testing.T) {
 		"fiber_g": 6,
 		"price_idr": 18000,
 		"input_source": "budget"
-	}`
+	}`, targetDate)
 
 	respCreate := doMealReq(t, app, http.MethodPost, "/api/v1/meals", uidA, payload)
 	if respCreate.StatusCode != fiber.StatusCreated {
@@ -653,7 +656,7 @@ func TestMealHandler_IDORProtectionAcrossAllEndpoints(t *testing.T) {
 	}
 
 	// User B history must NOT contain User A's meal.
-	respHistB := doMealReq(t, app, http.MethodGet, "/api/v1/meals/history?from=2026-11-12&to=2026-11-18", uidB, "")
+	respHistB := doMealReq(t, app, http.MethodGet, fmt.Sprintf("/api/v1/meals/history?from=%s&to=%s", fromDate, targetDate), uidB, "")
 	if respHistB.StatusCode != fiber.StatusOK {
 		t.Fatalf("expected 200 for User B history, got %d", respHistB.StatusCode)
 	}
