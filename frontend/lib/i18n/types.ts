@@ -42,9 +42,19 @@ export interface Dictionary {
     logout: string;
     login: string;
     register: string;
+    menuLabel: string;
   };
   footer: {
     copyright: string;
+    description: string;
+    disclaimer: string;
+    navAriaLabel: string;
+    exploreHeading: string;
+    homeLink: string;
+    capabilitiesLink: string;
+    howItWorksLink: string;
+    accountHeading: string;
+    infoHeading: string;
     privacyLink: string;
   };
   landing: {
@@ -55,17 +65,88 @@ export interface Dictionary {
     ctaLogin: string;
     ctaOpenChat: string;
     ctaContinueOnboarding: string;
+    overviewEyebrow: string;
+    overviewTitle: string;
+    overviewItems: {
+      label: string;
+      value: string;
+    }[];
+    rubricHeading: string;
+    rubricBadges: {
+      good: string;
+      fair: string;
+      low: string;
+    };
+    capabilitiesEyebrow: string;
     capabilitiesHeading: string;
     capabilities: {
+      number: string;
+      tag: string;
       title: string;
       description: string;
+      imageAlt: string;
+      calloutLabel: string;
+      calloutText?: string;
+      chips?: string[];
+      budgetRows?: {
+        label: string;
+        value: string;
+      }[];
     }[];
+    heroPhotoAlt: string;
+    heroStats: {
+      value: string;
+      label: string;
+    }[];
+    heroMealPreview: {
+      name: string;
+      estimate: string;
+      scoreBadge: string;
+      macros: {
+        label: string;
+        value: string;
+        tone: "calories" | "protein" | "carbs" | "fat" | "fiber";
+      }[];
+    };
+    stepsEyebrow: string;
     stepsHeading: string;
+    stepsIntro: string;
+    workflowPhotoAlt: string;
     steps: {
       step: string;
       title: string;
       description: string;
+      highlight: string;
     }[];
+    stepPreviews: {
+      profile: {
+        label: string;
+        bodyMeta: string;
+        targetLabel: string;
+        targetValue: string;
+        macrosSummary: string;
+      };
+      chat: {
+        label: string;
+        userMessage: string;
+        attachmentNote: string;
+        replyNote: string;
+      };
+      tracking: {
+        label: string;
+        caloriesLabel: string;
+        caloriesValue: string;
+        progressPercent: number;
+        spendLabel: string;
+        spendValue: string;
+        scoreBadge: string;
+      };
+    };
+    bottomCtaEyebrow: string;
+    bottomCtaHeading: string;
+    bottomCtaDescription: string;
+    bottomCtaAuthedDescription: string;
+    bottomCtaPhotoAlt: string;
   };
   register: {
     title: string;

@@ -16,16 +16,15 @@ export function BrandLogo({ href, isCurrentPage = false }: BrandLogoProps) {
     <Link
       href={href}
       aria-current={isCurrentPage ? "page" : undefined}
-      className="inline-flex items-center gap-2 text-base font-semibold tracking-tight text-neutral-900 dark:text-neutral-100"
+      className="inline-flex min-h-11 items-center gap-2.5 rounded-full pr-2 text-base font-semibold tracking-tight text-foreground transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
       <Image
         src="/logo.png"
         alt=""
-        width={24}
-        height={24}
-        priority
+        width={28}
+        height={28}
         aria-hidden="true"
-        className="h-6 w-6 shrink-0 object-contain"
+        className="size-7 aspect-square shrink-0 object-contain"
       />
       <span>{t.common.brand}</span>
     </Link>

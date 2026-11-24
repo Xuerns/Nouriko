@@ -119,7 +119,7 @@ export function AccountMenu() {
         </DropdownMenuItem>
 
         <DropdownMenuItem
-          onClick={toggleTheme}
+          onClick={(event) => toggleTheme(event)}
           className="rounded-xl px-2.5 py-2 text-xs font-medium"
         >
           {theme === "dark" ? (

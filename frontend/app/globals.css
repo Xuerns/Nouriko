@@ -11,63 +11,47 @@
   --font-heading:
     var(--font-plus-jakarta-sans), "Plus Jakarta Sans", "Inter", "Segoe UI",
     Roboto, "Helvetica Neue", Arial, sans-serif;
-
-  /* Enforce Flat & Matte (zero drop shadows) per DESIGN.md & AGENTS.md */
-  --shadow-2xs: none;
-  --shadow-xs: none;
-  --shadow-sm: none;
-  --shadow-md: none;
-  --shadow-lg: none;
-  --shadow-xl: none;
-  --shadow-2xl: none;
-
-  /* Core shadcn semantic colors */
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-
-  /* Brand & semantic tokens from DESIGN.md */
-  --color-brand-primary: var(--brand-primary);
-  --color-brand-primary-hover: var(--brand-primary-hover);
-  --color-brand-tint: var(--brand-tint);
-  --color-brand-accent: var(--brand-accent);
-  --color-brand-accent-tint: var(--brand-accent-tint);
-
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
   --color-chart-5: var(--chart-5);
-
-  --radius-sm: calc(var(--radius) * 0.5);
-  --radius-md: calc(var(--radius) * 0.75);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.25);
-  --radius-2xl: calc(var(--radius) * 1.5);
-  --radius-3xl: calc(var(--radius) * 1.75);
-  --radius-4xl: calc(var(--radius) * 2);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+  --radius-4xl: 2rem;
 }
 
 :root {
-  --radius: 1rem;
-
-  /* Surfaces & Neutrals (Light: Warm Alabaster) */
   --bg-canvas: #faf8f5;
   --bg-surface: #ffffff;
   --bg-subtle: #f2efe9;
@@ -78,7 +62,6 @@
   --text-secondary: #5a635d;
   --text-muted: #848d87;
 
-  /* Brand Accents (Light: Botanical Sage & Soft Terracotta) */
   --brand-primary: #2f7d60;
   --brand-primary-hover: #26674f;
   --brand-primary-text: #faf8f5;
@@ -86,7 +69,6 @@
   --brand-accent: #d4723c;
   --brand-accent-tint: #fbefe8;
 
-  /* Health Score & Status Semantics (Light) */
   --score-good-bg: #e6f3ed;
   --score-good-text: #1e5c45;
   --score-fair-bg: #f9f1df;
@@ -96,14 +78,12 @@
   --error-bg: #f9e8e6;
   --error-text: #9e2f26;
 
-  /* Macro Accents (Light) */
   --macro-calories: #2f7d60;
   --macro-protein: #4b7b9c;
   --macro-carbs: #c78a3b;
   --macro-fat: #c46d5e;
   --macro-fiber: #6a8e58;
 
-  /* shadcn/ui Mapping */
   --background: var(--bg-canvas);
   --foreground: var(--text-primary);
   --card: var(--bg-surface);
@@ -119,7 +99,6 @@
   --accent: var(--bg-hover);
   --accent-foreground: var(--text-primary);
   --destructive: var(--error-text);
-  --destructive-foreground: var(--brand-primary-text);
   --border: var(--border-default);
   --input: var(--border-default);
   --ring: var(--brand-primary);
@@ -129,10 +108,20 @@
   --chart-3: var(--macro-carbs);
   --chart-4: var(--macro-fat);
   --chart-5: var(--macro-fiber);
+
+  --radius: 1rem;
+
+  --sidebar: var(--bg-surface);
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-primary: var(--brand-primary);
+  --sidebar-primary-foreground: var(--brand-primary-text);
+  --sidebar-accent: var(--bg-subtle);
+  --sidebar-accent-foreground: var(--text-primary);
+  --sidebar-border: var(--border-default);
+  --sidebar-ring: var(--brand-primary);
 }
 
 .dark {
-  /* Surfaces & Neutrals (Dark: Soft Forest Charcoal) */
   --bg-canvas: #141715;
   --bg-surface: #1b1f1c;
   --bg-subtle: #232824;
@@ -143,7 +132,6 @@
   --text-secondary: #a4ada6;
   --text-muted: #747e77;
 
-  /* Brand Accents (Dark: Soft Sage Mint & Warm Apricot) */
   --brand-primary: #5bb58e;
   --brand-primary-hover: #6ec29e;
   --brand-primary-text: #101a15;
@@ -151,7 +139,6 @@
   --brand-accent: #e59160;
   --brand-accent-tint: #33231a;
 
-  /* Health Score & Status Semantics (Dark) */
   --score-good-bg: #1c3329;
   --score-good-text: #7ed4ae;
   --score-fair-bg: #332b1a;
@@ -161,14 +148,12 @@
   --error-bg: #36201e;
   --error-text: #f08a82;
 
-  /* Macro Accents (Dark) */
   --macro-calories: #5bb58e;
   --macro-protein: #7baed1;
   --macro-carbs: #dfaa62;
   --macro-fat: #de8d7f;
   --macro-fiber: #93b880;
 
-  /* shadcn/ui Mapping */
   --background: var(--bg-canvas);
   --foreground: var(--text-primary);
   --card: var(--bg-surface);
@@ -184,7 +169,6 @@
   --accent: var(--bg-hover);
   --accent-foreground: var(--text-primary);
   --destructive: var(--error-text);
-  --destructive-foreground: var(--brand-primary-text);
   --border: var(--border-default);
   --input: var(--border-default);
   --ring: var(--brand-primary);
@@ -194,29 +178,44 @@
   --chart-3: var(--macro-carbs);
   --chart-4: var(--macro-fat);
   --chart-5: var(--macro-fiber);
+
+  --sidebar: var(--bg-surface);
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-primary: var(--brand-primary);
+  --sidebar-primary-foreground: var(--brand-primary-text);
+  --sidebar-accent: var(--bg-subtle);
+  --sidebar-accent-foreground: var(--text-primary);
+  --sidebar-border: var(--border-default);
+  --sidebar-ring: var(--brand-primary);
 }
 
 html {
   color-scheme: light;
-  --scrollbar-thumb: #cfc9bc;
-  --scrollbar-track: #faf8f5;
+  accent-color: var(--brand-primary);
+  scrollbar-gutter: stable;
+  --scrollbar-thumb: #2f7d60;
+  --scrollbar-thumb-hover: #26674f;
+  --scrollbar-track: #ebe6dc;
 }
 
 html.dark {
   color-scheme: dark;
-  --scrollbar-thumb: #3e4740;
-  --scrollbar-track: #141715;
+  --scrollbar-thumb: #5bb58e;
+  --scrollbar-thumb-hover: #6ec29e;
+  --scrollbar-track: #1e2320;
 }
 
 @media (prefers-contrast: more) {
   html {
-    --scrollbar-thumb: #1f2622;
-    --scrollbar-track: #faf8f5;
+    --scrollbar-thumb: #000000;
+    --scrollbar-thumb-hover: #000000;
+    --scrollbar-track: #ffffff;
   }
 
   html.dark {
-    --scrollbar-thumb: #f0efea;
-    --scrollbar-track: #141715;
+    --scrollbar-thumb: #ffffff;
+    --scrollbar-thumb-hover: #ffffff;
+    --scrollbar-track: #000000;
   }
 }
 
@@ -234,31 +233,69 @@ html,
 
   html::-webkit-scrollbar,
   *::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
   }
 
   html::-webkit-scrollbar-thumb,
   *::-webkit-scrollbar-thumb {
     background: var(--scrollbar-thumb);
-    border-radius: 4px;
+    border: 2px solid var(--scrollbar-track);
+    border-radius: 9999px;
+  }
+
+  html::-webkit-scrollbar-thumb:hover,
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
   }
 
   html::-webkit-scrollbar-track,
   *::-webkit-scrollbar-track {
     background: var(--scrollbar-track);
   }
+
+  html::-webkit-scrollbar-corner,
+  *::-webkit-scrollbar-corner {
+    background: var(--scrollbar-track);
+  }
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
+::selection {
+  background-color: var(--brand-tint);
+  color: var(--text-primary);
+}
+
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition: none !important;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
-  body {
-    @apply bg-background text-foreground font-sans;
-  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
   html {
-    @apply font-sans;
+    scroll-behavior: smooth;
   }
   a[href],
   button:not(:disabled),
@@ -277,6 +314,36 @@ html,
   [aria-disabled="true"] {
     cursor: not-allowed;
   }
+
+  @supports (animation-timeline: scroll()) {
+    @keyframes nouriko-scroll-progress {
+      from {
+        transform: scaleX(0);
+      }
+      to {
+        transform: scaleX(1);
+      }
+    }
+
+    .nouriko-scroll-progress {
+      display: block;
+      transform-origin: 0 50%;
+      animation: nouriko-scroll-progress auto linear;
+      animation-timeline: scroll(root block);
+    }
+  }
+}
+
+body {
+  font-family:
+    var(--font-plus-jakarta-sans),
+    "Plus Jakarta Sans",
+    "Inter",
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
 }
 
 dialog:modal {
@@ -361,5 +428,17 @@ dialog::backdrop {
       opacity: 0;
       translate: 0 -0.25rem;
     }
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
   }
 }
