@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Lock } from "lucide-react";
 import { useI18n } from "@/components/providers/I18nProvider";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { evaluatePasswordStrength } from "@/lib/password";
+import { cn } from "@/lib/utils";
 
 interface PasswordInputProps {
   id: string;
@@ -20,6 +19,7 @@ interface PasswordInputProps {
   disabled?: boolean;
   showStrength?: boolean;
   hint?: string;
+  placeholder?: string;
 }
 
 export function PasswordInput({
@@ -34,6 +34,7 @@ export function PasswordInput({
   disabled = false,
   showStrength = false,
   hint,
+  placeholder,
 }: PasswordInputProps) {
   const { t } = useI18n();
   const [visible, setVisible] = useState(false);
@@ -57,11 +58,11 @@ export function PasswordInput({
           ? 3
           : 0;
 
-  const strengthBarColor =
+  const segmentColorClass =
     strength === "weak"
-      ? "bg-[var(--score-low-text)]"
+      ? "bg-[var(--brand-accent)]"
       : strength === "fair"
-        ? "bg-[var(--score-fair-text)]"
+        ? "bg-[#C78A3B]"
         : "bg-[var(--brand-primary)]";
 
   const toggleLabel = visible ? t.common.hidePassword : t.common.showPassword;
@@ -84,7 +85,7 @@ export function PasswordInput({
           disabled={disabled}
           className="h-10 rounded-2xl bg-card pr-10 pl-3.5 text-sm shadow-none [&::-ms-clear]:hidden [&::-ms-reveal]:hidden"
         />
-        <Button
+        <button
           type="button"
           variant="ghost"
           size="icon-sm"
@@ -96,9 +97,9 @@ export function PasswordInput({
           className="absolute top-1/2 right-1 size-8 -translate-y-1/2 rounded-full text-muted-foreground shadow-none hover:bg-accent hover:text-foreground"
         >
           {visible ? (
-            <EyeOff className="size-4 stroke-[1.75]" aria-hidden="true" />
+            <EyeOff className="h-4 w-4" strokeWidth={1.75} />
           ) : (
-            <Eye className="size-4 stroke-[1.75]" aria-hidden="true" />
+            <Eye className="h-4 w-4" strokeWidth={1.75} />
           )}
         </Button>
       </div>
@@ -113,15 +114,20 @@ export function PasswordInput({
             {[1, 2, 3].map((segment) => (
               <div
                 key={segment}
-                className={`h-1.5 rounded-full transition-colors duration-150 ${
-                  segment <= filledSegments ? strengthBarColor : "bg-muted"
-                }`}
+                className={cn(
+                  "h-1.5 rounded-full transition-colors duration-150",
+                  segment <= filledSegments
+                    ? segmentColorClass
+                    : "bg-muted"
+                )}
               />
             ))}
           </div>
           <p className="text-[11px] text-muted-foreground">
             {t.common.passwordStrengthLabel}:{" "}
-            <span className="font-medium text-foreground">{strengthText}</span>
+            <span className="font-medium text-foreground">
+              {strengthText}
+            </span>
           </p>
         </div>
       ) : null}

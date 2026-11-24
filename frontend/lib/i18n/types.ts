@@ -150,6 +150,11 @@ export interface Dictionary {
   };
   register: {
     title: string;
+    subtitle: string;
+    heroTitle: string;
+    heroBrand: string;
+    heroAccent: string;
+    heroSubtitle: string;
     submitButton: string;
     hasAccount: string;
     loginLink: string;
@@ -172,6 +177,17 @@ export interface Dictionary {
   };
   login: {
     title: string;
+    subtitle: string;
+    heroTitle: string;
+    heroAccent: string;
+    heroSubtitle: string;
+    feature1: string;
+    feature2: string;
+    feature3: string;
+    rememberMe: string;
+    orDivider: string;
+    socialGoogle: string;
+    socialGithub: string;
     submitButton: string;
     forgotPasswordLink: string;
     noAccount: string;
@@ -180,6 +196,12 @@ export interface Dictionary {
   };
   forgotPassword: {
     title: string;
+    subtitle: string;
+    heroTitle: string;
+    heroSubtitle: string;
+    successTitle: string;
+    successSubtitle: string;
+    backToLoginBtn: string;
     submitButton: string;
     successMessage: string;
     devResetLink: string;
@@ -196,17 +218,29 @@ export interface Dictionary {
   onboarding: {
     title: string;
     displayNameLabel: string;
+    displayNameOptional: string;
     displayNamePlaceholder: string;
     heightLabel: string;
     weightLabel: string;
     ageLabel: string;
+    cmUnit: string;
+    kgUnit: string;
+    yearUnit: string;
     genderLabel: string;
     genderMale: string;
     genderFemale: string;
     activityLabel: string;
     activityLight: string;
+    activityLightDesc: string;
     activityModerate: string;
+    activityModerateDesc: string;
     activityHeavy: string;
+    activityHeavyDesc: string;
+    heightRangeError: string;
+    weightRangeError: string;
+    ageRangeError: string;
+    previewHeading: string;
+    previewEmptyHint: string;
     submitButton: string;
   };
   profile: {
