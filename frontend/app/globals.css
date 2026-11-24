@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
@@ -6,29 +8,215 @@
     var(--font-plus-jakarta-sans), "Plus Jakarta Sans", "Inter", "Segoe UI",
     Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: var(--font-geist-mono);
+  --font-heading:
+    var(--font-plus-jakarta-sans), "Plus Jakarta Sans", "Inter", "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* Enforce Flat & Matte (zero drop shadows) per DESIGN.md & AGENTS.md */
+  --shadow-2xs: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
+
+  /* Core shadcn semantic colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Brand & semantic tokens from DESIGN.md */
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-primary-hover: var(--brand-primary-hover);
+  --color-brand-tint: var(--brand-tint);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-accent-tint: var(--brand-accent-tint);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.25);
+  --radius-2xl: calc(var(--radius) * 1.5);
+  --radius-3xl: calc(var(--radius) * 1.75);
+  --radius-4xl: calc(var(--radius) * 2);
+}
+
+:root {
+  --radius: 1rem;
+
+  /* Surfaces & Neutrals (Light: Warm Alabaster) */
+  --bg-canvas: #faf8f5;
+  --bg-surface: #ffffff;
+  --bg-subtle: #f2efe9;
+  --bg-hover: #eae6de;
+  --border-default: #e6e2d9;
+  --border-strong: #cfc9bc;
+  --text-primary: #1f2622;
+  --text-secondary: #5a635d;
+  --text-muted: #848d87;
+
+  /* Brand Accents (Light: Botanical Sage & Soft Terracotta) */
+  --brand-primary: #2f7d60;
+  --brand-primary-hover: #26674f;
+  --brand-primary-text: #faf8f5;
+  --brand-tint: #e6f3ed;
+  --brand-accent: #d4723c;
+  --brand-accent-tint: #fbefe8;
+
+  /* Health Score & Status Semantics (Light) */
+  --score-good-bg: #e6f3ed;
+  --score-good-text: #1e5c45;
+  --score-fair-bg: #f9f1df;
+  --score-fair-text: #7d5614;
+  --score-low-bg: #f9e8e6;
+  --score-low-text: #8c322a;
+  --error-bg: #f9e8e6;
+  --error-text: #9e2f26;
+
+  /* Macro Accents (Light) */
+  --macro-calories: #2f7d60;
+  --macro-protein: #4b7b9c;
+  --macro-carbs: #c78a3b;
+  --macro-fat: #c46d5e;
+  --macro-fiber: #6a8e58;
+
+  /* shadcn/ui Mapping */
+  --background: var(--bg-canvas);
+  --foreground: var(--text-primary);
+  --card: var(--bg-surface);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-surface);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--brand-primary);
+  --primary-foreground: var(--brand-primary-text);
+  --secondary: var(--bg-subtle);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-subtle);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--bg-hover);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--error-text);
+  --destructive-foreground: var(--brand-primary-text);
+  --border: var(--border-default);
+  --input: var(--border-default);
+  --ring: var(--brand-primary);
+
+  --chart-1: var(--macro-calories);
+  --chart-2: var(--macro-protein);
+  --chart-3: var(--macro-carbs);
+  --chart-4: var(--macro-fat);
+  --chart-5: var(--macro-fiber);
+}
+
+.dark {
+  /* Surfaces & Neutrals (Dark: Soft Forest Charcoal) */
+  --bg-canvas: #141715;
+  --bg-surface: #1b1f1c;
+  --bg-subtle: #232824;
+  --bg-hover: #2b312c;
+  --border-default: #2c322d;
+  --border-strong: #3e4740;
+  --text-primary: #f0efea;
+  --text-secondary: #a4ada6;
+  --text-muted: #747e77;
+
+  /* Brand Accents (Dark: Soft Sage Mint & Warm Apricot) */
+  --brand-primary: #5bb58e;
+  --brand-primary-hover: #6ec29e;
+  --brand-primary-text: #101a15;
+  --brand-tint: #1e332a;
+  --brand-accent: #e59160;
+  --brand-accent-tint: #33231a;
+
+  /* Health Score & Status Semantics (Dark) */
+  --score-good-bg: #1c3329;
+  --score-good-text: #7ed4ae;
+  --score-fair-bg: #332b1a;
+  --score-fair-text: #e6be73;
+  --score-low-bg: #36201e;
+  --score-low-text: #e8928a;
+  --error-bg: #36201e;
+  --error-text: #f08a82;
+
+  /* Macro Accents (Dark) */
+  --macro-calories: #5bb58e;
+  --macro-protein: #7baed1;
+  --macro-carbs: #dfaa62;
+  --macro-fat: #de8d7f;
+  --macro-fiber: #93b880;
+
+  /* shadcn/ui Mapping */
+  --background: var(--bg-canvas);
+  --foreground: var(--text-primary);
+  --card: var(--bg-surface);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-surface);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--brand-primary);
+  --primary-foreground: var(--brand-primary-text);
+  --secondary: var(--bg-subtle);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-subtle);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--bg-hover);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--error-text);
+  --destructive-foreground: var(--brand-primary-text);
+  --border: var(--border-default);
+  --input: var(--border-default);
+  --ring: var(--brand-primary);
+
+  --chart-1: var(--macro-calories);
+  --chart-2: var(--macro-protein);
+  --chart-3: var(--macro-carbs);
+  --chart-4: var(--macro-fat);
+  --chart-5: var(--macro-fiber);
 }
 
 html {
   color-scheme: light;
-  --scrollbar-thumb: #737373;
-  --scrollbar-track: #f5f5f5;
+  --scrollbar-thumb: #cfc9bc;
+  --scrollbar-track: #faf8f5;
 }
 
 html.dark {
   color-scheme: dark;
-  --scrollbar-thumb: #737373;
-  --scrollbar-track: #171717;
+  --scrollbar-thumb: #3e4740;
+  --scrollbar-track: #141715;
 }
 
 @media (prefers-contrast: more) {
   html {
-    --scrollbar-thumb: #000000;
-    --scrollbar-track: #ffffff;
+    --scrollbar-thumb: #1f2622;
+    --scrollbar-track: #faf8f5;
   }
 
   html.dark {
-    --scrollbar-thumb: #ffffff;
-    --scrollbar-track: #000000;
+    --scrollbar-thumb: #f0efea;
+    --scrollbar-track: #141715;
   }
 }
 
@@ -62,16 +250,16 @@ html,
   }
 }
 
-body {
-  font-family:
-    var(--font-plus-jakarta-sans),
-    "Plus Jakarta Sans",
-    "Inter",
-    "Segoe UI",
-    Roboto,
-    "Helvetica Neue",
-    Arial,
-    sans-serif;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+  html {
+    @apply font-sans;
+  }
 }
 
 dialog:modal {

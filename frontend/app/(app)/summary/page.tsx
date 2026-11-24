@@ -7,11 +7,13 @@ import { ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useI18n } from "@/components/providers/I18nProvider";
 import { Alert } from "@/components/ui/Alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { formatIDR, formatMacro } from "@/components/chat/format";
-import {
-  getHealthLabelTextClass,
-  SavedMealItem,
-} from "@/components/meals/SavedMealItem";
+import { getHealthBadgeClass } from "@/components/chat/MealResultCard";
+import { SavedMealItem } from "@/components/meals/SavedMealItem";
 import { apiClient, ApiError } from "@/lib/api";
 import {
   formatDisplayDate,
@@ -22,12 +24,14 @@ import {
 import { getFriendlyErrorMessage } from "@/lib/errors";
 import type { DailySummaryResponse } from "@/lib/types";
 
-function WireframeProgressBar({
+function MacroProgressBar({
   label,
   percent,
+  colorVar,
 }: {
   label: string;
   percent: number;
+  colorVar: string;
 }) {
   const safePercent = Number.isFinite(percent)
     ? Math.max(0, Math.round(percent))
@@ -41,11 +45,11 @@ function WireframeProgressBar({
       aria-valuenow={safePercent}
       aria-valuemin={0}
       aria-valuemax={100}
-      className="h-2 w-full rounded-sm border border-neutral-300 dark:border-neutral-700 overflow-hidden"
+      className="h-2.5 w-full overflow-hidden rounded-full bg-muted"
     >
       <div
-        className="h-full bg-neutral-900 dark:bg-neutral-100"
-        style={{ width: `${fillWidth}%` }}
+        className="h-full rounded-full transition-all duration-200"
+        style={{ width: `${fillWidth}%`, backgroundColor: colorVar }}
       />
     </div>
   );
@@ -97,7 +101,10 @@ function SummaryContent() {
 
     async function run() {
       try {
-        const data = await apiClient.getDailySummary(token as string, selectedDate);
+        const data = await apiClient.getDailySummary(
+          token as string,
+          selectedDate
+        );
         if (cancelled) return;
         setSummary(data);
         setFetchError(null);
@@ -183,9 +190,9 @@ function SummaryContent() {
     !profile.onboarding_completed
   ) {
     return (
-      <div className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 text-sm text-neutral-600 dark:text-neutral-400">
+      <Card className="rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-none ring-0">
         {t.common.loading}
-      </div>
+      </Card>
     );
   }
 
@@ -207,6 +214,7 @@ function SummaryContent() {
       actual: totals?.protein_g ?? 0,
       target: targets?.target_protein_g ?? 0,
       percent: progress?.protein_g ?? 0,
+      colorVar: "var(--macro-protein)",
     },
     {
       key: "carbs",
@@ -214,6 +222,7 @@ function SummaryContent() {
       actual: totals?.carbs_g ?? 0,
       target: targets?.target_carbs_g ?? 0,
       percent: progress?.carbs_g ?? 0,
+      colorVar: "var(--macro-carbs)",
     },
     {
       key: "fat",
@@ -221,6 +230,7 @@ function SummaryContent() {
       actual: totals?.fat_g ?? 0,
       target: targets?.target_fat_g ?? 0,
       percent: progress?.fat_g ?? 0,
+      colorVar: "var(--macro-fat)",
     },
     {
       key: "fiber",
@@ -228,178 +238,194 @@ function SummaryContent() {
       actual: totals?.fiber_g ?? 0,
       target: targets?.target_fiber_g ?? 0,
       percent: progress?.fiber_g ?? 0,
+      colorVar: "var(--macro-fiber)",
     },
   ];
 
   return (
     <div className="space-y-5">
-      <section className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
-            {t.summary.title}
-          </h1>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            {formatDisplayDate(selectedDate, language)}
-          </p>
+      <Card className="rounded-3xl border border-border bg-card p-5 shadow-none ring-0">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-[22px] font-semibold tracking-[-0.015em] text-foreground sm:text-[26px]">
+              {t.summary.title}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {formatDisplayDate(selectedDate, language)}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => updateDate(shiftDateString(selectedDate, -1))}
+              aria-label={t.summary.prevDayLabel}
+              className="size-10 rounded-full shadow-none"
+            >
+              <ChevronLeft className="size-4 stroke-[1.75]" aria-hidden="true" />
+            </Button>
+
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => {
+                if (e.target.value) {
+                  updateDate(e.target.value);
+                }
+              }}
+              aria-label={t.summary.dateInputLabel}
+              className="h-10 w-auto rounded-2xl bg-card px-3 text-xs tabular-nums shadow-none"
+            />
+
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => updateDate(shiftDateString(selectedDate, 1))}
+              aria-label={t.summary.nextDayLabel}
+              className="size-10 rounded-full shadow-none"
+            >
+              <ChevronRight className="size-4 stroke-[1.75]" aria-hidden="true" />
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={selectedDate === todayStr}
+              onClick={() => updateDate(todayStr)}
+              className="h-10 rounded-full px-4 text-xs shadow-none"
+            >
+              {t.summary.todayButton}
+            </Button>
+          </div>
         </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => updateDate(shiftDateString(selectedDate, -1))}
-            aria-label={t.summary.prevDayLabel}
-            className="inline-flex items-center justify-center rounded-md border border-neutral-300 dark:border-neutral-700 p-2 text-neutral-800 dark:text-neutral-200 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900"
-          >
-            <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
-          </button>
-
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => {
-              if (e.target.value) {
-                updateDate(e.target.value);
-              }
-            }}
-            aria-label={t.summary.dateInputLabel}
-            className="rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent px-2.5 py-1.5 font-mono text-xs text-neutral-900 dark:text-neutral-100"
-          />
-
-          <button
-            type="button"
-            onClick={() => updateDate(shiftDateString(selectedDate, 1))}
-            aria-label={t.summary.nextDayLabel}
-            className="inline-flex items-center justify-center rounded-md border border-neutral-300 dark:border-neutral-700 p-2 text-neutral-800 dark:text-neutral-200 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900"
-          >
-            <ChevronRight className="h-4 w-4 shrink-0" aria-hidden="true" />
-          </button>
-
-          <button
-            type="button"
-            disabled={selectedDate === todayStr}
-            onClick={() => updateDate(todayStr)}
-            className="rounded-md border border-neutral-300 dark:border-neutral-700 px-3 py-1.5 text-xs font-medium text-neutral-900 dark:text-neutral-100 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900 disabled:opacity-50"
-          >
-            {t.summary.todayButton}
-          </button>
-        </div>
-      </section>
+      </Card>
 
       {fetchError ? (
         <div className="space-y-3">
           <Alert variant="error">{fetchError}</Alert>
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={triggerReload}
-            className="inline-flex items-center gap-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 px-3 py-1.5 text-xs font-medium text-neutral-900 dark:text-neutral-100 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900"
+            className="h-10 rounded-full px-4 text-xs shadow-none"
           >
-            <RotateCcw className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <RotateCcw className="size-3.5 stroke-[1.75]" aria-hidden="true" />
             <span>{t.summary.retryButton}</span>
-          </button>
+          </Button>
         </div>
       ) : isFetching && !summary ? (
-        <div className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 text-sm text-neutral-600 dark:text-neutral-400">
+        <Card className="rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-none ring-0">
           {t.common.loading}
-        </div>
+        </Card>
       ) : (
         <>
-          <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-4 space-y-2.5">
-              <p className="font-mono text-xs uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+          <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Card className="rounded-3xl border border-border bg-card p-5 shadow-none ring-0 gap-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
                 {t.summary.caloriesHeading}
               </p>
               <div className="flex items-baseline justify-between gap-2">
-                <p className="font-mono text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                <p className="text-xl font-semibold tabular-nums text-foreground">
                   {totals?.calories ?? 0} {t.profile.kcalUnit}
                 </p>
-                <span className="font-mono text-xs text-neutral-600 dark:text-neutral-400">
+                <span className="text-xs font-semibold tabular-nums text-[var(--brand-primary)]">
                   {progress?.calories ?? 0}%
                 </span>
               </div>
-              <p className="text-xs text-neutral-600 dark:text-neutral-400">
+              <p className="text-xs text-muted-foreground">
                 {t.summary.ofTarget}{" "}
-                <span className="font-mono text-neutral-900 dark:text-neutral-100">
+                <span className="font-medium tabular-nums text-foreground">
                   {targets?.daily_calorie_target ?? 0} {t.profile.kcalUnit}
                 </span>
               </p>
-              <WireframeProgressBar
+              <MacroProgressBar
                 label={t.summary.caloriesHeading}
                 percent={progress?.calories ?? 0}
+                colorVar="var(--macro-calories)"
               />
-            </div>
+            </Card>
 
-            <div className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-4 space-y-2.5">
-              <p className="font-mono text-xs uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+            <Card className="rounded-3xl border border-border bg-card p-5 shadow-none ring-0 gap-2.5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
                 {t.summary.spendingHeading}
               </p>
-              <p className="font-mono text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+              <p className="text-xl font-semibold tabular-nums text-[var(--brand-accent)]">
                 {formatIDR(totals?.total_spending_idr ?? 0)}
               </p>
-              <p className="text-xs text-neutral-600 dark:text-neutral-400">
+              <p className="text-xs text-muted-foreground">
                 {(totals?.meal_count ?? 0) > 0
                   ? `${totals?.meal_count ?? 0} ${t.meals.mealCountUnit}`
                   : t.summary.noMealsCount}
               </p>
-            </div>
+            </Card>
 
-            <div className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-4 space-y-2.5">
-              <p className="font-mono text-xs uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+            <Card className="rounded-3xl border border-border bg-card p-5 shadow-none ring-0 gap-2.5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
                 {t.summary.healthScoreHeading}
               </p>
               {(totals?.meal_count ?? 0) > 0 && totals?.health_label ? (
-                <div className="space-y-1">
-                  <p className="font-mono text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                <div className="space-y-2">
+                  <p className="text-xl font-semibold tabular-nums text-foreground">
                     {totals.average_health_score}/100
                   </p>
-                  <p
-                    className={`text-sm font-medium ${getHealthLabelTextClass(totals.health_label)}`}
+                  <Badge
+                    className={`h-6 rounded-full border-0 px-3 text-xs font-semibold ${getHealthBadgeClass(totals.health_label)}`}
                   >
                     {dailyHealthLabelText}
-                  </p>
+                  </Badge>
                 </div>
               ) : (
-                <p className="font-mono text-lg font-semibold text-neutral-500 dark:text-neutral-400">
+                <p className="text-xl font-semibold tabular-nums text-muted-foreground">
                   -
                 </p>
               )}
-            </div>
+            </Card>
           </section>
 
-          <section className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-4 sm:p-5 space-y-3">
-            <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+          <Card className="rounded-3xl border border-border bg-card p-5 shadow-none ring-0 gap-4">
+            <h2 className="text-base font-semibold text-foreground">
               {t.summary.macrosHeading}
             </h2>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 rounded-md border border-neutral-300 dark:border-neutral-700 divide-y sm:divide-y-0 sm:divide-x divide-neutral-300 dark:divide-neutral-700">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {macroRows.map((macro) => (
-                <div key={macro.key} className="p-3 space-y-2">
+                <div
+                  key={macro.key}
+                  className="rounded-2xl bg-muted p-3.5 space-y-2"
+                >
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                    <p className="text-xs font-medium text-muted-foreground">
                       {macro.label}
                     </p>
-                    <span className="font-mono text-xs text-neutral-600 dark:text-neutral-400">
+                    <span className="text-xs font-semibold tabular-nums text-foreground">
                       {macro.percent}%
                     </span>
                   </div>
-                  <p className="font-mono text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                  <p className="text-sm font-semibold tabular-nums text-foreground">
                     {formatMacro(macro.actual)} / {formatMacro(macro.target)}{" "}
                     {t.profile.gramUnit}
                   </p>
-                  <WireframeProgressBar
+                  <MacroProgressBar
                     label={macro.label}
                     percent={macro.percent}
+                    colorVar={macro.colorVar}
                   />
                 </div>
               ))}
             </div>
-          </section>
+          </Card>
 
           <section className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+            <div className="flex items-center justify-between gap-2 px-1">
+              <h2 className="text-base font-semibold text-foreground">
                 {t.summary.savedMealsHeading}
               </h2>
-              <span className="font-mono text-xs text-neutral-600 dark:text-neutral-400">
+              <span className="text-xs tabular-nums text-muted-foreground">
                 {meals.length} {t.meals.mealCountUnit}
               </span>
             </div>
@@ -407,22 +433,23 @@ function SummaryContent() {
             {deleteError ? <Alert variant="error">{deleteError}</Alert> : null}
 
             {meals.length === 0 ? (
-              <div className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 space-y-3">
-                <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+              <Card className="rounded-3xl border border-border bg-card p-6 shadow-none ring-0 gap-3">
+                <p className="text-sm font-semibold text-foreground">
                   {t.summary.emptyTitle}
                 </p>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                <p className="text-sm leading-relaxed text-muted-foreground">
                   {t.summary.emptyDescription}
                 </p>
-                <div>
-                  <Link
-                    href="/chat"
-                    className="inline-flex items-center rounded-md border border-neutral-900 dark:border-neutral-100 px-3.5 py-2 text-xs font-medium text-neutral-900 dark:text-neutral-100 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900"
+                <div className="pt-1">
+                  <Button
+                    render={<Link href="/chat" />}
+                    size="sm"
+                    className="h-10 rounded-full px-5 text-xs shadow-none"
                   >
                     {t.summary.goToChatButton}
-                  </Link>
+                  </Button>
                 </div>
-              </div>
+              </Card>
             ) : (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {meals.map((meal) => (
@@ -446,9 +473,9 @@ export default function SummaryPage() {
   return (
     <Suspense
       fallback={
-        <div className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 text-sm text-neutral-600 dark:text-neutral-400">
+        <Card className="rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-none ring-0">
           Loading...
-        </div>
+        </Card>
       }
     >
       <SummaryContent />

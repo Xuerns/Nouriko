@@ -1,13 +1,36 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useI18n } from "@/components/providers/I18nProvider";
 import { Alert } from "@/components/ui/Alert";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/PasswordInput";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { apiClient, ApiError } from "@/lib/api";
 import { getFriendlyErrorMessage } from "@/lib/errors";
 import type {
@@ -91,22 +114,16 @@ export default function ProfilePage() {
     }
   }, [isAuthenticated, isLoading, profile, router]);
 
-  useEffect(() => {
-    if (!deleteModalOpen) return;
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape" && !deleteSubmitting) {
-        setDeleteModalOpen(false);
-      }
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [deleteModalOpen, deleteSubmitting]);
-
-  if (isLoading || !isAuthenticated || !profile || !profile.onboarding_completed) {
+  if (
+    isLoading ||
+    !isAuthenticated ||
+    !profile ||
+    !profile.onboarding_completed
+  ) {
     return (
-      <div className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 text-sm text-neutral-600 dark:text-neutral-400">
+      <Card className="rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-none ring-0">
         {t.common.loading}
-      </div>
+      </Card>
     );
   }
 
@@ -156,8 +173,6 @@ export default function ProfilePage() {
       payload.activity_level = form.activityLevel;
     }
 
-    // Only include explicit macro/calorie target overrides when the user edited them,
-    // so changing body metrics alone triggers automatic Mifflin-St Jeor recalculation.
     const parsedCal = Number(form.dailyCalories);
     const parsedPro = Number(form.proteinG);
     const parsedCarbs = Number(form.carbsG);
@@ -211,6 +226,7 @@ export default function ProfilePage() {
       setProfile(res.profile);
       setFormOverride(null);
       setProfileSuccess(t.profile.profileSaved);
+      toast.success(t.profile.profileSaved);
     } catch (err) {
       if (handleUnauthorized(err)) return;
       const code = err instanceof ApiError ? err.code : "INTERNAL_ERROR";
@@ -241,6 +257,7 @@ export default function ProfilePage() {
       setNewPassword("");
       setConfirmNewPassword("");
       setPasswordSuccess(t.profile.passwordChanged);
+      toast.success(t.profile.passwordChanged);
     } catch (err) {
       if (handleUnauthorized(err)) return;
       const code = err instanceof ApiError ? err.code : "INTERNAL_ERROR";
@@ -273,80 +290,82 @@ export default function ProfilePage() {
     typeof profile.profile_url === "string" &&
     profile.profile_url.startsWith("https://api.dicebear.com/");
 
+  const initials = (profile.display_name.trim() || profile.email || "N")
+    .slice(0, 1)
+    .toUpperCase();
+
+  const genderLabels: Record<Gender, string> = {
+    male: t.onboarding.genderMale,
+    female: t.onboarding.genderFemale,
+  };
+
+  const activityOptions: { value: ActivityLevel; label: string }[] = [
+    { value: "light", label: t.onboarding.activityLight },
+    { value: "moderate", label: t.onboarding.activityModerate },
+    { value: "heavy", label: t.onboarding.activityHeavy },
+  ];
+
+  const targetCards = [
+    {
+      label: t.profile.dailyCalories,
+      value: `${profile.daily_calorie_target ?? "-"} ${t.profile.kcalUnit}`,
+    },
+    {
+      label: t.profile.protein,
+      value: `${profile.target_protein_g ?? "-"} ${t.profile.gramUnit}`,
+    },
+    {
+      label: t.profile.carbs,
+      value: `${profile.target_carbs_g ?? "-"} ${t.profile.gramUnit}`,
+    },
+    {
+      label: t.profile.fat,
+      value: `${profile.target_fat_g ?? "-"} ${t.profile.gramUnit}`,
+    },
+    {
+      label: t.profile.fiber,
+      value: `${profile.target_fiber_g ?? "-"} ${t.profile.gramUnit}`,
+    },
+  ];
+
   return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+    <div className="space-y-6">
+      <h1 className="px-1 text-[22px] font-semibold tracking-[-0.015em] text-foreground sm:text-[26px]">
         {t.profile.title}
       </h1>
 
-      <section className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 space-y-5">
+      <Card className="rounded-3xl border border-border bg-card p-6 shadow-none ring-0 gap-5">
         <div className="flex flex-wrap items-center gap-4">
-          {isSafeAvatarUrl ? (
-            <Image
-              src={profile.profile_url}
-              alt={t.profile.avatarAlt}
-              width={64}
-              height={64}
-              unoptimized
-              className="h-16 w-16 rounded-lg border border-neutral-300 dark:border-neutral-700"
-            />
-          ) : null}
-          <div className="space-y-1">
-            <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+          <Avatar className="size-16">
+            {isSafeAvatarUrl ? (
+              <AvatarImage src={profile.profile_url} alt={t.profile.avatarAlt} />
+            ) : null}
+            <AvatarFallback className="text-lg font-semibold">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="space-y-0.5">
+            <h2 className="text-base font-semibold text-foreground">
               {profile.display_name.trim() || t.profile.summaryHeading}
             </h2>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
-              {profile.email}
-            </p>
+            <p className="text-sm text-muted-foreground">{profile.email}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <div className="rounded-md border border-neutral-300 dark:border-neutral-700 p-3">
-            <p className="text-xs text-neutral-600 dark:text-neutral-400">
-              {t.profile.dailyCalories}
-            </p>
-            <p className="mt-1 font-mono text-base font-semibold text-neutral-900 dark:text-neutral-100">
-              {profile.daily_calorie_target ?? "-"} {t.profile.kcalUnit}
-            </p>
-          </div>
-          <div className="rounded-md border border-neutral-300 dark:border-neutral-700 p-3">
-            <p className="text-xs text-neutral-600 dark:text-neutral-400">
-              {t.profile.protein}
-            </p>
-            <p className="mt-1 font-mono text-base font-semibold text-neutral-900 dark:text-neutral-100">
-              {profile.target_protein_g ?? "-"} {t.profile.gramUnit}
-            </p>
-          </div>
-          <div className="rounded-md border border-neutral-300 dark:border-neutral-700 p-3">
-            <p className="text-xs text-neutral-600 dark:text-neutral-400">
-              {t.profile.carbs}
-            </p>
-            <p className="mt-1 font-mono text-base font-semibold text-neutral-900 dark:text-neutral-100">
-              {profile.target_carbs_g ?? "-"} {t.profile.gramUnit}
-            </p>
-          </div>
-          <div className="rounded-md border border-neutral-300 dark:border-neutral-700 p-3">
-            <p className="text-xs text-neutral-600 dark:text-neutral-400">
-              {t.profile.fat}
-            </p>
-            <p className="mt-1 font-mono text-base font-semibold text-neutral-900 dark:text-neutral-100">
-              {profile.target_fat_g ?? "-"} {t.profile.gramUnit}
-            </p>
-          </div>
-          <div className="rounded-md border border-neutral-300 dark:border-neutral-700 p-3">
-            <p className="text-xs text-neutral-600 dark:text-neutral-400">
-              {t.profile.fiber}
-            </p>
-            <p className="mt-1 font-mono text-base font-semibold text-neutral-900 dark:text-neutral-100">
-              {profile.target_fiber_g ?? "-"} {t.profile.gramUnit}
-            </p>
-          </div>
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
+          {targetCards.map((item) => (
+            <div key={item.label} className="rounded-2xl bg-muted p-3">
+              <p className="text-xs text-muted-foreground">{item.label}</p>
+              <p className="mt-1 text-base font-semibold tabular-nums text-foreground">
+                {item.value}
+              </p>
+            </div>
+          ))}
         </div>
-      </section>
+      </Card>
 
-      <section className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 space-y-5">
-        <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+      <Card className="rounded-3xl border border-border bg-card p-6 shadow-none ring-0 gap-5">
+        <h2 className="text-lg font-semibold text-foreground">
           {t.profile.editProfileHeading}
         </h2>
 
@@ -355,15 +374,18 @@ export default function ProfilePage() {
           <Alert variant="success">{profileSuccess}</Alert>
         ) : null}
 
-        <form onSubmit={(e) => void handleProfileSubmit(e)} className="space-y-6">
+        <form
+          onSubmit={(e) => void handleProfileSubmit(e)}
+          className="space-y-6"
+        >
           <div className="space-y-1.5">
-            <label
+            <Label
               htmlFor="profile-display-name"
-              className="block text-sm font-medium text-neutral-900 dark:text-neutral-100"
+              className="text-sm font-medium text-foreground"
             >
               {t.onboarding.displayNameLabel}
-            </label>
-            <input
+            </Label>
+            <Input
               id="profile-display-name"
               type="text"
               maxLength={50}
@@ -372,19 +394,19 @@ export default function ProfilePage() {
               value={form.displayName}
               onChange={(e) => updateField("displayName", e.target.value)}
               placeholder={t.onboarding.displayNamePlaceholder}
-              className="w-full max-w-sm rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-neutral-100 disabled:opacity-60"
+              className="h-11 max-w-sm rounded-2xl bg-card px-3.5 text-sm shadow-none"
             />
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <label
+              <Label
                 htmlFor="profile-height"
-                className="block text-sm font-medium text-neutral-900 dark:text-neutral-100"
+                className="text-sm font-medium text-foreground"
               >
                 {t.onboarding.heightLabel}
-              </label>
-              <input
+              </Label>
+              <Input
                 id="profile-height"
                 type="number"
                 min={100}
@@ -394,18 +416,18 @@ export default function ProfilePage() {
                 disabled={profileSaving}
                 value={form.heightCm}
                 onChange={(e) => updateField("heightCm", e.target.value)}
-                className="w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-neutral-100 disabled:opacity-60"
+                className="h-11 rounded-2xl bg-card px-3.5 text-sm tabular-nums shadow-none"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label
+              <Label
                 htmlFor="profile-weight"
-                className="block text-sm font-medium text-neutral-900 dark:text-neutral-100"
+                className="text-sm font-medium text-foreground"
               >
                 {t.onboarding.weightLabel}
-              </label>
-              <input
+              </Label>
+              <Input
                 id="profile-weight"
                 type="number"
                 min={25}
@@ -415,18 +437,18 @@ export default function ProfilePage() {
                 disabled={profileSaving}
                 value={form.weightKg}
                 onChange={(e) => updateField("weightKg", e.target.value)}
-                className="w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-neutral-100 disabled:opacity-60"
+                className="h-11 rounded-2xl bg-card px-3.5 text-sm tabular-nums shadow-none"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label
+              <Label
                 htmlFor="profile-age"
-                className="block text-sm font-medium text-neutral-900 dark:text-neutral-100"
+                className="text-sm font-medium text-foreground"
               >
                 {t.onboarding.ageLabel}
-              </label>
-              <input
+              </Label>
+              <Input
                 id="profile-age"
                 type="number"
                 min={13}
@@ -436,73 +458,99 @@ export default function ProfilePage() {
                 disabled={profileSaving}
                 value={form.age}
                 onChange={(e) => updateField("age", e.target.value)}
-                className="w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-neutral-100 disabled:opacity-60"
+                className="h-11 rounded-2xl bg-card px-3.5 text-sm tabular-nums shadow-none"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <label
+              <Label
                 htmlFor="profile-gender"
-                className="block text-sm font-medium text-neutral-900 dark:text-neutral-100"
+                className="text-sm font-medium text-foreground"
               >
                 {t.onboarding.genderLabel}
-              </label>
-              <select
-                id="profile-gender"
-                disabled={profileSaving}
+              </Label>
+              <Select
                 value={form.gender}
-                onChange={(e) =>
-                  updateField("gender", e.target.value as Gender)
+                disabled={profileSaving}
+                onValueChange={(val) =>
+                  updateField("gender", (val ?? "male") as Gender)
                 }
-                className="w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-neutral-100 disabled:opacity-60"
               >
-                <option value="male">{t.onboarding.genderMale}</option>
-                <option value="female">{t.onboarding.genderFemale}</option>
-              </select>
+                <SelectTrigger
+                  id="profile-gender"
+                  className="h-11 w-full rounded-2xl border-border bg-card px-3.5 text-sm shadow-none"
+                >
+                  <SelectValue>{genderLabels[form.gender]}</SelectValue>
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border border-border bg-card shadow-none ring-0">
+                  <SelectItem value="male" className="rounded-xl">
+                    {t.onboarding.genderMale}
+                  </SelectItem>
+                  <SelectItem value="female" className="rounded-xl">
+                    {t.onboarding.genderFemale}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
-              <label
-                htmlFor="profile-activity"
-                className="block text-sm font-medium text-neutral-900 dark:text-neutral-100"
-              >
+              <Label className="text-sm font-medium text-foreground">
                 {t.onboarding.activityLabel}
-              </label>
-              <select
-                id="profile-activity"
-                disabled={profileSaving}
+              </Label>
+              <RadioGroup
                 value={form.activityLevel}
-                onChange={(e) =>
-                  updateField("activityLevel", e.target.value as ActivityLevel)
+                disabled={profileSaving}
+                onValueChange={(val) =>
+                  updateField("activityLevel", val as ActivityLevel)
                 }
-                className="w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-neutral-100 disabled:opacity-60"
+                className="grid grid-cols-3 gap-2"
               >
-                <option value="light">{t.onboarding.activityLight}</option>
-                <option value="moderate">{t.onboarding.activityModerate}</option>
-                <option value="heavy">{t.onboarding.activityHeavy}</option>
-              </select>
+                {activityOptions.map((opt) => {
+                  const selected = form.activityLevel === opt.value;
+                  return (
+                    <Label
+                      key={opt.value}
+                      htmlFor={`profile-activity-${opt.value}`}
+                      className={`flex h-11 cursor-pointer items-center justify-center rounded-2xl border px-2 text-xs font-medium transition-colors duration-150 ${
+                        selected
+                          ? "border-[var(--brand-primary)] bg-[var(--brand-tint)] text-[var(--brand-primary)]"
+                          : "border-border bg-card text-foreground hover:bg-accent"
+                      }`}
+                    >
+                      <RadioGroupItem
+                        id={`profile-activity-${opt.value}`}
+                        value={opt.value}
+                        className="sr-only"
+                      />
+                      <span>{opt.label}</span>
+                    </Label>
+                  );
+                })}
+              </RadioGroup>
             </div>
           </div>
 
-          <div className="space-y-3 border-t border-neutral-300 dark:border-neutral-700 pt-5">
-            <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+          <Separator className="bg-border" />
+
+          <div className="space-y-3">
+            <h3 className="text-base font-semibold text-foreground">
               {t.profile.macroTargetsHeading}
             </h3>
-            <p className="text-xs text-neutral-600 dark:text-neutral-400">
+            <p className="text-xs text-muted-foreground">
               {t.profile.recalcNote}
             </p>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-5">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
               <div className="space-y-1.5">
-                <label
+                <Label
                   htmlFor="profile-calories"
-                  className="block text-xs font-medium text-neutral-900 dark:text-neutral-100"
+                  className="text-xs font-medium text-foreground"
                 >
                   {t.profile.dailyCalories} ({t.profile.kcalUnit})
-                </label>
-                <input
+                </Label>
+                <Input
                   id="profile-calories"
                   type="number"
                   min={800}
@@ -511,18 +559,18 @@ export default function ProfilePage() {
                   disabled={profileSaving}
                   value={form.dailyCalories}
                   onChange={(e) => updateField("dailyCalories", e.target.value)}
-                  className="w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-neutral-100 disabled:opacity-60"
+                  className="h-11 rounded-2xl bg-card px-3 text-sm tabular-nums shadow-none"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label
+                <Label
                   htmlFor="profile-protein"
-                  className="block text-xs font-medium text-neutral-900 dark:text-neutral-100"
+                  className="text-xs font-medium text-foreground"
                 >
                   {t.profile.protein} ({t.profile.gramUnit})
-                </label>
-                <input
+                </Label>
+                <Input
                   id="profile-protein"
                   type="number"
                   min={10}
@@ -531,18 +579,18 @@ export default function ProfilePage() {
                   disabled={profileSaving}
                   value={form.proteinG}
                   onChange={(e) => updateField("proteinG", e.target.value)}
-                  className="w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-neutral-100 disabled:opacity-60"
+                  className="h-11 rounded-2xl bg-card px-3 text-sm tabular-nums shadow-none"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label
+                <Label
                   htmlFor="profile-carbs"
-                  className="block text-xs font-medium text-neutral-900 dark:text-neutral-100"
+                  className="text-xs font-medium text-foreground"
                 >
                   {t.profile.carbs} ({t.profile.gramUnit})
-                </label>
-                <input
+                </Label>
+                <Input
                   id="profile-carbs"
                   type="number"
                   min={20}
@@ -551,18 +599,18 @@ export default function ProfilePage() {
                   disabled={profileSaving}
                   value={form.carbsG}
                   onChange={(e) => updateField("carbsG", e.target.value)}
-                  className="w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-neutral-100 disabled:opacity-60"
+                  className="h-11 rounded-2xl bg-card px-3 text-sm tabular-nums shadow-none"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label
+                <Label
                   htmlFor="profile-fat"
-                  className="block text-xs font-medium text-neutral-900 dark:text-neutral-100"
+                  className="text-xs font-medium text-foreground"
                 >
                   {t.profile.fat} ({t.profile.gramUnit})
-                </label>
-                <input
+                </Label>
+                <Input
                   id="profile-fat"
                   type="number"
                   min={10}
@@ -571,18 +619,18 @@ export default function ProfilePage() {
                   disabled={profileSaving}
                   value={form.fatG}
                   onChange={(e) => updateField("fatG", e.target.value)}
-                  className="w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-neutral-100 disabled:opacity-60"
+                  className="h-11 rounded-2xl bg-card px-3 text-sm tabular-nums shadow-none"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label
+                <Label
                   htmlFor="profile-fiber"
-                  className="block text-xs font-medium text-neutral-900 dark:text-neutral-100"
+                  className="text-xs font-medium text-foreground"
                 >
                   {t.profile.fiber} ({t.profile.gramUnit})
-                </label>
-                <input
+                </Label>
+                <Input
                   id="profile-fiber"
                   type="number"
                   min={5}
@@ -591,31 +639,26 @@ export default function ProfilePage() {
                   disabled={profileSaving}
                   value={form.fiberG}
                   onChange={(e) => updateField("fiberG", e.target.value)}
-                  className="w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-neutral-100 disabled:opacity-60"
+                  className="h-11 rounded-2xl bg-card px-3 text-sm tabular-nums shadow-none"
                 />
               </div>
             </div>
           </div>
 
-          <button
+          <Button
             type="submit"
             disabled={profileSaving}
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-950 dark:hover:bg-neutral-200 disabled:opacity-60"
+            className="h-11 rounded-full px-6 text-sm font-medium shadow-none"
           >
             {profileSaving ? t.common.saving : t.profile.saveProfileButton}
-          </button>
+          </Button>
         </form>
-      </section>
+      </Card>
 
-      <section className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 space-y-5">
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-            {t.profile.changePasswordHeading}
-          </h2>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
-            {t.profile.changePasswordDescription}
-          </p>
-        </div>
+      <Card className="rounded-3xl border border-border bg-card p-6 shadow-none ring-0 gap-5">
+        <h2 className="text-lg font-semibold text-foreground">
+          {t.profile.changePasswordHeading}
+        </h2>
 
         {passwordError ? <Alert variant="error">{passwordError}</Alert> : null}
         {passwordSuccess ? (
@@ -660,118 +703,105 @@ export default function ProfilePage() {
             disabled={passwordSaving}
           />
 
-          <button
+          <Button
             type="submit"
             disabled={passwordSaving}
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-950 dark:hover:bg-neutral-200 disabled:opacity-60"
+            className="h-11 rounded-full px-6 text-sm font-medium shadow-none"
           >
             {passwordSaving
               ? t.common.saving
               : t.profile.changePasswordButton}
-          </button>
+          </Button>
         </form>
-      </section>
+      </Card>
 
-      <section className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 space-y-3">
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-            {t.profile.privacyHeading}
-          </h2>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
-            {t.profile.privacyDescription}
-          </p>
+      <Card className="rounded-3xl border border-border bg-card p-6 shadow-none ring-0 gap-3">
+        <h2 className="text-lg font-semibold text-foreground">
+          {t.profile.privacyHeading}
+        </h2>
+        <div>
+          <Link
+            href="/privacy"
+            className="inline-block text-sm font-medium text-foreground underline underline-offset-4 transition-colors duration-150 hover:text-primary"
+          >
+            {t.profile.privacyLinkText}
+          </Link>
         </div>
-        <Link
-          href="/privacy"
-          className="inline-block text-sm font-medium text-neutral-900 dark:text-neutral-100 underline underline-offset-4"
-        >
-          {t.profile.privacyLinkText}
-        </Link>
-      </section>
+      </Card>
 
-      <section className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 space-y-3">
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-            {t.profile.deleteAccountHeading}
-          </h2>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
-            {t.profile.deleteAccountDescription}
-          </p>
+      <Card className="rounded-3xl border border-border bg-card p-6 shadow-none ring-0 gap-3">
+        <h2 className="text-lg font-semibold text-foreground">
+          {t.profile.deleteAccountHeading}
+        </h2>
+        <div>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => {
+              setDeletePassword("");
+              setDeleteError(null);
+              setDeleteModalOpen(true);
+            }}
+            className="h-11 rounded-full bg-[var(--error-bg)] px-6 text-sm font-medium text-[var(--error-text)] hover:bg-[var(--error-bg)]/80 shadow-none"
+          >
+            {t.profile.deleteAccountButton}
+          </Button>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setDeletePassword("");
-            setDeleteError(null);
-            setDeleteModalOpen(true);
-          }}
-          className="rounded-md bg-red-700 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-red-800 dark:bg-red-600 dark:hover:bg-red-700"
-        >
-          {t.profile.deleteAccountButton}
-        </button>
-      </section>
+      </Card>
 
-      {deleteModalOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/60 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-account-dialog-title"
-        >
-          <div className="w-full max-w-md rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-6 space-y-4">
-            <h2
-              id="delete-account-dialog-title"
-              className="text-lg font-semibold text-neutral-900 dark:text-neutral-100"
-            >
-              {t.profile.deleteDialogTitle}
-            </h2>
+      <AlertDialog
+        open={deleteModalOpen}
+        onOpenChange={(open) => {
+          if (!deleteSubmitting) {
+            setDeleteModalOpen(open);
+          }
+        }}
+      >
+        <AlertDialogContent className="max-w-md rounded-3xl border border-border bg-card p-6 shadow-none ring-0">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t.profile.deleteDialogTitle}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t.profile.deleteDialogQuestion} {t.profile.deleteDialogWarning}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
 
-            <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-              {t.profile.deleteDialogQuestion}
-            </p>
-            <p className="text-sm text-neutral-700 dark:text-neutral-300">
-              {t.profile.deleteDialogWarning}
-            </p>
+          {deleteError ? <Alert variant="error">{deleteError}</Alert> : null}
 
-            {deleteError ? <Alert variant="error">{deleteError}</Alert> : null}
+          <form
+            onSubmit={(e) => void handleDeleteAccount(e)}
+            className="space-y-4"
+          >
+            <PasswordInput
+              id="delete-account-password"
+              name="deletePassword"
+              label={t.profile.deleteDialogPasswordLabel}
+              value={deletePassword}
+              onChange={setDeletePassword}
+              autoComplete="current-password"
+              disabled={deleteSubmitting}
+            />
 
-            <form
-              onSubmit={(e) => void handleDeleteAccount(e)}
-              className="space-y-4"
-            >
-              <PasswordInput
-                id="delete-account-password"
-                name="deletePassword"
-                label={t.profile.deleteDialogPasswordLabel}
-                value={deletePassword}
-                onChange={setDeletePassword}
-                autoComplete="current-password"
+            <AlertDialogFooter className="mx-0 mb-0 rounded-none border-0 bg-transparent p-0 pt-2">
+              <AlertDialogCancel
                 disabled={deleteSubmitting}
-              />
-
-              <div className="flex flex-wrap justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  disabled={deleteSubmitting}
-                  onClick={() => setDeleteModalOpen(false)}
-                  className="rounded-md border border-neutral-300 dark:border-neutral-700 px-4 py-2 text-sm font-medium text-neutral-900 dark:text-neutral-100 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900 disabled:opacity-60"
-                >
-                  {t.common.cancel}
-                </button>
-                <button
-                  type="submit"
-                  disabled={deleteSubmitting}
-                  className="rounded-md bg-red-700 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-red-800 dark:bg-red-600 dark:hover:bg-red-700 disabled:opacity-60"
-                >
-                  {deleteSubmitting
-                    ? t.profile.deleteDialogDeleting
-                    : t.profile.deleteDialogConfirm}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      ) : null}
+                className="h-10 rounded-full px-5 shadow-none"
+              >
+                {t.common.cancel}
+              </AlertDialogCancel>
+              <Button
+                type="submit"
+                variant="destructive"
+                disabled={deleteSubmitting}
+                className="h-10 rounded-full bg-[var(--error-bg)] px-5 text-sm font-medium text-[var(--error-text)] hover:bg-[var(--error-bg)]/80 shadow-none"
+              >
+                {deleteSubmitting
+                  ? t.profile.deleteDialogDeleting
+                  : t.profile.deleteDialogConfirm}
+              </Button>
+            </AlertDialogFooter>
+          </form>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

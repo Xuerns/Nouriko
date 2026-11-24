@@ -9,18 +9,18 @@ interface AlertProps {
 }
 
 export function Alert({ variant, children, className = "" }: AlertProps) {
-  const accentClass =
+  const variantClass =
     variant === "error"
-      ? "border-l-4 border-l-red-700 dark:border-l-red-500 text-red-800 dark:text-red-300"
+      ? "bg-[var(--error-bg)] text-[var(--error-text)]"
       : variant === "success"
-        ? "border-l-4 border-l-neutral-900 dark:border-l-neutral-100 text-neutral-900 dark:text-neutral-100"
-        : "border-l-4 border-l-neutral-500 dark:border-l-neutral-400 text-neutral-800 dark:text-neutral-200";
+        ? "bg-[var(--score-good-bg)] text-[var(--score-good-text)]"
+        : "bg-[var(--brand-accent-tint)] text-foreground border border-border";
 
   return (
     <div
       role="alert"
       aria-live="polite"
-      className={`rounded-md border border-neutral-300 dark:border-neutral-700 px-3.5 py-2.5 text-sm leading-relaxed ${accentClass} ${className}`}
+      className={`rounded-2xl shadow-none px-4 py-3 text-sm leading-relaxed ${variantClass} ${className}`}
     >
       {children}
     </div>

@@ -16,15 +16,15 @@ export function AppFooter({
 
   return (
     <footer
-      className={`w-full border-t border-neutral-300 dark:border-neutral-700 ${className}`.trim()}
+      className={`w-full border-t border-border bg-background ${className}`.trim()}
     >
       <div
-        className={`mx-auto flex w-full ${maxWidthClass} flex-wrap items-center justify-between gap-2 px-4 py-4 text-xs text-neutral-600 dark:text-neutral-400`}
+        className={`mx-auto flex w-full ${maxWidthClass} flex-wrap items-center justify-between gap-2 px-4 py-5 text-xs text-muted-foreground sm:px-6`}
       >
         <p>{t.footer.copyright}</p>
         <Link
           href="/privacy"
-          className="underline underline-offset-4 transition-colors duration-150 hover:text-neutral-900 dark:hover:text-neutral-100"
+          className="font-medium text-foreground underline underline-offset-4 transition-colors duration-150 hover:text-primary"
         >
           {t.footer.privacyLink}
         </Link>

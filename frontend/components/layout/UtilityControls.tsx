@@ -1,7 +1,9 @@
 "use client";
 
+import { Moon, Sun } from "lucide-react";
 import { useI18n } from "@/components/providers/I18nProvider";
 import { useTheme } from "@/components/providers/ThemeProvider";
+import { Button } from "@/components/ui/button";
 
 export function UtilityControls() {
   const { language, t, toggleLanguage } = useI18n();
@@ -9,22 +11,31 @@ export function UtilityControls() {
 
   return (
     <div className="flex items-center gap-1.5">
-      <button
+      <Button
         type="button"
+        variant="outline"
+        size="sm"
         onClick={toggleLanguage}
         aria-label={t.common.languageLabel}
-        className="rounded-md border border-neutral-300 dark:border-neutral-700 px-2.5 py-1.5 font-mono text-xs font-medium text-neutral-800 dark:text-neutral-200 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900"
+        className="h-9 min-w-10 rounded-full px-3 text-xs font-semibold tabular-nums shadow-none"
       >
         {language === "id" ? "ID" : "EN"}
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
+        variant="outline"
+        size="icon"
         onClick={toggleTheme}
         aria-label={t.common.themeLabel}
-        className="rounded-md border border-neutral-300 dark:border-neutral-700 px-2.5 py-1.5 text-xs font-medium text-neutral-800 dark:text-neutral-200 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900"
+        title={theme === "dark" ? t.common.themeDark : t.common.themeLight}
+        className="size-9 rounded-full shadow-none"
       >
-        {theme === "dark" ? t.common.themeDark : t.common.themeLight}
-      </button>
+        {theme === "dark" ? (
+          <Moon className="size-4 stroke-[1.75]" aria-hidden="true" />
+        ) : (
+          <Sun className="size-4 stroke-[1.75]" aria-hidden="true" />
+        )}
+      </Button>
     </div>
   );
 }

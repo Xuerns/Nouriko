@@ -4,28 +4,32 @@ import Link from "next/link";
 import { AppFooter } from "@/components/layout/AppFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { useI18n } from "@/components/providers/I18nProvider";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export default function NotFoundPage() {
   const { t } = useI18n();
 
   return (
-    <div className="flex min-h-dvh flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+    <div className="flex min-h-dvh flex-col bg-background text-foreground">
       <PublicHeader />
-      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center px-4 py-8">
-        <div className="mx-auto w-full max-w-md rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 space-y-4">
-          <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
+      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center px-4 py-8 sm:px-6">
+        <Card className="mx-auto w-full max-w-md rounded-3xl border border-border bg-card p-6 shadow-none ring-0 gap-4">
+          <h1 className="text-xl font-semibold text-foreground">
             {t.notFound.title}
           </h1>
-          <p className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
+          <p className="text-sm leading-relaxed text-muted-foreground">
             {t.notFound.description}
           </p>
-          <Link
-            href="/"
-            className="inline-block rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-950 dark:hover:bg-neutral-200"
-          >
-            {t.notFound.backHome}
-          </Link>
-        </div>
+          <div>
+            <Button
+              render={<Link href="/" />}
+              className="h-11 rounded-full px-5 text-sm shadow-none"
+            >
+              {t.notFound.backHome}
+            </Button>
+          </div>
+        </Card>
       </main>
       <AppFooter />
     </div>
