@@ -4,6 +4,11 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useI18n } from "@/components/providers/I18nProvider";
 import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { apiClient, ApiError } from "@/lib/api";
 import { getFriendlyErrorMessage } from "@/lib/errors";
 
@@ -33,8 +38,8 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 space-y-6">
-      <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
+    <Card className="mx-auto w-full max-w-md rounded-3xl border border-border bg-card p-6 shadow-none ring-0 gap-6 sm:p-7">
+      <h1 className="text-[22px] font-semibold tracking-[-0.015em] text-foreground">
         {t.forgotPassword.title}
       </h1>
 
@@ -45,25 +50,30 @@ export default function ForgotPasswordPage() {
           <Alert variant="success">{t.forgotPassword.successMessage}</Alert>
           {devResetToken ? (
             <div>
-              <Link
-                href={`/reset-password?token=${encodeURIComponent(devResetToken)}`}
-                className="inline-block rounded-md bg-neutral-900 px-3.5 py-2 text-xs font-medium text-white transition-colors duration-150 hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-950 dark:hover:bg-neutral-200"
+              <Button
+                render={
+                  <Link
+                    href={`/reset-password?token=${encodeURIComponent(devResetToken)}`}
+                  />
+                }
+                size="sm"
+                className="h-10 rounded-full px-5 text-xs shadow-none"
               >
                 {t.forgotPassword.devResetLink}
-              </Link>
+              </Button>
             </div>
           ) : null}
         </div>
       ) : (
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
           <div className="space-y-1.5">
-            <label
+            <Label
               htmlFor="forgot-email"
-              className="block text-sm font-medium text-neutral-900 dark:text-neutral-100"
+              className="text-sm font-medium text-foreground"
             >
               {t.common.emailLabel}
-            </label>
-            <input
+            </Label>
+            <Input
               id="forgot-email"
               name="email"
               type="email"
@@ -73,28 +83,30 @@ export default function ForgotPasswordPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t.common.emailPlaceholder}
-              className="w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-neutral-100 disabled:opacity-60"
+              className="h-11 rounded-2xl bg-card px-3.5 text-sm shadow-none"
             />
           </div>
 
-          <button
+          <Button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-950 dark:hover:bg-neutral-200 disabled:opacity-60"
+            className="h-11 w-full rounded-full text-sm font-medium shadow-none"
           >
             {submitting ? t.common.submitting : t.forgotPassword.submitButton}
-          </button>
+          </Button>
         </form>
       )}
 
-      <div className="border-t border-neutral-300 dark:border-neutral-700 pt-4 text-sm">
+      <Separator className="bg-border" />
+
+      <div className="text-sm">
         <Link
           href="/login"
-          className="font-medium text-neutral-900 dark:text-neutral-100 underline underline-offset-4"
+          className="font-medium text-foreground underline underline-offset-4 transition-colors duration-150 hover:text-primary"
         >
           {t.forgotPassword.backToLogin}
         </Link>
       </div>
-    </div>
+    </Card>
   );
 }
