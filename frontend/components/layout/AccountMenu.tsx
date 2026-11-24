@@ -24,6 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function AccountMenu() {
   const pathname = usePathname();
@@ -37,23 +38,37 @@ export function AccountMenu() {
     .slice(0, 1)
     .toUpperCase();
 
+  if (isLoading) {
+    return (
+      <div
+        aria-hidden="true"
+        className="flex min-h-10 items-center gap-1.5 px-1 py-1 sm:pr-2"
+      >
+        <Skeleton className="size-8 rounded-full" />
+        <Skeleton className="hidden h-3.5 w-16 rounded-md sm:block" />
+      </div>
+    );
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             aria-label={displayName || t.nav.profile}
-            className={`h-10 rounded-full pl-1.5 pr-3 gap-2 shadow-none ${
-              isProfileActive
-                ? "border-[var(--brand-primary)] bg-[var(--brand-tint)] text-[var(--brand-primary)]"
-                : "bg-card text-foreground"
-            }`}
+            className="min-h-10 h-auto rounded-full border-0 bg-transparent px-1 py-1 gap-1.5 text-foreground shadow-none transition-colors duration-150 hover:bg-muted/60 hover:text-foreground aria-expanded:bg-muted/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-primary)] focus-visible:ring-0 sm:pr-2 dark:hover:bg-muted/40 dark:aria-expanded:bg-muted/40"
           />
         }
       >
-        <Avatar className="size-7">
+        <Avatar
+          className={`size-8 transition-opacity duration-150 group-hover/button:opacity-90 ${
+            isProfileActive
+              ? "outline-2 outline-offset-2 outline-[var(--brand-primary)]"
+              : ""
+          }`}
+        >
           {profile?.profile_url ? (
             <AvatarImage src={profile.profile_url} alt="" />
           ) : null}
@@ -62,12 +77,18 @@ export function AccountMenu() {
           </AvatarFallback>
         </Avatar>
         {displayName ? (
-          <span className="hidden sm:inline max-w-28 truncate text-xs font-medium">
+          <span
+            className={`hidden sm:inline max-w-28 truncate text-xs ${
+              isProfileActive
+                ? "font-semibold text-[var(--brand-primary)]"
+                : "font-medium text-foreground"
+            }`}
+          >
             {displayName}
           </span>
         ) : null}
         <ChevronDown
-          className="size-3.5 shrink-0 stroke-[1.75] text-muted-foreground"
+          className="size-3.5 shrink-0 stroke-[1.75] text-muted-foreground transition-transform duration-150 group-aria-expanded/button:rotate-180"
           aria-hidden="true"
         />
       </DropdownMenuTrigger>

@@ -6,6 +6,7 @@ import { ArrowRight } from "lucide-react";
 import FadeContent from "@/components/FadeContent";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Dictionary } from "@/lib/i18n/types";
 
 interface BottomCtaBannerProps {
@@ -47,7 +48,18 @@ export function BottomCtaBanner({
               </div>
 
               <div className="flex min-h-11 flex-wrap items-center gap-2.5">
-                {isLoading ? null : isAuthenticated ? (
+                {isLoading ? (
+                  <>
+                    <Skeleton
+                      aria-hidden="true"
+                      className="h-11 w-32 rounded-full"
+                    />
+                    <Skeleton
+                      aria-hidden="true"
+                      className="h-11 w-28 rounded-full"
+                    />
+                  </>
+                ) : isAuthenticated ? (
                   <Button
                     size="lg"
                     nativeButton={false}

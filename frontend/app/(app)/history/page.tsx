@@ -11,6 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
+  HistoryContentSkeleton,
+  HistoryPageSkeleton,
+} from "@/components/ui/PageSkeletons";
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -120,11 +124,7 @@ export default function HistoryPage() {
     !profile ||
     !profile.onboarding_completed
   ) {
-    return (
-      <Card className="rounded-3xl border border-border bg-card p-6 text-[15px] text-muted-foreground shadow-none ring-0">
-        {t.common.loading}
-      </Card>
-    );
+    return <HistoryPageSkeleton label={t.common.loading} />;
   }
 
   const rangeOptions: { value: HistoryRange; label: string }[] = [
@@ -193,9 +193,7 @@ export default function HistoryPage() {
           </Button>
         </div>
       ) : isFetching && !history ? (
-        <Card className="rounded-3xl border border-border bg-card p-6 text-[15px] text-muted-foreground shadow-none ring-0">
-          {t.common.loading}
-        </Card>
+        <HistoryContentSkeleton label={t.common.loading} />
       ) : (
         <>
           {weeklyTrend.length > 0 ? (

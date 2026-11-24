@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  Loader2,
   RotateCcw,
   SlidersHorizontal,
   SquarePen,
@@ -16,6 +15,7 @@ import { useI18n } from "@/components/providers/I18nProvider";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ChatPageSkeleton } from "@/components/ui/PageSkeletons";
 import { ChatComposer } from "@/components/chat/ChatComposer";
 import {
   EmptyChatState,
@@ -24,6 +24,7 @@ import {
 import { MealResultCard } from "@/components/chat/MealResultCard";
 import { PhotoCorrectionBar } from "@/components/chat/PhotoCorrectionBar";
 import { ShoppingListCard } from "@/components/chat/ShoppingListCard";
+import { ThinkingIndicator } from "@/components/chat/ThinkingIndicator";
 import { apiClient, ApiError } from "@/lib/api";
 import { getLocalDateString } from "@/lib/date";
 import { getFriendlyErrorMessage } from "@/lib/errors";
@@ -413,11 +414,7 @@ function ChatContent() {
     !profile ||
     !profile.onboarding_completed
   ) {
-    return (
-      <Card className="rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-none ring-0">
-        {t.common.loading}
-      </Card>
-    );
+    return <ChatPageSkeleton label={t.common.loading} />;
   }
 
   return (
@@ -631,7 +628,7 @@ function ChatContent() {
             })}
 
             {isSending ? (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <div className="flex items-center gap-2 px-1">
                   <Image
                     src="/logo.png"
@@ -645,21 +642,14 @@ function ChatContent() {
                     {t.chat.assistantLabel}
                   </span>
                 </div>
-                <div
-                  role="status"
-                  aria-live="polite"
-                  className="flex items-center gap-2.5 rounded-3xl rounded-bl-md border border-border bg-card px-4 py-3.5 text-sm text-muted-foreground"
-                >
-                  <Loader2
-                    className="size-4 shrink-0 animate-spin stroke-[1.75] text-[var(--brand-primary)]"
-                    aria-hidden="true"
-                  />
-                  <span>
-                    {sendingWithPhoto
-                      ? t.chat.analyzingPhotoText
-                      : t.chat.analyzingText}
-                  </span>
-                </div>
+                <ThinkingIndicator
+                  key={sendingWithPhoto ? "photo" : "text"}
+                  steps={
+                    sendingWithPhoto
+                      ? t.chat.photoThinkingSteps
+                      : t.chat.thinkingSteps
+                  }
+                />
               </div>
             ) : null}
 
@@ -696,13 +686,7 @@ function ChatContent() {
 
 export default function ChatPage() {
   return (
-    <Suspense
-      fallback={
-        <Card className="rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-none ring-0">
-          Loading...
-        </Card>
-      }
-    >
+    <Suspense fallback={<ChatPageSkeleton />}>
       <ChatContent />
     </Suspense>
   );

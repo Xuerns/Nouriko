@@ -538,6 +538,18 @@ export const enDictionary: Dictionary = {
     assistantLabel: "Nouriko",
     analyzingText: "Preparing nutrition recommendations...",
     analyzingPhotoText: "Analyzing photo and estimating nutrition...",
+    thinkingSteps: [
+      "Understanding your request and preferences...",
+      "Estimating calories and macronutrients...",
+      "Matching meal options to your daily target...",
+      "Preparing recommendations and cost estimates...",
+    ],
+    photoThinkingSteps: [
+      "Identifying dishes and ingredients from your photo...",
+      "Estimating portion size and nutritional profile...",
+      "Calculating health score and macro breakdown...",
+      "Preparing your nutrition analysis...",
+    ],
     retryButton: "Try again",
     photoAttachedFallback: "Photo attached",
     estimatedTag: "Estimated",
@@ -658,6 +670,8 @@ export const enDictionary: Dictionary = {
     title: "Page Not Found",
     description:
       "The page you are looking for is unavailable or the link may have changed.",
+    goBack: "Go Back",
     backHome: "Back to Home",
+    backToChat: "Open Chat",
   },
 };

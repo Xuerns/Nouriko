@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function PublicHeader() {
   const pathname = usePathname();
@@ -35,7 +36,7 @@ export function PublicHeader() {
 
         <div className="hidden md:flex items-center gap-2">
           {isLoading ? (
-            <div className="h-9 w-28" aria-hidden="true" />
+            <Skeleton aria-hidden="true" className="h-9 w-28 rounded-full" />
           ) : isAuthenticated ? (
             <Button
               size="sm"
@@ -173,10 +174,6 @@ export function PublicHeader() {
           </DropdownMenu>
         </div>
       </div>
-      <div
-        aria-hidden="true"
-        className="nouriko-scroll-progress pointer-events-none absolute inset-x-0 bottom-0 hidden h-0.5 bg-[var(--brand-primary)]"
-      />
     </header>
   );
 }
