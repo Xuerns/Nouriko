@@ -1,8 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { Camera, ImagePlus, Loader2, SwitchCamera, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Camera, ImagePlus, Loader2, SwitchCamera } from "lucide-react";
 import { useI18n } from "@/components/providers/I18nProvider";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type FacingMode = "environment" | "user";
 
@@ -20,8 +27,6 @@ export function CameraCaptureDialog({
   onFallbackToFile,
 }: CameraCaptureDialogProps) {
   const { t } = useI18n();
-  const titleId = useId();
-  const dialogRef = useRef<HTMLDialogElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -41,53 +46,6 @@ export function CameraCaptureDialog({
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-  }, []);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-
-    if (open) {
-      if (!dialog.open) {
-        dialog.showModal();
-      }
-    } else if (dialog.open) {
-      dialog.close();
-    }
-  }, [open]);
-
-  // Fallback light-dismiss for browsers without native <dialog closedby="any">.
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog || "closedBy" in HTMLDialogElement.prototype) return;
-
-    const isOutside = (e: PointerEvent) => {
-      const rect = dialog.getBoundingClientRect();
-      return (
-        e.clientX < rect.left ||
-        e.clientX > rect.right ||
-        e.clientY < rect.top ||
-        e.clientY > rect.bottom
-      );
-    };
-
-    let pressedOutside = false;
-    const handlePointerDown = (e: PointerEvent) => {
-      pressedOutside = isOutside(e);
-    };
-    const handlePointerUp = (e: PointerEvent) => {
-      if (pressedOutside && isOutside(e) && dialog.open) {
-        dialog.close();
-      }
-      pressedOutside = false;
-    };
-
-    dialog.addEventListener("pointerdown", handlePointerDown);
-    dialog.addEventListener("pointerup", handlePointerUp);
-    return () => {
-      dialog.removeEventListener("pointerdown", handlePointerDown);
-      dialog.removeEventListener("pointerup", handlePointerUp);
-    };
   }, []);
 
   useEffect(() => {
@@ -120,7 +78,8 @@ export function CameraCaptureDialog({
         } catch (err) {
           if (
             err instanceof DOMException &&
-            (err.name === "OverconstrainedError" || err.name === "NotFoundError")
+            (err.name === "OverconstrainedError" ||
+              err.name === "NotFoundError")
           ) {
             stream = await navigator.mediaDevices.getUserMedia({
               video: true,
@@ -163,14 +122,11 @@ export function CameraCaptureDialog({
     t.chat.cameraUnavailableError,
   ]);
 
-  function handleDialogClose() {
+  function handleClose() {
     stopStream();
     setIsReady(false);
     setIsCapturing(false);
     setErrorMessage(null);
-    if (dialogRef.current) {
-      dialogRef.current.returnValue = "";
-    }
     onClose();
   }
 
@@ -207,7 +163,7 @@ export function CameraCaptureDialog({
           type: "image/jpeg",
           lastModified: Date.now(),
         });
-        dialogRef.current?.close();
+        handleClose();
         onCapture(file);
       },
       "image/jpeg",
@@ -216,106 +172,111 @@ export function CameraCaptureDialog({
   }
 
   function handleChooseExistingPhoto() {
-    dialogRef.current?.close();
+    handleClose();
     onFallbackToFile();
   }
 
   return (
-    <dialog
-      ref={dialogRef}
-      aria-labelledby={titleId}
-      onClose={handleDialogClose}
-      {...({ closedby: "any" } as Record<string, unknown>)}
-      className="m-auto w-[calc(100%-2rem)] max-w-lg rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-0 text-neutral-900 dark:text-neutral-100 backdrop:bg-neutral-950/60"
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          handleClose();
+        }
+      }}
     >
-      <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 px-4 py-3">
-        <h2
-          id={titleId}
-          className="text-sm font-semibold text-neutral-900 dark:text-neutral-100"
-        >
-          {t.chat.cameraDialogTitle}
-        </h2>
-        <button
-          type="button"
-          onClick={() => dialogRef.current?.close()}
-          aria-label={t.chat.cameraCancelButton}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900"
-        >
-          <X className="h-4 w-4 shrink-0" aria-hidden="true" />
-        </button>
-      </div>
+      <DialogContent className="max-w-lg rounded-3xl border border-border bg-card p-5 shadow-none ring-0">
+        <DialogHeader>
+          <DialogTitle className="text-base font-semibold text-foreground">
+            {t.chat.cameraDialogTitle}
+          </DialogTitle>
+        </DialogHeader>
 
-      <div className="p-4 space-y-4">
-        <div className="relative aspect-4/3 w-full overflow-hidden rounded-md border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900">
-          {errorMessage ? (
-            <div className="flex h-full flex-col items-center justify-center gap-3 p-4 text-center">
-              <p className="text-xs text-neutral-700 dark:text-neutral-300">
-                {errorMessage}
-              </p>
-              <button
-                type="button"
-                onClick={handleChooseExistingPhoto}
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 text-xs font-medium text-neutral-800 dark:text-neutral-200 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900"
-              >
-                <ImagePlus className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span>{t.chat.attachPhotoLabel}</span>
-              </button>
-            </div>
-          ) : (
-            <>
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                onLoadedMetadata={() => setIsReady(true)}
-                className="h-full w-full object-cover"
-              />
-              {!isReady ? (
-                <div className="absolute inset-0 flex items-center justify-center gap-2 bg-neutral-100 dark:bg-neutral-900 text-xs text-neutral-600 dark:text-neutral-400">
-                  <Loader2
-                    className="h-4 w-4 shrink-0 animate-spin"
+        <div className="space-y-4">
+          <div className="relative aspect-4/3 w-full overflow-hidden rounded-2xl border border-border bg-muted">
+            {errorMessage ? (
+              <div className="flex h-full flex-col items-center justify-center gap-3 p-4 text-center">
+                <p className="text-xs text-muted-foreground">{errorMessage}</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleChooseExistingPhoto}
+                  className="h-9 rounded-full bg-card px-4 text-xs shadow-none"
+                >
+                  <ImagePlus
+                    className="size-4 shrink-0 stroke-[1.75]"
                     aria-hidden="true"
                   />
-                  <span>{t.chat.cameraStartingText}</span>
-                </div>
-              ) : null}
-            </>
-          )}
-        </div>
+                  <span>{t.chat.attachPhotoLabel}</span>
+                </Button>
+              </div>
+            ) : (
+              <>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  onLoadedMetadata={() => setIsReady(true)}
+                  className="h-full w-full object-cover"
+                />
+                {!isReady ? (
+                  <div className="absolute inset-0 flex items-center justify-center gap-2 bg-muted text-xs text-muted-foreground">
+                    <Loader2
+                      className="size-4 shrink-0 animate-spin stroke-[1.75]"
+                      aria-hidden="true"
+                    />
+                    <span>{t.chat.cameraStartingText}</span>
+                  </div>
+                ) : null}
+              </>
+            )}
+          </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={handleSwitchCamera}
-            disabled={Boolean(errorMessage) || isCapturing}
-            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 px-3 text-xs font-medium text-neutral-800 dark:text-neutral-200 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900 disabled:opacity-50"
-          >
-            <SwitchCamera className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span>{t.chat.cameraSwitchButton}</span>
-          </button>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleSwitchCamera}
+              disabled={Boolean(errorMessage) || isCapturing}
+              className="h-10 rounded-full px-4 text-xs shadow-none"
+            >
+              <SwitchCamera
+                className="size-4 shrink-0 stroke-[1.75]"
+                aria-hidden="true"
+              />
+              <span>{t.chat.cameraSwitchButton}</span>
+            </Button>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => dialogRef.current?.close()}
-              className="inline-flex h-9 items-center justify-center rounded-md border border-neutral-300 dark:border-neutral-700 px-3 text-xs font-medium text-neutral-800 dark:text-neutral-200 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900"
-            >
-              {t.chat.cameraCancelButton}
-            </button>
-            <button
-              type="button"
-              autoFocus
-              onClick={handleCapture}
-              disabled={!isReady || Boolean(errorMessage) || isCapturing}
-              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-neutral-900 px-3.5 text-xs font-medium text-white transition-colors duration-150 hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-950 dark:hover:bg-neutral-300 disabled:opacity-50"
-            >
-              <Camera className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span>{t.chat.cameraCaptureButton}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleClose}
+                className="h-10 rounded-full px-4 text-xs shadow-none"
+              >
+                {t.chat.cameraCancelButton}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleCapture}
+                disabled={!isReady || Boolean(errorMessage) || isCapturing}
+                className="h-10 rounded-full px-4 text-xs shadow-none"
+              >
+                <Camera
+                  className="size-4 shrink-0 stroke-[1.75]"
+                  aria-hidden="true"
+                />
+                <span>{t.chat.cameraCaptureButton}</span>
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
-    </dialog>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -38,59 +38,183 @@ export const idDictionary: Dictionary = {
     logout: "Keluar",
     login: "Masuk",
     register: "Daftar",
+    menuLabel: "Menu",
   },
   footer: {
-    copyright: "Nouriko — Asisten Nutrisi Harian",
+    copyright: "© 2026 Nouriko. Menu Bergizi Anak Kos",
+    description:
+      "Chatbot AI untuk memilih makanan bergizi dari bahan yang ada, anggaran makan, atau foto makanan.",
+    disclaimer: "Estimasi nutrisi bersifat informatif, bukan saran medis.",
+    navAriaLabel: "Footer",
+    exploreHeading: "Jelajahi",
+    homeLink: "Beranda",
+    capabilitiesLink: "Kemampuan Utama",
+    howItWorksLink: "Cara Kerja",
+    accountHeading: "Akun",
+    infoHeading: "Informasi",
     privacyLink: "Kebijakan Privasi",
   },
   landing: {
-    eyebrow: "ASISTEN NUTRISI HARIAN",
-    title: "Nouriko",
+    eyebrow: "MENU BERGIZI ANAK KOS",
+    title: "Pilih makan bergizi dari bahan, budget, atau foto yang kamu punya.",
     tagline:
-      "Rekomendasi menu harian dan perhitungan nutrisi sesuai bahan yang ada, anggaran belanja, serta foto makanan kamu.",
+      "Tulis stok bahan di kamar, sebut nominal uang makan, atau kirim foto makanan lewat satu kolom chat. Nouriko menampilkan rekomendasi makanan beserta skor kesehatan, rincian makro, dan estimasi harganya.",
     ctaRegister: "Daftar",
     ctaLogin: "Masuk",
     ctaOpenChat: "Buka Chat",
     ctaContinueOnboarding: "Lengkapi Profil",
-    capabilitiesHeading: "Kemampuan Utama",
-    capabilities: [
+    overviewEyebrow: "CAKUPAN FITUR",
+    overviewTitle: "Satu asisten chat untuk rencana makan harian",
+    overviewItems: [
       {
-        title: "Rekomendasi dari Bahan",
-        description:
-          "Masukkan bahan yang tersedia di dapur atau kulkas untuk mendapatkan rekomendasi menu beserta perkiraan kalori dan makronya.",
+        label: "Input fleksibel",
+        value: "Bahan kos, nominal uang, atau foto makanan",
       },
       {
-        title: "Sesuai Anggaran",
-        description:
-          "Tentukan anggaran makan harian atau mingguan agar rekomendasi menu tetap bergizi tanpa melebihi batas pengeluaran.",
+        label: "Lima rincian gizi",
+        value: "Kalori, protein, karbohidrat, lemak, dan serat",
       },
       {
-        title: "Analisis Foto Makanan",
-        description:
-          "Unggah foto makanan untuk melihat perkiraan komposisi bahan, kalori, protein, karbohidrat, lemak, dan serat.",
+        label: "Target personal",
+        value: "Dihitung dari tinggi, berat, usia, gender, dan aktivitas",
       },
     ],
-    stepsHeading: "Cara Kerja",
+    rubricHeading: "Skala Skor Kesehatan (0–100)",
+    rubricBadges: {
+      good: "70–100 · Baik",
+      fair: "40–69 · Cukup",
+      low: "0–39 · Rendah",
+    },
+    heroPhotoAlt:
+      "Mangkuk keramik berisi nasi putih hangat, tempe kecap panggang, telur rebus setengah matang, tumis pakcoy wijen, dan tomat ceri di atas meja kayu",
+    heroStats: [
+      {
+        value: "1 Chat",
+        label: "Bahan kos, budget, atau foto",
+      },
+      {
+        value: "5 Makro",
+        label: "Kalori, protein, karbo, lemak, serat",
+      },
+      {
+        value: "0–100",
+        label: "Skor kesehatan yang mudah dibaca",
+      },
+    ],
+    heroMealPreview: {
+      name: "Nasi Tempe Kecap & Telur Rebus",
+      estimate: "Rp14.000 · Estimasi",
+      scoreBadge: "86 · Baik",
+      macros: [
+        { label: "Kkal", value: "485", tone: "calories" },
+        { label: "Protein", value: "24g", tone: "protein" },
+        { label: "Karbo", value: "56g", tone: "carbs" },
+        { label: "Lemak", value: "16g", tone: "fat" },
+        { label: "Serat", value: "7g", tone: "fiber" },
+      ],
+    },
+    capabilitiesEyebrow: "TIGA KEMAMPUAN",
+    capabilitiesHeading: "Dirancang untuk kondisi nyata anak kos",
+    capabilities: [
+      {
+        number: "01",
+        tag: "STOK KAMAR & RICE COOKER",
+        title: "Rekomendasi dari Bahan",
+        description:
+          "Tulis bahan seadanya di kamar kos beserta alat masak yang tersedia, seperti rice cooker saja, untuk mendapat opsi masakan praktis dan langkah singkatnya.",
+        imageAlt:
+          "Rice cooker krem minimalis di atas meja kayu bersama telur, irisan tempe, sawi pakcoy, bawang merah, bawang putih, dan semangkuk beras",
+        calloutLabel: "Contoh pesan",
+        calloutText:
+          "\"Cuma ada telur, tempe, pakcoy, sama rice cooker di kamar kos.\"",
+        chips: ["3 opsi masakan praktis", "Langkah masak ringkas", "Rincian makro lengkap"],
+      },
+      {
+        number: "02",
+        tag: "ANGGARAN HARIAN & MINGGUAN",
+        title: "Rekomendasi Sesuai Budget",
+        description:
+          "Sebutkan nominal uang untuk sekali makan atau belanja bahan beberapa hari agar rekomendasi makanan maupun daftar belanja tetap masuk anggaranmu.",
+        imageAlt:
+          "Sepiring makan bergizi terjangkau berisi nasi putih, tahu dan tempe panggang, telur balado, dan tumis bayam wortel di samping keranjang sayur segar",
+        calloutLabel: "Simulasi anggaran",
+        budgetRows: [
+          { label: "Budget sekali makan", value: "Rp15.000 · 84 Baik" },
+          { label: "Belanja bahan 5 hari", value: "Rp100.000 · Daftar belanja" },
+        ],
+      },
+      {
+        number: "03",
+        tag: "ANALISIS KAMERA INSTAN",
+        title: "Analisis Foto Makanan & Bahan",
+        description:
+          "Ambil atau unggah foto makanan jadi maupun bahan mentah untuk melihat perkiraan skor kesehatan, kandungan makro, serta ide pengolahannya.",
+        imageAlt:
+          "Tangan memegang ponsel memotret sepiring makan siang bergizi berisi ayam panggang, nasi putih, dan tumis sayur hijau di meja kayu",
+        calloutLabel: "Skala Skor Kesehatan (0–100)",
+      },
+    ],
+    stepsEyebrow: "CARA KERJA",
+    stepsHeading: "Mulai dalam tiga langkah sederhana",
+    stepsIntro:
+      "Pilih salah satu langkah untuk melihat bagaimana Nouriko mengubah pesan singkat atau foto menjadi panduan makan harian.",
+    workflowPhotoAlt:
+      "Meja belajar kayu diterangi cahaya pagi dengan mangkuk nasi telur dadar dan tumis sayur di samping cangkir teh hangat dan buku catatan hijau sage",
     steps: [
       {
         step: "01",
-        title: "Buat Akun dan Isi Profil",
+        title: "Daftar dan Isi Profil Tubuh",
         description:
-          "Daftar dengan email, verifikasi akun, lalu isi data tubuh agar target kalori dan makro harian dihitung otomatis.",
+          "Buat akun dengan email, lalu lengkapi tinggi badan, berat badan, usia, gender, dan aktivitas untuk menghitung target kalori harianmu.",
+        highlight: "Target kalori & 5 makro personal otomatis",
       },
       {
         step: "02",
-        title: "Tulis Bahan, Anggaran, atau Unggah Foto",
+        title: "Tulis Pesan atau Kirim Foto di Chat",
         description:
-          "Buka halaman chat dan sampaikan kebutuhan makanmu dalam bahasa sehari-hari atau kirim foto makanan.",
+          "Ketik bahan yang ada, nominal uang makan, atau lampirkan foto lewat satu kolom chat tanpa perlu berpindah halaman atau memilih mode.",
+        highlight: "Bahan, budget, dan kamera dalam satu kolom",
       },
       {
         step: "03",
-        title: "Simpan dan Pantau Menu",
+        title: "Simpan Menu dan Pantau Harian",
         description:
-          "Tinjau rekomendasi nutrisi yang sesuai target harianmu dan sesuaikan profil kapan saja bila kebutuhan berubah.",
+          "Simpan makanan pilihanmu ke menu hari ini untuk memantau total kalori, rincian makro, pengeluaran makan, serta riwayat skor kesehatan.",
+        highlight: "Ringkasan harian & riwayat skor mingguan",
       },
     ],
+    stepPreviews: {
+      profile: {
+        label: "Langkah 01 · Target Profil",
+        bodyMeta: "170 cm · 62 kg · Aktivitas sedang",
+        targetLabel: "Target harian terhitung",
+        targetValue: "2.050 kkal",
+        macrosSummary: "112g Protein · 248g Karbo · 64g Lemak · 30g Serat",
+      },
+      chat: {
+        label: "Langkah 02 · Satu Kolom Chat",
+        userMessage: "\"Ada telur, tempe, dan budget Rp15.000 buat makan malam\"",
+        attachmentNote: "Bisa langsung lampirkan foto di pesan yang sama",
+        replyNote: "Menampilkan kartu menu berskor, makro, & estimasi biaya",
+      },
+      tracking: {
+        label: "Langkah 03 · Ringkasan Hari Ini",
+        caloriesLabel: "Asupan kalori harian",
+        caloriesValue: "1.640 / 2.050 kkal",
+        progressPercent: 80,
+        spendLabel: "Estimasi pengeluaran makan",
+        spendValue: "Rp34.000",
+        scoreBadge: "84 · Baik",
+      },
+    },
+    bottomCtaEyebrow: "MULAI HARI INI",
+    bottomCtaHeading: "Siap mengatur menu harian yang lebih terarah?",
+    bottomCtaDescription:
+      "Buat akun untuk menghitung target kalori harianmu dan mulai berdiskusi langsung di halaman chat Nouriko.",
+    bottomCtaAuthedDescription:
+      "Akun kamu sudah aktif. Lanjutkan langsung ke halaman chat Nouriko atau lengkapi profil harianmu.",
+    bottomCtaPhotoAlt:
+      "Foto dari atas bahan segar sehari-hari berupa bayam, pakcoy, potongan tahu, irisan tempe, telur, tomat ceri, jeruk nipis, dan biji-bijian di atas taplak linen hangat",
   },
   register: {
     title: "Daftar Akun",
@@ -349,9 +473,10 @@ export const idDictionary: Dictionary = {
     saveMealButton: "Simpan",
     savedMealButton: "Tersimpan",
     savingMealButton: "Menyimpan...",
-    saveMealFeedback: "Menu berhasil disimpan ke daftar makan hari ini.",
+    saveMealFeedback: "Menu berhasil disimpan ke jadwal makan.",
     viewSummaryLink: "Lihat Ringkasan",
     mealTimeSelectLabel: "Waktu makan",
+    mealDateSelectLabel: "Tanggal",
     shoppingListHeading: "Daftar Belanja Bahan",
     shoppingItemCol: "Bahan",
     shoppingUnitCol: "Satuan",
@@ -406,6 +531,16 @@ export const idDictionary: Dictionary = {
       "Minta rekomendasi menu atau analisis foto makanan di Chat, lalu tekan Simpan agar tercatat di ringkasan harian.",
     goToChatButton: "Buka Chat Nutrisi",
     retryButton: "Coba lagi",
+    remainingLabel: "Sisa",
+    overTargetLabel: "Melebihi target",
+    targetMetLabel: "Target kalori hari ini sudah terpenuhi.",
+    shortOnLabel: "Kurang",
+    findMealsForRemainingButton: "Cari menu untuk sisa target",
+    askLightMealButton: "Tanya ide menu ringan di Chat",
+    allMealTimesFilter: "Semua",
+    slotEmptyLabel: "Belum diisi",
+    slotEmptyListMessage: "Belum ada menu tersimpan untuk {slot}.",
+    slotFindMealButton: "Cari menu {slot}",
   },
   history: {
     title: "Riwayat Menu",

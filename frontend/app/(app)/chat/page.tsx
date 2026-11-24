@@ -1,12 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useI18n } from "@/components/providers/I18nProvider";
 import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { ChatComposer } from "@/components/chat/ChatComposer";
 import {
   EmptyChatState,
@@ -76,11 +79,20 @@ function mealKey(messageId: string, meal: MealOption, idx: number): string {
   return `${messageId}:${idx}:${meal.name}`;
 }
 
-export default function ChatPage() {
+function ChatContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialPrompt = searchParams.get("prompt") ?? "";
+  const [prefillText] = useState(initialPrompt);
   const { token, isAuthenticated, isLoading, profile, handleUnauthorized } =
     useAuth();
   const { t, language } = useI18n();
+
+  useEffect(() => {
+    if (initialPrompt) {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, [initialPrompt]);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isSending, setIsSending] = useState(false);
@@ -91,7 +103,6 @@ export default function ChatPage() {
   const [savedMeals, setSavedMeals] = useState<Record<string, boolean>>({});
   const [savingMeals, setSavingMeals] = useState<Record<string, boolean>>({});
   const [saveErrors, setSaveErrors] = useState<Record<string, string>>({});
-  const [saveNotice, setSaveNotice] = useState(false);
   const [hasRetryableSubmission, setHasRetryableSubmission] = useState(false);
 
   const lastSubmissionRef = useRef<PendingSubmission | null>(null);
@@ -248,7 +259,6 @@ export default function ChatPage() {
       const withoutFailed = messagesRef.current.filter(
         (m) => m.id !== failedMessageId
       );
-      // Exclude the last user turn that matches the retried submission so it is not duplicated in context.
       const contextBase =
         withoutFailed.length > 0 &&
         withoutFailed[withoutFailed.length - 1].role === "user"
@@ -280,15 +290,21 @@ export default function ChatPage() {
     setSavedMeals({});
     setSavingMeals({});
     setSaveErrors({});
-    setSaveNotice(false);
     setComposerErrorCode(null);
   }, [isSending]);
 
   const handleSaveMeal = useCallback(
-    async (key: string, meal: MealOption, mealTime?: MealTime) => {
+    async (
+      key: string,
+      meal: MealOption,
+      mealTime?: MealTime,
+      mealDate?: string
+    ) => {
       if (!token || savingMealsRef.current[key] || savedMealsRef.current[key]) {
         return;
       }
+
+      const targetDate = mealDate || getLocalDateString();
 
       savingMealsRef.current[key] = true;
       setSavingMeals((prev) => ({ ...prev, [key]: true }));
@@ -300,7 +316,7 @@ export default function ChatPage() {
 
       try {
         await apiClient.saveMeal(token, {
-          meal_date: getLocalDateString(),
+          meal_date: targetDate,
           ...(mealTime ? { meal_time: mealTime } : {}),
           name: meal.name,
           health_score: Math.max(
@@ -321,7 +337,13 @@ export default function ChatPage() {
 
         savedMealsRef.current[key] = true;
         setSavedMeals((prev) => ({ ...prev, [key]: true }));
-        setSaveNotice(true);
+        toast.success(t.chat.saveMealFeedback, {
+          action: {
+            label: t.chat.viewSummaryLink,
+            onClick: () =>
+              router.push(`/summary?date=${encodeURIComponent(targetDate)}`),
+          },
+        });
       } catch (err) {
         if (handleUnauthorized(err)) {
           return;
@@ -347,7 +369,14 @@ export default function ChatPage() {
         });
       }
     },
-    [handleUnauthorized, language, router, token]
+    [
+      handleUnauthorized,
+      language,
+      router,
+      t.chat.saveMealFeedback,
+      t.chat.viewSummaryLink,
+      token,
+    ]
   );
 
   if (
@@ -357,64 +386,53 @@ export default function ChatPage() {
     !profile.onboarding_completed
   ) {
     return (
-      <div className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 text-sm text-neutral-600 dark:text-neutral-400">
+      <Card className="rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-none ring-0">
         {t.common.loading}
-      </div>
+      </Card>
     );
   }
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
-      <section className="shrink-0 rounded-lg border border-neutral-300 dark:border-neutral-700 p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="space-y-1">
-          <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
-            {t.chat.title}
-          </h1>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            {t.chat.targetSummary}:{" "}
-            <span className="font-mono font-medium text-neutral-900 dark:text-neutral-100">
-              {profile.daily_calorie_target ?? "-"} {t.profile.kcalUnit}
-            </span>
-          </p>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            {t.chat.ephemeralNotice}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {messages.length > 0 ? (
-            <button
-              type="button"
-              disabled={isSending}
-              onClick={handleClearChat}
-              className="rounded-md border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-xs font-medium text-neutral-900 dark:text-neutral-100 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900 disabled:opacity-50"
-            >
-              {t.chat.clearChatButton}
-            </button>
-          ) : null}
-
-          <Link
-            href="/profile"
-            className="rounded-md border border-neutral-300 dark:border-neutral-700 px-3.5 py-2 text-xs font-medium text-neutral-900 dark:text-neutral-100 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900"
-          >
-            {t.chat.editProfileLink}
-          </Link>
-        </div>
-      </section>
-
-      {saveNotice ? (
-        <Alert variant="success">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span>{t.chat.saveMealFeedback}</span>
-            <Link
-              href="/summary"
-              className="text-xs font-medium underline underline-offset-4 text-neutral-900 dark:text-neutral-100"
-            >
-              {t.chat.viewSummaryLink}
-            </Link>
+      <Card className="shrink-0 rounded-3xl border border-border bg-card p-4 shadow-none ring-0">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-0.5">
+            <h1 className="text-lg font-semibold tracking-[-0.01em] text-foreground">
+              {t.chat.title}
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              {t.chat.targetSummary}:{" "}
+              <span className="font-semibold tabular-nums text-[var(--brand-primary)]">
+                {profile.daily_calorie_target ?? "-"} {t.profile.kcalUnit}
+              </span>
+            </p>
           </div>
-        </Alert>
-      ) : null}
+
+          <div className="flex flex-wrap items-center gap-2">
+            {messages.length > 0 ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isSending}
+                onClick={handleClearChat}
+                className="h-9 rounded-full px-3.5 text-xs shadow-none"
+              >
+                {t.chat.clearChatButton}
+              </Button>
+            ) : null}
+
+            <Button
+              render={<Link href="/profile" />}
+              variant="outline"
+              size="sm"
+              className="h-9 rounded-full px-3.5 text-xs shadow-none"
+            >
+              {t.chat.editProfileLink}
+            </Button>
+          </div>
+        </div>
+      </Card>
 
       <section
         aria-label={t.chat.title}
@@ -428,21 +446,18 @@ export default function ChatPage() {
               if (msg.role === "user") {
                 return (
                   <div key={msg.id} className="flex justify-end">
-                    <div className="w-full max-w-2xl rounded-lg border border-neutral-400 dark:border-neutral-600 p-4 space-y-2.5">
-                      <p className="font-mono text-xs uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                        {profile.display_name.trim() || t.chat.youLabel}
-                      </p>
+                    <div className="max-w-[85%] rounded-3xl rounded-br-md bg-muted px-4 py-3.5 space-y-2.5 sm:max-w-[78%]">
                       {msg.photoPreviewUrl ? (
                         <div>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={msg.photoPreviewUrl}
                             alt={msg.photoName || t.chat.photoAttachedFallback}
-                            className="max-h-56 w-auto rounded-md border border-neutral-300 dark:border-neutral-700 object-contain"
+                            className="max-h-56 w-auto rounded-2xl border border-border object-contain"
                           />
                         </div>
                       ) : null}
-                      <p className="text-sm text-neutral-900 dark:text-neutral-100 whitespace-pre-wrap leading-relaxed">
+                      <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
                         {msg.text || t.chat.photoAttachedFallback}
                       </p>
                     </div>
@@ -452,33 +467,33 @@ export default function ChatPage() {
 
               if (msg.errorCode) {
                 return (
-                  <div
+                  <Card
                     key={msg.id}
-                    className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-4 space-y-3"
+                    className="rounded-3xl rounded-bl-md border border-border bg-card p-4 shadow-none ring-0 gap-3"
                   >
-                    <p className="font-mono text-xs uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                      {t.chat.assistantLabel}
-                    </p>
                     <Alert variant="error">
                       {getFriendlyErrorMessage(msg.errorCode, language)}
                     </Alert>
-                    {hasRetryableSubmission && msgIdx === messages.length - 1 ? (
+                    {hasRetryableSubmission &&
+                    msgIdx === messages.length - 1 ? (
                       <div>
-                        <button
+                        <Button
                           type="button"
+                          variant="outline"
+                          size="sm"
                           disabled={isSending}
                           onClick={() => handleRetry(msg.id)}
-                          className="inline-flex items-center gap-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 px-3 py-1.5 text-xs font-medium text-neutral-900 dark:text-neutral-100 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900 disabled:opacity-50"
+                          className="h-9 rounded-full px-4 text-xs shadow-none"
                         >
                           <RotateCcw
-                            className="h-3.5 w-3.5 shrink-0"
+                            className="size-3.5 shrink-0 stroke-[1.75]"
                             aria-hidden="true"
                           />
                           <span>{t.chat.retryButton}</span>
-                        </button>
+                        </Button>
                       </div>
                     ) : null}
-                  </div>
+                  </Card>
                 );
               }
 
@@ -497,16 +512,9 @@ export default function ChatPage() {
                 resp.shopping_list.length > 0;
 
               return (
-                <div
-                  key={msg.id}
-                  className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-4 space-y-4"
-                >
-                  <p className="font-mono text-xs uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                    {t.chat.assistantLabel}
-                  </p>
-
+                <div key={msg.id} className="space-y-3">
                   {resp.intro ? (
-                    <p className="text-sm text-neutral-900 dark:text-neutral-100 leading-relaxed">
+                    <p className="px-1 text-[15px] leading-[1.6] text-foreground">
                       {resp.intro}
                     </p>
                   ) : null}
@@ -534,8 +542,13 @@ export default function ChatPage() {
                             saved={Boolean(savedMeals[key])}
                             isSaving={Boolean(savingMeals[key])}
                             saveError={saveErrors[key] ?? null}
-                            onSave={(selectedMeal, mealTime) =>
-                              handleSaveMeal(key, selectedMeal, mealTime)
+                            onSave={(selectedMeal, mealTime, mealDate) =>
+                              handleSaveMeal(
+                                key,
+                                selectedMeal,
+                                mealTime,
+                                mealDate
+                              )
                             }
                           />
                         );
@@ -561,10 +574,10 @@ export default function ChatPage() {
               <div
                 role="status"
                 aria-live="polite"
-                className="rounded-lg border border-neutral-300 dark:border-neutral-700 p-4 flex items-center gap-2.5 text-sm text-neutral-700 dark:text-neutral-300"
+                className="flex items-center gap-2.5 rounded-3xl rounded-bl-md border border-border bg-card px-4 py-3.5 text-sm text-muted-foreground"
               >
                 <Loader2
-                  className="h-4 w-4 shrink-0 animate-spin"
+                  className="size-4 shrink-0 animate-spin stroke-[1.75] text-[var(--brand-primary)]"
                   aria-hidden="true"
                 />
                 <span>
@@ -580,7 +593,7 @@ export default function ChatPage() {
         )}
       </section>
 
-      <div className="shrink-0 space-y-2">
+      <div className="shrink-0 space-y-2.5">
         {messages.length === 0 && !isSending ? (
           <PromptSuggestions
             onSelectPrompt={handlePromptSelect}
@@ -595,11 +608,26 @@ export default function ChatPage() {
         ) : null}
 
         <ChatComposer
+          prefillMessage={prefillText}
           onSend={handleSend}
           disabled={isSending}
           onPhotoError={(code) => setComposerErrorCode(code)}
         />
       </div>
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense
+      fallback={
+        <Card className="rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-none ring-0">
+          Loading...
+        </Card>
+      }
+    >
+      <ChatContent />
+    </Suspense>
   );
 }

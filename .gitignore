@@ -17,3 +17,5 @@ backend/tmp/
 coverage.out
 *.exe
 .orchestrator/
+
+/anti-slop

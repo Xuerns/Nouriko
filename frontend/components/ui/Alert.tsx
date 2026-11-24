@@ -10,12 +10,12 @@ interface AlertProps {
 }
 
 export function Alert({ variant, children, className = "" }: AlertProps) {
-  const variantStyles =
+  const variantClass =
     variant === "error"
       ? "bg-[var(--error-bg)] text-[var(--error-text)]"
       : variant === "success"
-        ? "bg-[var(--success-bg)] text-[var(--success-text)]"
-        : "bg-[var(--info-bg)] text-[var(--info-text)]";
+        ? "bg-[var(--score-good-bg)] text-[var(--score-good-text)]"
+        : "bg-[var(--brand-accent-tint)] text-foreground border border-border";
 
   return (
     <div

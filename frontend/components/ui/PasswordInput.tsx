@@ -89,8 +89,9 @@ export function PasswordInput({
           placeholder={placeholder}
           className="h-12 w-full rounded-2xl border border-border bg-card pl-10 pr-11 text-sm text-foreground placeholder:text-muted-foreground shadow-none transition-colors outline-none focus-visible:border-[var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/20 disabled:pointer-events-none disabled:opacity-50"
         />
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={() => setVisible((prev) => !prev)}
           disabled={disabled}
           aria-label={visible ? t.common.hidePassword : t.common.showPassword}

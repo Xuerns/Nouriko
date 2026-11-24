@@ -1,6 +1,7 @@
 "use client";
 
 import { useI18n } from "@/components/providers/I18nProvider";
+import { Button } from "@/components/ui/button";
 
 interface EmptyChatStateProps {
   displayName?: string;
@@ -15,11 +16,11 @@ export function EmptyChatState({ displayName }: EmptyChatStateProps) {
 
   return (
     <div className="flex h-full flex-col items-center justify-center px-4 text-center">
-      <div className="max-w-lg space-y-1.5">
-        <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+      <div className="max-w-lg space-y-2">
+        <h2 className="text-xl font-semibold tracking-[-0.01em] text-foreground">
           {heading}
         </h2>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
+        <p className="text-[15px] leading-[1.6] text-muted-foreground">
           {t.chat.emptyDescription}
         </p>
       </div>
@@ -45,20 +46,21 @@ export function PromptSuggestions({
       className="grid grid-cols-1 gap-2 sm:grid-cols-2"
     >
       {quickExamples.map((item) => (
-        <button
+        <Button
           key={item.label}
           type="button"
+          variant="outline"
           disabled={disabled}
           onClick={() => onSelectPrompt(item.prompt)}
-          className="rounded-md border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-left transition-colors duration-150 hover:border-neutral-500 dark:hover:border-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900 disabled:opacity-50"
+          className="h-auto min-h-11 flex-col items-start justify-start rounded-2xl border-border bg-card px-4 py-3 text-left whitespace-normal shadow-none hover:bg-accent"
         >
-          <span className="block font-mono text-[11px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+          <span className="block text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--brand-primary)]">
             {item.label}
           </span>
-          <span className="mt-0.5 block text-xs text-neutral-900 dark:text-neutral-100 leading-snug">
+          <span className="mt-1 block text-xs font-normal leading-snug text-foreground">
             {item.prompt}
           </span>
-        </button>
+        </Button>
       ))}
     </div>
   );

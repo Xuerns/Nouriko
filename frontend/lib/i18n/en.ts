@@ -38,59 +38,184 @@ export const enDictionary: Dictionary = {
     logout: "Log out",
     login: "Sign in",
     register: "Sign up",
+    menuLabel: "Menu",
   },
   footer: {
-    copyright: "Nouriko — Daily Nutrition Assistant",
+    copyright: "© 2026 Nouriko. Daily Nutrition Assistant",
+    description:
+      "AI chatbot for choosing nutritious meals from available ingredients, meal budgets, or food photos.",
+    disclaimer: "Nutrition estimates are informational and not medical advice.",
+    navAriaLabel: "Footer",
+    exploreHeading: "Explore",
+    homeLink: "Home",
+    capabilitiesLink: "Core Capabilities",
+    howItWorksLink: "How It Works",
+    accountHeading: "Account",
+    infoHeading: "Information",
     privacyLink: "Privacy Policy",
   },
   landing: {
     eyebrow: "DAILY NUTRITION ASSISTANT",
-    title: "Nouriko",
+    title:
+      "Choose nutritious meals from the ingredients, budget, or food photo you have.",
     tagline:
-      "Daily meal recommendations and nutrition estimates tailored to your ingredients, budget, and food photos.",
+      "Type the ingredients in your room, enter your meal budget, or send a food photo in a single chat box. Nouriko replies with meal options, health scores, macro breakdowns, and price estimates.",
     ctaRegister: "Sign up",
     ctaLogin: "Sign in",
     ctaOpenChat: "Open Chat",
     ctaContinueOnboarding: "Complete Profile",
-    capabilitiesHeading: "Core Capabilities",
-    capabilities: [
+    overviewEyebrow: "WHAT YOU GET",
+    overviewTitle: "One chat assistant for daily meal planning",
+    overviewItems: [
       {
-        title: "Ingredient-Based Meals",
-        description:
-          "Enter the ingredients you already have at home to get practical meal ideas with estimated calories and macros.",
+        label: "Flexible input",
+        value: "Room ingredients, meal budget, or food photos",
       },
       {
-        title: "Budget-Aware Planning",
-        description:
-          "Set a daily or meal budget to receive balanced meal recommendations that fit your spending limit.",
+        label: "Five nutrition metrics",
+        value: "Calories, protein, carbohydrates, fat, and fiber",
       },
       {
-        title: "Food Photo Analysis",
-        description:
-          "Upload a photo of your meal to estimate its ingredients, calories, protein, carbohydrates, fat, and fiber.",
+        label: "Personal targets",
+        value: "Calculated from height, weight, age, gender, and activity",
       },
     ],
-    stepsHeading: "How It Works",
+    rubricHeading: "Health Score Scale (0–100)",
+    rubricBadges: {
+      good: "70–100 · Good",
+      fair: "40–69 · Fair",
+      low: "0–39 · Low",
+    },
+    heroPhotoAlt:
+      "Warm stoneware bowl of steamed white rice, soy-glazed tempeh cubes, soft-boiled egg, sautéed bok choy with sesame, and cherry tomatoes on a wooden table",
+    heroStats: [
+      {
+        value: "1 Chat",
+        label: "Ingredients, budget, or photo",
+      },
+      {
+        value: "5 Macros",
+        label: "Calories, protein, carbs, fat, fiber",
+      },
+      {
+        value: "0–100",
+        label: "Clear meal health score scale",
+      },
+    ],
+    heroMealPreview: {
+      name: "Glazed Tempeh & Soft-Egg Bowl",
+      estimate: "Rp14.000 · Estimate",
+      scoreBadge: "86 · Good",
+      macros: [
+        { label: "Kcal", value: "485", tone: "calories" },
+        { label: "Protein", value: "24g", tone: "protein" },
+        { label: "Carbs", value: "56g", tone: "carbs" },
+        { label: "Fat", value: "16g", tone: "fat" },
+        { label: "Fiber", value: "7g", tone: "fiber" },
+      ],
+    },
+    capabilitiesEyebrow: "THREE CAPABILITIES",
+    capabilitiesHeading: "Built for everyday student meal decisions",
+    capabilities: [
+      {
+        number: "01",
+        tag: "PANTRY & RICE COOKER",
+        title: "Ingredient-Based Meals",
+        description:
+          "List whatever ingredients and cookware you have on hand, even just a rice cooker, to get practical meal options with concise cooking steps.",
+        imageAlt:
+          "Compact cream rice cooker on an oak counter beside fresh eggs, sliced tempeh, pak choi, shallots, garlic, and a bowl of rice",
+        calloutLabel: "Sample message",
+        calloutText:
+          "\"I only have eggs, tempeh, bok choy, and a rice cooker in my room.\"",
+        chips: ["3 practical meal ideas", "Concise cooking steps", "Full macro estimates"],
+      },
+      {
+        number: "02",
+        tag: "DAILY & WEEKLY SPENDING",
+        title: "Budget-Aware Options",
+        description:
+          "Enter your spending limit for a single meal or multi-day groceries to receive nutritious meal ideas or a shopping list within budget.",
+        imageAlt:
+          "Balanced Indonesian meal plate with steamed rice, pan-seared tofu, tempeh, spiced egg, and stir-fried spinach beside a woven basket of fresh vegetables",
+        calloutLabel: "Budget snapshot",
+        budgetRows: [
+          { label: "Single meal budget", value: "Rp15.000 · 84 Good" },
+          { label: "5-day grocery plan", value: "Rp100.000 · Itemized list" },
+        ],
+      },
+      {
+        number: "03",
+        tag: "INSTANT CAMERA INSIGHT",
+        title: "Food & Ingredient Photo Analysis",
+        description:
+          "Snap or upload a photo of a prepared meal or raw ingredients to check estimated health scores, macro breakdowns, or cooking ideas.",
+        imageAlt:
+          "Person holding a smartphone photographing a healthy Indonesian lunch plate of grilled chicken, steamed rice, and sautéed greens on a wooden table",
+        calloutLabel: "Health Score Scale (0–100)",
+      },
+    ],
+    stepsEyebrow: "HOW IT WORKS",
+    stepsHeading: "Start in three straightforward steps",
+    stepsIntro:
+      "Select any step to preview how Nouriko turns a quick note or meal photo into daily clarity.",
+    workflowPhotoAlt:
+      "Sunlit wooden study desk with a stoneware rice bowl topped with omelette and greens beside a ceramic mug of tea and a sage-linen notebook",
     steps: [
       {
         step: "01",
-        title: "Create an Account & Profile",
+        title: "Sign Up and Set Your Profile",
         description:
-          "Sign up with your email, verify your account, and enter your body profile to calculate daily calorie and macro targets.",
+          "Create an account with your email, then enter height, weight, age, gender, and activity level to calculate your daily calorie target.",
+        highlight: "Personalized daily calorie & 5-macro baseline",
       },
       {
         step: "02",
-        title: "Share Ingredients, Budget, or a Photo",
+        title: "Message or Send a Photo in Chat",
         description:
-          "Open the chat page and describe what you want to eat in plain language or upload a food photo.",
+          "Type your ingredients, enter your budget, or attach a photo in the same chat input without switching pages or selecting modes.",
+        highlight: "Ingredients, budget, and camera in one input",
       },
       {
         step: "03",
-        title: "Review & Track Your Meals",
+        title: "Save Meals and Track Daily Intake",
         description:
-          "Check meal suggestions against your daily targets and update your profile anytime your needs change.",
+          "Save chosen meals to today's menu to monitor total calories, macro progress, meal spending, and daily health score history.",
+        highlight: "Daily summary & weekly nutrition trends",
       },
     ],
+    stepPreviews: {
+      profile: {
+        label: "Step 01 · Profile Target",
+        bodyMeta: "170 cm · 62 kg · Moderate activity",
+        targetLabel: "Calculated daily target",
+        targetValue: "2,050 kcal",
+        macrosSummary: "112g Protein · 248g Carbs · 64g Fat · 30g Fiber",
+      },
+      chat: {
+        label: "Step 02 · Unified Chat",
+        userMessage: "\"Have eggs, tempeh, and Rp15,000 for dinner tonight\"",
+        attachmentNote: "Optional photo attached in the same prompt",
+        replyNote: "Returns scored meal cards + macro & cost breakdown",
+      },
+      tracking: {
+        label: "Step 03 · Today's Summary",
+        caloriesLabel: "Daily calorie intake",
+        caloriesValue: "1,640 / 2,050 kcal",
+        progressPercent: 80,
+        spendLabel: "Estimated meal spending",
+        spendValue: "Rp34.000",
+        scoreBadge: "84 · Good",
+      },
+    },
+    bottomCtaEyebrow: "START TODAY",
+    bottomCtaHeading: "Ready to plan balanced meals around your budget?",
+    bottomCtaDescription:
+      "Create an account to calculate your daily calorie target and start planning meals in Nouriko Chat.",
+    bottomCtaAuthedDescription:
+      "Your account is active. Jump straight into Nouriko Chat or finish setting up your daily profile.",
+    bottomCtaPhotoAlt:
+      "Overhead flat-lay of fresh spinach, bok choy, cubed tofu, sliced tempeh, farm eggs, cherry tomatoes, lime halves, and whole grains on warm linen",
   },
   register: {
     title: "Create Account",
@@ -348,9 +473,10 @@ export const enDictionary: Dictionary = {
     saveMealButton: "Save",
     savedMealButton: "Saved",
     savingMealButton: "Saving...",
-    saveMealFeedback: "Meal saved to today's menu.",
+    saveMealFeedback: "Meal saved to your meal plan.",
     viewSummaryLink: "View Summary",
     mealTimeSelectLabel: "Meal time",
+    mealDateSelectLabel: "Date",
     shoppingListHeading: "Ingredient Shopping List",
     shoppingItemCol: "Ingredient",
     shoppingUnitCol: "Unit",
@@ -405,6 +531,16 @@ export const enDictionary: Dictionary = {
       "Ask for meal recommendations or analyze a food photo in Chat, then press Save to track it in your daily summary.",
     goToChatButton: "Open Nutrition Chat",
     retryButton: "Try again",
+    remainingLabel: "Remaining",
+    overTargetLabel: "Over target by",
+    targetMetLabel: "Daily calorie target reached.",
+    shortOnLabel: "Needs",
+    findMealsForRemainingButton: "Find meals for remaining target",
+    askLightMealButton: "Ask for light meal ideas",
+    allMealTimesFilter: "All",
+    slotEmptyLabel: "Not logged",
+    slotEmptyListMessage: "No meals saved for {slot} yet.",
+    slotFindMealButton: "Find {slot} ideas",
   },
   history: {
     title: "Meal History",
