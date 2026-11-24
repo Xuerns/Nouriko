@@ -18,7 +18,12 @@ export function AppShell({ children }: AppShellProps) {
   const { t } = useI18n();
 
   const isChatRoute = pathname === "/chat";
-  const maxWidthClass = isChatRoute ? "max-w-2xl" : "max-w-3xl";
+  const isSummaryRoute = pathname === "/summary";
+  const maxWidthClass = isChatRoute
+    ? "max-w-2xl"
+    : isSummaryRoute
+      ? "max-w-5xl"
+      : "max-w-3xl";
 
   const navItems = [
     { href: "/chat", label: t.nav.chat, icon: MessageSquare },

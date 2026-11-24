@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"math"
@@ -135,18 +136,31 @@ func TestValidateCreateMealRequest_NaNInfAndBounds(t *testing.T) {
 		t.Fatal("expected name > 200 runes to be rejected")
 	}
 
-	// Far future date (> todayWIB + 1 day)
-	futureDate := baseReq()
-	futureDate.MealDate = "2026-11-21"
-	if _, ok := validateCreateMealRequest("user-1", futureDate, now); ok {
-		t.Fatal("expected meal_date > today+1d to be rejected")
+	// Past date (< todayWIB) must be rejected
+	pastDate := baseReq()
+	pastDate.MealDate = "2026-11-18"
+	if _, ok := validateCreateMealRequest("user-1", pastDate, now); ok {
+		t.Fatal("expected meal_date < today to be rejected")
 	}
 
-	// Today + 1 day is allowed (ahead timezones)
+	// Far future date (> todayWIB + maxFutureMealDays)
+	futureDate := baseReq()
+	futureDate.MealDate = "2026-12-20"
+	if _, ok := validateCreateMealRequest("user-1", futureDate, now); ok {
+		t.Fatal("expected meal_date > today+30d to be rejected")
+	}
+
+	// Today + 1 day (tomorrow) and today + 30 days are allowed for meal planning
 	tomorrowDate := baseReq()
 	tomorrowDate.MealDate = "2026-11-20"
 	if _, ok := validateCreateMealRequest("user-1", tomorrowDate, now); !ok {
 		t.Fatal("expected meal_date == today+1d to be allowed")
+	}
+
+	maxFutureDate := baseReq()
+	maxFutureDate.MealDate = "2026-12-19"
+	if _, ok := validateCreateMealRequest("user-1", maxFutureDate, now); !ok {
+		t.Fatal("expected meal_date == today+30d to be allowed")
 	}
 }
 
@@ -593,9 +607,11 @@ func TestMealHandler_IDORProtectionAcrossAllEndpoints(t *testing.T) {
 	uidA := seedOnboardedMealsUser(store)
 	uidB := seedOnboardedMealsUser(store)
 
-	targetDate := "2026-11-18"
-	payload := `{
-		"meal_date": "2026-11-18",
+	nowWIB := time.Now().In(wibZone)
+	targetDate := nowWIB.Format(dateLayout)
+	fromDate := nowWIB.AddDate(0, 0, -6).Format(dateLayout)
+	payload := fmt.Sprintf(`{
+		"meal_date": %q,
 		"meal_time": "lunch",
 		"name": "Ayam Bakar User A",
 		"health_score": 82,
@@ -606,7 +622,7 @@ func TestMealHandler_IDORProtectionAcrossAllEndpoints(t *testing.T) {
 		"fiber_g": 6,
 		"price_idr": 18000,
 		"input_source": "budget"
-	}`
+	}`, targetDate)
 
 	respCreate := doMealReq(t, app, http.MethodPost, "/api/v1/meals", uidA, payload)
 	if respCreate.StatusCode != fiber.StatusCreated {
@@ -640,7 +656,7 @@ func TestMealHandler_IDORProtectionAcrossAllEndpoints(t *testing.T) {
 	}
 
 	// User B history must NOT contain User A's meal.
-	respHistB := doMealReq(t, app, http.MethodGet, "/api/v1/meals/history?from=2026-11-12&to=2026-11-18", uidB, "")
+	respHistB := doMealReq(t, app, http.MethodGet, fmt.Sprintf("/api/v1/meals/history?from=%s&to=%s", fromDate, targetDate), uidB, "")
 	if respHistB.StatusCode != fiber.StatusOK {
 		t.Fatalf("expected 200 for User B history, got %d", respHistB.StatusCode)
 	}

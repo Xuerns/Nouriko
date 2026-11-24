@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -79,11 +79,20 @@ function mealKey(messageId: string, meal: MealOption, idx: number): string {
   return `${messageId}:${idx}:${meal.name}`;
 }
 
-export default function ChatPage() {
+function ChatContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialPrompt = searchParams.get("prompt") ?? "";
+  const [prefillText] = useState(initialPrompt);
   const { token, isAuthenticated, isLoading, profile, handleUnauthorized } =
     useAuth();
   const { t, language } = useI18n();
+
+  useEffect(() => {
+    if (initialPrompt) {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, [initialPrompt]);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isSending, setIsSending] = useState(false);
@@ -285,10 +294,17 @@ export default function ChatPage() {
   }, [isSending]);
 
   const handleSaveMeal = useCallback(
-    async (key: string, meal: MealOption, mealTime?: MealTime) => {
+    async (
+      key: string,
+      meal: MealOption,
+      mealTime?: MealTime,
+      mealDate?: string
+    ) => {
       if (!token || savingMealsRef.current[key] || savedMealsRef.current[key]) {
         return;
       }
+
+      const targetDate = mealDate || getLocalDateString();
 
       savingMealsRef.current[key] = true;
       setSavingMeals((prev) => ({ ...prev, [key]: true }));
@@ -300,7 +316,7 @@ export default function ChatPage() {
 
       try {
         await apiClient.saveMeal(token, {
-          meal_date: getLocalDateString(),
+          meal_date: targetDate,
           ...(mealTime ? { meal_time: mealTime } : {}),
           name: meal.name,
           health_score: Math.max(
@@ -324,7 +340,8 @@ export default function ChatPage() {
         toast.success(t.chat.saveMealFeedback, {
           action: {
             label: t.chat.viewSummaryLink,
-            onClick: () => router.push("/summary"),
+            onClick: () =>
+              router.push(`/summary?date=${encodeURIComponent(targetDate)}`),
           },
         });
       } catch (err) {
@@ -525,8 +542,13 @@ export default function ChatPage() {
                             saved={Boolean(savedMeals[key])}
                             isSaving={Boolean(savingMeals[key])}
                             saveError={saveErrors[key] ?? null}
-                            onSave={(selectedMeal, mealTime) =>
-                              handleSaveMeal(key, selectedMeal, mealTime)
+                            onSave={(selectedMeal, mealTime, mealDate) =>
+                              handleSaveMeal(
+                                key,
+                                selectedMeal,
+                                mealTime,
+                                mealDate
+                              )
                             }
                           />
                         );
@@ -586,11 +608,26 @@ export default function ChatPage() {
         ) : null}
 
         <ChatComposer
+          prefillMessage={prefillText}
           onSend={handleSend}
           disabled={isSending}
           onPhotoError={(code) => setComposerErrorCode(code)}
         />
       </div>
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense
+      fallback={
+        <Card className="rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-none ring-0">
+          Loading...
+        </Card>
+      }
+    >
+      <ChatContent />
+    </Suspense>
   );
 }

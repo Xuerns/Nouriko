@@ -3,7 +3,13 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  MessageSquare,
+  RotateCcw,
+} from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useI18n } from "@/components/providers/I18nProvider";
 import { Alert } from "@/components/ui/Alert";
@@ -11,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { formatIDR, formatMacro } from "@/components/chat/format";
 import { getHealthBadgeClass } from "@/components/chat/MealResultCard";
 import { SavedMealItem } from "@/components/meals/SavedMealItem";
@@ -22,16 +29,20 @@ import {
   shiftDateString,
 } from "@/lib/date";
 import { getFriendlyErrorMessage } from "@/lib/errors";
-import type { DailySummaryResponse } from "@/lib/types";
+import type { DailySummaryResponse, MealTime } from "@/lib/types";
+
+const MEAL_TIME_ORDER: MealTime[] = ["breakfast", "lunch", "dinner", "snack"];
 
 function MacroProgressBar({
   label,
   percent,
   colorVar,
+  heightClass = "h-2.5",
 }: {
   label: string;
   percent: number;
   colorVar: string;
+  heightClass?: string;
 }) {
   const safePercent = Number.isFinite(percent)
     ? Math.max(0, Math.round(percent))
@@ -45,12 +56,33 @@ function MacroProgressBar({
       aria-valuenow={safePercent}
       aria-valuemin={0}
       aria-valuemax={100}
-      className="h-2.5 w-full overflow-hidden rounded-full bg-muted"
+      className={`${heightClass} w-full overflow-hidden rounded-full bg-muted`}
     >
       <div
         className="h-full rounded-full transition-all duration-200"
         style={{ width: `${fillWidth}%`, backgroundColor: colorVar }}
       />
+    </div>
+  );
+}
+
+function SummaryLoadingState({ label }: { label: string }) {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="grid grid-cols-1 gap-8 lg:grid-cols-12"
+    >
+      <div className="space-y-5 lg:col-span-5">
+        <div className="min-h-56 rounded-3xl border border-border bg-card p-6 flex items-center justify-center text-sm text-muted-foreground">
+          {label}
+        </div>
+        <div className="min-h-60 rounded-3xl border border-border bg-card p-6" />
+      </div>
+      <div className="space-y-4 lg:col-span-7">
+        <div className="min-h-40 rounded-3xl border border-border bg-card p-6" />
+        <div className="min-h-40 rounded-3xl border border-border bg-card p-6" />
+      </div>
     </div>
   );
 }
@@ -72,6 +104,7 @@ function SummaryContent() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deletingIds, setDeletingIds] = useState<Record<string, boolean>>({});
+  const [selectedSlot, setSelectedSlot] = useState<"all" | MealTime>("all");
 
   const currentKey = `${selectedDate}:${reloadNonce}`;
 
@@ -149,6 +182,7 @@ function SummaryContent() {
     if (!isValidDateString(nextDate)) return;
     setDeleteError(null);
     setFetchError(null);
+    setSelectedSlot("all");
     router.replace(`/summary?date=${encodeURIComponent(nextDate)}`, {
       scroll: false,
     });
@@ -189,17 +223,87 @@ function SummaryContent() {
     !profile ||
     !profile.onboarding_completed
   ) {
-    return (
-      <Card className="rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-none ring-0">
-        {t.common.loading}
-      </Card>
-    );
+    return <SummaryLoadingState label={t.common.loading} />;
   }
 
   const totals = summary?.totals;
   const targets = summary?.targets;
   const progress = summary?.progress_percent;
   const meals = summary?.meals ?? [];
+
+  const targetCalories = targets?.daily_calorie_target ?? 0;
+  const actualCalories = totals?.calories ?? 0;
+  const remainingCalories = targetCalories - actualCalories;
+  const remainingProtein = Math.max(
+    0,
+    Math.round((targets?.target_protein_g ?? 0) - (totals?.protein_g ?? 0))
+  );
+  const remainingFiber = Math.max(
+    0,
+    Math.round((targets?.target_fiber_g ?? 0) - (totals?.fiber_g ?? 0))
+  );
+
+  const missingMacroParts: string[] = [];
+  if (remainingProtein > 0) {
+    missingMacroParts.push(
+      `${remainingProtein} ${t.profile.gramUnit} ${t.profile.protein.toLowerCase()}`
+    );
+  }
+  if (remainingFiber > 0) {
+    missingMacroParts.push(
+      `${remainingFiber} ${t.profile.gramUnit} ${t.profile.fiber.toLowerCase()}`
+    );
+  }
+
+  const remainingPrompt =
+    remainingCalories > 0
+      ? language === "en"
+        ? `Recommend healthy meals for my remaining daily target: around ${remainingCalories} kcal${
+            missingMacroParts.length > 0
+              ? `, ${missingMacroParts.join(" and ")}`
+              : ""
+          }.`
+        : `Rekomendasikan menu bergizi untuk sisa target hari ini: sekitar ${remainingCalories} kkal${
+            missingMacroParts.length > 0
+              ? `, ${missingMacroParts.join(" dan ")}`
+              : ""
+          }.`
+      : language === "en"
+        ? "Suggest light, low-calorie healthy snack or meal options."
+        : "Rekomendasikan pilihan menu atau camilan sehat yang ringan dan rendah kalori.";
+
+  const remainingChatHref = `/chat?prompt=${encodeURIComponent(remainingPrompt)}`;
+
+  const slotSummaries = MEAL_TIME_ORDER.map((slot) => {
+    const slotMeals = meals.filter((m) => m.meal_time === slot);
+    const slotCalories = slotMeals.reduce(
+      (sum, m) => sum + Math.round(m.calories),
+      0
+    );
+    return {
+      slot,
+      label: t.meals.mealTimes[slot],
+      count: slotMeals.length,
+      calories: slotCalories,
+    };
+  });
+
+  const filteredMeals =
+    selectedSlot === "all"
+      ? meals
+      : meals.filter((m) => m.meal_time === selectedSlot);
+
+  const activeSlotLabel =
+    selectedSlot === "all" ? "" : t.meals.mealTimes[selectedSlot];
+
+  const activeSlotChatHref =
+    selectedSlot === "all"
+      ? "/chat"
+      : `/chat?prompt=${encodeURIComponent(
+          language === "en"
+            ? `Recommend healthy ${activeSlotLabel.toLowerCase()} meal ideas for today.`
+            : `Rekomendasikan ide menu ${activeSlotLabel.toLowerCase()} yang bergizi untuk hari ini.`
+        )}`;
 
   const dailyHealthLabelText =
     totals?.health_label &&
@@ -243,66 +347,63 @@ function SummaryContent() {
   ];
 
   return (
-    <div className="space-y-5">
-      <Card className="rounded-3xl border border-border bg-card p-5 shadow-none ring-0">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="space-y-1">
-            <h1 className="text-[22px] font-semibold tracking-[-0.015em] text-foreground sm:text-[26px]">
-              {t.summary.title}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {formatDisplayDate(selectedDate, language)}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => updateDate(shiftDateString(selectedDate, -1))}
-              aria-label={t.summary.prevDayLabel}
-              className="size-10 rounded-full shadow-none"
-            >
-              <ChevronLeft className="size-4 stroke-[1.75]" aria-hidden="true" />
-            </Button>
-
-            <Input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => {
-                if (e.target.value) {
-                  updateDate(e.target.value);
-                }
-              }}
-              aria-label={t.summary.dateInputLabel}
-              className="h-10 w-auto rounded-2xl bg-card px-3 text-xs tabular-nums shadow-none"
-            />
-
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => updateDate(shiftDateString(selectedDate, 1))}
-              aria-label={t.summary.nextDayLabel}
-              className="size-10 rounded-full shadow-none"
-            >
-              <ChevronRight className="size-4 stroke-[1.75]" aria-hidden="true" />
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={selectedDate === todayStr}
-              onClick={() => updateDate(todayStr)}
-              className="h-10 rounded-full px-4 text-xs shadow-none"
-            >
-              {t.summary.todayButton}
-            </Button>
-          </div>
+    <div className="space-y-8">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-[24px] font-semibold tracking-[-0.015em] text-foreground sm:text-[28px]">
+            {t.summary.title}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {formatDisplayDate(selectedDate, language)}
+          </p>
         </div>
-      </Card>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => updateDate(shiftDateString(selectedDate, -1))}
+            aria-label={t.summary.prevDayLabel}
+            className="size-11 rounded-full bg-card shadow-none"
+          >
+            <ChevronLeft className="size-4 stroke-[1.75]" aria-hidden="true" />
+          </Button>
+
+          <Input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => {
+              if (e.target.value) {
+                updateDate(e.target.value);
+              }
+            }}
+            aria-label={t.summary.dateInputLabel}
+            className="h-11 w-auto rounded-2xl bg-card px-3.5 text-sm tabular-nums shadow-none"
+          />
+
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => updateDate(shiftDateString(selectedDate, 1))}
+            aria-label={t.summary.nextDayLabel}
+            className="size-11 rounded-full bg-card shadow-none"
+          >
+            <ChevronRight className="size-4 stroke-[1.75]" aria-hidden="true" />
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            disabled={selectedDate === todayStr}
+            onClick={() => updateDate(todayStr)}
+            className="h-11 rounded-full bg-card px-4 text-xs font-medium shadow-none"
+          >
+            {t.summary.todayButton}
+          </Button>
+        </div>
+      </header>
 
       {fetchError ? (
         <div className="space-y-3">
@@ -310,160 +411,325 @@ function SummaryContent() {
           <Button
             type="button"
             variant="outline"
-            size="sm"
             onClick={triggerReload}
-            className="h-10 rounded-full px-4 text-xs shadow-none"
+            className="h-11 rounded-full px-5 text-xs font-medium shadow-none"
           >
-            <RotateCcw className="size-3.5 stroke-[1.75]" aria-hidden="true" />
+            <RotateCcw className="size-4 stroke-[1.75]" aria-hidden="true" />
             <span>{t.summary.retryButton}</span>
           </Button>
         </div>
       ) : isFetching && !summary ? (
-        <Card className="rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-none ring-0">
-          {t.common.loading}
-        </Card>
+        <SummaryLoadingState label={t.common.loading} />
       ) : (
-        <>
-          <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Card className="rounded-3xl border border-border bg-card p-5 shadow-none ring-0 gap-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-                {t.summary.caloriesHeading}
-              </p>
-              <div className="flex items-baseline justify-between gap-2">
-                <p className="text-xl font-semibold tabular-nums text-foreground">
-                  {totals?.calories ?? 0} {t.profile.kcalUnit}
-                </p>
-                <span className="text-xs font-semibold tabular-nums text-[var(--brand-primary)]">
-                  {progress?.calories ?? 0}%
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {t.summary.ofTarget}{" "}
-                <span className="font-medium tabular-nums text-foreground">
-                  {targets?.daily_calorie_target ?? 0} {t.profile.kcalUnit}
-                </span>
-              </p>
-              <MacroProgressBar
-                label={t.summary.caloriesHeading}
-                percent={progress?.calories ?? 0}
-                colorVar="var(--macro-calories)"
-              />
-            </Card>
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
+          <div className="space-y-5 lg:sticky lg:top-24 lg:col-span-5">
+            <Card className="rounded-3xl border border-border bg-card p-6 shadow-none ring-0 gap-5">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="text-sm font-medium text-muted-foreground">
+                    {t.summary.caloriesHeading}
+                  </h2>
+                  <span className="rounded-full bg-[var(--brand-tint)] px-3 py-1 text-xs font-semibold tabular-nums text-[var(--brand-primary)]">
+                    {progress?.calories ?? 0}%
+                  </span>
+                </div>
 
-            <Card className="rounded-3xl border border-border bg-card p-5 shadow-none ring-0 gap-2.5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-                {t.summary.spendingHeading}
-              </p>
-              <p className="text-xl font-semibold tabular-nums text-[var(--brand-accent)]">
-                {formatIDR(totals?.total_spending_idr ?? 0)}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {(totals?.meal_count ?? 0) > 0
-                  ? `${totals?.meal_count ?? 0} ${t.meals.mealCountUnit}`
-                  : t.summary.noMealsCount}
-              </p>
-            </Card>
-
-            <Card className="rounded-3xl border border-border bg-card p-5 shadow-none ring-0 gap-2.5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-                {t.summary.healthScoreHeading}
-              </p>
-              {(totals?.meal_count ?? 0) > 0 && totals?.health_label ? (
-                <div className="space-y-2">
-                  <p className="text-xl font-semibold tabular-nums text-foreground">
-                    {totals.average_health_score}/100
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <p className="text-3xl font-semibold tracking-[-0.02em] tabular-nums text-foreground">
+                    {actualCalories}
                   </p>
-                  <Badge
-                    className={`h-6 rounded-full border-0 px-3 text-xs font-semibold ${getHealthBadgeClass(totals.health_label)}`}
+                  <span className="text-sm text-muted-foreground">
+                    {t.profile.kcalUnit} {t.summary.ofTarget}{" "}
+                    <span className="font-medium tabular-nums text-foreground">
+                      {targetCalories} {t.profile.kcalUnit}
+                    </span>
+                  </span>
+                </div>
+
+                <MacroProgressBar
+                  label={t.summary.caloriesHeading}
+                  percent={progress?.calories ?? 0}
+                  colorVar="var(--macro-calories)"
+                  heightClass="h-3"
+                />
+
+                {targetCalories > 0 ? (
+                  <div className="space-y-3 pt-1">
+                    {remainingCalories > 0 ? (
+                      <p className="text-xs leading-relaxed text-muted-foreground">
+                        {t.summary.remainingLabel}{" "}
+                        <span className="font-semibold tabular-nums text-foreground">
+                          {remainingCalories} {t.profile.kcalUnit}
+                        </span>
+                        {missingMacroParts.length > 0 ? (
+                          <>
+                            {" · "}
+                            {t.summary.shortOnLabel}{" "}
+                            <span className="font-medium tabular-nums text-foreground">
+                              {missingMacroParts.join(" & ")}
+                            </span>
+                          </>
+                        ) : null}
+                      </p>
+                    ) : remainingCalories < 0 ? (
+                      <p className="text-xs font-medium tabular-nums text-[var(--score-fair-text)]">
+                        {t.summary.overTargetLabel} +
+                        {Math.abs(remainingCalories)} {t.profile.kcalUnit}
+                      </p>
+                    ) : (
+                      <p className="text-xs font-medium text-[var(--score-good-text)]">
+                        {t.summary.targetMetLabel}
+                      </p>
+                    )}
+
+                    <Button
+                      render={<Link href={remainingChatHref} />}
+                      variant="secondary"
+                      className="h-11 w-full rounded-full bg-[var(--brand-tint)] px-4 text-xs font-semibold text-[var(--brand-primary)] hover:bg-[var(--brand-tint)]/80 shadow-none"
+                    >
+                      <MessageSquare
+                        className="size-4 shrink-0 stroke-[1.75]"
+                        aria-hidden="true"
+                      />
+                      <span>
+                        {remainingCalories > 0
+                          ? t.summary.findMealsForRemainingButton
+                          : t.summary.askLightMealButton}
+                      </span>
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+
+              <Separator className="bg-border" />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    {t.summary.spendingHeading}
+                  </p>
+                  <p className="text-lg font-semibold tabular-nums text-[var(--brand-accent)]">
+                    {formatIDR(totals?.total_spending_idr ?? 0)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {(totals?.meal_count ?? 0) > 0
+                      ? `${totals?.meal_count ?? 0} ${t.meals.mealCountUnit}`
+                      : t.summary.noMealsCount}
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    {t.summary.healthScoreHeading}
+                  </p>
+                  {(totals?.meal_count ?? 0) > 0 && totals?.health_label ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-lg font-semibold tabular-nums text-foreground">
+                        {totals.average_health_score}/100
+                      </p>
+                      <Badge
+                        className={`h-6 rounded-full border-0 px-2.5 text-xs font-semibold ${getHealthBadgeClass(totals.health_label)}`}
+                      >
+                        {dailyHealthLabelText}
+                      </Badge>
+                    </div>
+                  ) : (
+                    <p className="text-lg font-semibold tabular-nums text-muted-foreground">
+                      -
+                    </p>
+                  )}
+                </div>
+              </div>
+            </Card>
+
+            <Card className="rounded-3xl border border-border bg-card p-6 shadow-none ring-0 gap-4">
+              <h2 className="text-base font-semibold text-foreground">
+                {t.summary.macrosHeading}
+              </h2>
+
+              <div className="space-y-4">
+                {macroRows.map((macro) => (
+                  <div key={macro.key} className="space-y-1.5">
+                    <div className="flex items-baseline justify-between gap-3 text-sm">
+                      <span className="font-medium text-foreground">
+                        {macro.label}
+                      </span>
+                      <div className="flex items-baseline gap-2 tabular-nums">
+                        <span className="text-sm font-semibold text-foreground">
+                          {formatMacro(macro.actual)}{" "}
+                          <span className="font-normal text-muted-foreground">
+                            / {formatMacro(macro.target)} {t.profile.gramUnit}
+                          </span>
+                        </span>
+                        <span className="min-w-9 text-right text-xs text-muted-foreground">
+                          {macro.percent}%
+                        </span>
+                      </div>
+                    </div>
+                    <MacroProgressBar
+                      label={macro.label}
+                      percent={macro.percent}
+                      colorVar={macro.colorVar}
+                    />
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+
+          <section className="lg:col-span-7">
+            <Card className="flex flex-col gap-5 rounded-3xl border border-border bg-card p-6 shadow-none ring-0">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-baseline gap-2.5">
+                  <h2 className="text-base font-semibold text-foreground">
+                    {t.summary.savedMealsHeading}
+                  </h2>
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    {filteredMeals.length} {t.meals.mealCountUnit}
+                  </span>
+                </div>
+
+                {selectedSlot !== "all" ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedSlot("all")}
+                    className="h-9 rounded-full px-3.5 text-xs shadow-none"
                   >
-                    {dailyHealthLabelText}
-                  </Badge>
+                    {t.summary.allMealTimesFilter}
+                  </Button>
+                ) : null}
+              </div>
+
+              <div
+                role="group"
+                aria-label={t.chat.mealTimeSelectLabel}
+                className="grid grid-cols-2 gap-2.5 sm:grid-cols-4"
+              >
+                {slotSummaries.map((item) => {
+                  const isActive = selectedSlot === item.slot;
+                  const isFilled = item.count > 0;
+                  return (
+                    <button
+                      key={item.slot}
+                      type="button"
+                      aria-pressed={isActive}
+                      onClick={() =>
+                        setSelectedSlot((prev) =>
+                          prev === item.slot ? "all" : item.slot
+                        )
+                      }
+                      className={`flex min-h-16 flex-col justify-between gap-1 rounded-2xl border p-3 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2 ${
+                        isActive
+                          ? "border-[var(--brand-primary)] bg-[var(--brand-tint)]"
+                          : isFilled
+                            ? "border-border bg-background hover:bg-accent"
+                            : "border-dashed border-border bg-background/50 hover:bg-accent"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <span
+                          className={`truncate text-xs font-medium ${
+                            isActive
+                              ? "text-[var(--brand-primary)]"
+                              : "text-foreground"
+                          }`}
+                        >
+                          {item.label}
+                        </span>
+                        {isFilled ? (
+                          <Check
+                            className="size-3.5 shrink-0 stroke-[2] text-[var(--brand-primary)]"
+                            aria-hidden="true"
+                          />
+                        ) : null}
+                      </div>
+
+                      {isFilled ? (
+                        <p className="text-xs font-semibold tabular-nums text-foreground">
+                          {item.calories}{" "}
+                          <span className="font-normal text-muted-foreground">
+                            {t.profile.kcalUnit}
+                          </span>
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          {t.summary.slotEmptyLabel}
+                        </p>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <Separator className="bg-border" />
+
+              {deleteError ? <Alert variant="error">{deleteError}</Alert> : null}
+
+              {meals.length === 0 ? (
+                <div className="space-y-3 py-2">
+                  <p className="text-base font-semibold text-foreground">
+                    {t.summary.emptyTitle}
+                  </p>
+                  <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
+                    {t.summary.emptyDescription}
+                  </p>
+                  <div className="pt-2">
+                    <Button
+                      render={<Link href="/chat" />}
+                      className="h-11 rounded-full px-6 text-sm font-medium shadow-none"
+                    >
+                      {t.summary.goToChatButton}
+                    </Button>
+                  </div>
+                </div>
+              ) : filteredMeals.length === 0 ? (
+                <div className="space-y-3 py-2">
+                  <p className="text-sm font-medium text-foreground">
+                    {t.summary.slotEmptyListMessage.replace(
+                      "{slot}",
+                      activeSlotLabel
+                    )}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <Button
+                      render={<Link href={activeSlotChatHref} />}
+                      size="sm"
+                      className="h-11 rounded-full px-5 text-xs font-medium shadow-none"
+                    >
+                      {t.summary.slotFindMealButton.replace(
+                        "{slot}",
+                        activeSlotLabel
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedSlot("all")}
+                      className="h-11 rounded-full px-5 text-xs font-medium shadow-none"
+                    >
+                      {t.summary.allMealTimesFilter}
+                    </Button>
+                  </div>
                 </div>
               ) : (
-                <p className="text-xl font-semibold tabular-nums text-muted-foreground">
-                  -
-                </p>
+                <div className="flex flex-col gap-3.5">
+                  {filteredMeals.map((meal) => (
+                    <SavedMealItem
+                      key={meal.id}
+                      meal={meal}
+                      surface="canvas"
+                      onDelete={handleDeleteMeal}
+                      isDeleting={Boolean(deletingIds[meal.id])}
+                    />
+                  ))}
+                </div>
               )}
             </Card>
           </section>
-
-          <Card className="rounded-3xl border border-border bg-card p-5 shadow-none ring-0 gap-4">
-            <h2 className="text-base font-semibold text-foreground">
-              {t.summary.macrosHeading}
-            </h2>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {macroRows.map((macro) => (
-                <div
-                  key={macro.key}
-                  className="rounded-2xl bg-muted p-3.5 space-y-2"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      {macro.label}
-                    </p>
-                    <span className="text-xs font-semibold tabular-nums text-foreground">
-                      {macro.percent}%
-                    </span>
-                  </div>
-                  <p className="text-sm font-semibold tabular-nums text-foreground">
-                    {formatMacro(macro.actual)} / {formatMacro(macro.target)}{" "}
-                    {t.profile.gramUnit}
-                  </p>
-                  <MacroProgressBar
-                    label={macro.label}
-                    percent={macro.percent}
-                    colorVar={macro.colorVar}
-                  />
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <section className="space-y-3">
-            <div className="flex items-center justify-between gap-2 px-1">
-              <h2 className="text-base font-semibold text-foreground">
-                {t.summary.savedMealsHeading}
-              </h2>
-              <span className="text-xs tabular-nums text-muted-foreground">
-                {meals.length} {t.meals.mealCountUnit}
-              </span>
-            </div>
-
-            {deleteError ? <Alert variant="error">{deleteError}</Alert> : null}
-
-            {meals.length === 0 ? (
-              <Card className="rounded-3xl border border-border bg-card p-6 shadow-none ring-0 gap-3">
-                <p className="text-sm font-semibold text-foreground">
-                  {t.summary.emptyTitle}
-                </p>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  {t.summary.emptyDescription}
-                </p>
-                <div className="pt-1">
-                  <Button
-                    render={<Link href="/chat" />}
-                    size="sm"
-                    className="h-10 rounded-full px-5 text-xs shadow-none"
-                  >
-                    {t.summary.goToChatButton}
-                  </Button>
-                </div>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {meals.map((meal) => (
-                  <SavedMealItem
-                    key={meal.id}
-                    meal={meal}
-                    onDelete={handleDeleteMeal}
-                    isDeleting={Boolean(deletingIds[meal.id])}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-        </>
+        </div>
       )}
     </div>
   );
@@ -471,13 +737,7 @@ function SummaryContent() {
 
 export default function SummaryPage() {
   return (
-    <Suspense
-      fallback={
-        <Card className="rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-none ring-0">
-          Loading...
-        </Card>
-      }
-    >
+    <Suspense fallback={<SummaryLoadingState label="Loading..." />}>
       <SummaryContent />
     </Suspense>
   );

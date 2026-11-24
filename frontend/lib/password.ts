@@ -16,6 +16,7 @@ const COMMON_PASSWORDS = new Set([
   "letmein1",
   "welcome1",
   "abc12345",
+
 ]);
 
 export function evaluatePasswordStrength(password: string): PasswordStrength {

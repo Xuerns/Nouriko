@@ -21,6 +21,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -29,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { getLocalDateString, shiftDateString } from "@/lib/date";
 import type {
   HealthLabel,
   InputSource,
@@ -38,7 +40,11 @@ import type {
 
 interface MealResultCardProps {
   meal: MealOption;
-  onSave?: (meal: MealOption, mealTime?: MealTime) => void | Promise<void>;
+  onSave?: (
+    meal: MealOption,
+    mealTime?: MealTime,
+    mealDate?: string
+  ) => void | Promise<void>;
   saved?: boolean;
   isSaving?: boolean;
   saveError?: string | null;
@@ -77,6 +83,9 @@ export function MealResultCard({
   const [selectedMealTime, setSelectedMealTime] = useState<"auto" | MealTime>(
     "auto"
   );
+  const todayStr = getLocalDateString();
+  const maxDateStr = shiftDateString(todayStr, 30);
+  const [selectedMealDate, setSelectedMealDate] = useState<string>(todayStr);
 
   const hasMissing =
     Array.isArray(meal.missing_ingredients) &&
@@ -243,42 +252,65 @@ export function MealResultCard({
       <Separator className="bg-border" />
 
       <div className="space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">
-              {t.chat.mealTimeSelectLabel}
-            </span>
-            <Select
-              value={selectedMealTime}
-              disabled={saved || isSaving}
-              onValueChange={(val) =>
-                setSelectedMealTime((val ?? "auto") as "auto" | MealTime)
-              }
-            >
-              <SelectTrigger
-                aria-label={t.chat.mealTimeSelectLabel}
-                className="h-9 min-w-32 rounded-full border-border bg-card px-3 text-xs shadow-none"
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                {t.chat.mealDateSelectLabel}
+              </span>
+              <Input
+                type="date"
+                min={todayStr}
+                max={maxDateStr}
+                value={selectedMealDate}
+                disabled={saved || isSaving}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  if (next && next >= todayStr && next <= maxDateStr) {
+                    setSelectedMealDate(next);
+                  }
+                }}
+                aria-label={t.chat.mealDateSelectLabel}
+                className="h-9 w-auto rounded-full border-border bg-card px-3 text-xs tabular-nums shadow-none"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                {t.chat.mealTimeSelectLabel}
+              </span>
+              <Select
+                value={selectedMealTime}
+                disabled={saved || isSaving}
+                onValueChange={(val) =>
+                  setSelectedMealTime((val ?? "auto") as "auto" | MealTime)
+                }
               >
-                <SelectValue>{mealTimeLabels[selectedMealTime]}</SelectValue>
-              </SelectTrigger>
-              <SelectContent className="rounded-2xl border border-border bg-card shadow-none ring-0">
-                <SelectItem value="auto" className="rounded-xl text-xs">
-                  {t.meals.mealTimeAuto}
-                </SelectItem>
-                <SelectItem value="breakfast" className="rounded-xl text-xs">
-                  {t.meals.mealTimes.breakfast}
-                </SelectItem>
-                <SelectItem value="lunch" className="rounded-xl text-xs">
-                  {t.meals.mealTimes.lunch}
-                </SelectItem>
-                <SelectItem value="dinner" className="rounded-xl text-xs">
-                  {t.meals.mealTimes.dinner}
-                </SelectItem>
-                <SelectItem value="snack" className="rounded-xl text-xs">
-                  {t.meals.mealTimes.snack}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+                <SelectTrigger
+                  aria-label={t.chat.mealTimeSelectLabel}
+                  className="h-9 min-w-28 rounded-full border-border bg-card px-3 text-xs shadow-none"
+                >
+                  <SelectValue>{mealTimeLabels[selectedMealTime]}</SelectValue>
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border border-border bg-card shadow-none ring-0">
+                  <SelectItem value="auto" className="rounded-xl text-xs">
+                    {t.meals.mealTimeAuto}
+                  </SelectItem>
+                  <SelectItem value="breakfast" className="rounded-xl text-xs">
+                    {t.meals.mealTimes.breakfast}
+                  </SelectItem>
+                  <SelectItem value="lunch" className="rounded-xl text-xs">
+                    {t.meals.mealTimes.lunch}
+                  </SelectItem>
+                  <SelectItem value="dinner" className="rounded-xl text-xs">
+                    {t.meals.mealTimes.dinner}
+                  </SelectItem>
+                  <SelectItem value="snack" className="rounded-xl text-xs">
+                    {t.meals.mealTimes.snack}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <Button
@@ -288,7 +320,8 @@ export function MealResultCard({
             onClick={() =>
               void onSave?.(
                 meal,
-                selectedMealTime === "auto" ? undefined : selectedMealTime
+                selectedMealTime === "auto" ? undefined : selectedMealTime,
+                selectedMealDate
               )
             }
             aria-pressed={saved}
