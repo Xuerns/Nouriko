@@ -14,7 +14,6 @@ import {
   ImagePlus,
   Loader2,
   ShoppingBasket,
-  Slash,
   Utensils,
   Wallet,
   X,
@@ -341,7 +340,17 @@ export function ChatComposer({
         models={[]}
         showCommandsButton
         commandsButtonIcon={
-          <Slash className="size-3.5 shrink-0 stroke-[1.75]" aria-hidden="true" />
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            className="size-3.5 shrink-0"
+            aria-hidden="true"
+          >
+            <path d="M9.75 2.5 6.25 13.5" />
+          </svg>
         }
         labels={labels}
         onAttach={handleSourceAttach}

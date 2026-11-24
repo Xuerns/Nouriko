@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { BarChart3, History, MessageSquare } from "lucide-react";
 import { AccountMenu } from "@/components/layout/AccountMenu";
 import { BrandLogo } from "@/components/layout/BrandLogo";
+import { NourikoMark } from "@/components/layout/NourikoMark";
 import { useI18n } from "@/components/providers/I18nProvider";
 
 interface AppShellProps {
@@ -73,7 +74,7 @@ export function AppShell({ children }: AppShellProps) {
 
       {isChatRoute ? (
         <main
-          className={`mx-auto flex w-full ${maxWidthClass} flex-1 min-h-0 flex-col px-4 pt-4 pb-20 sm:px-6 md:py-5`}
+          className={`mx-auto flex w-full ${maxWidthClass} flex-1 min-h-0 flex-col px-4 pt-4 pb-22 sm:px-6 md:py-5`}
         >
           {children}
         </main>
@@ -87,33 +88,99 @@ export function AppShell({ children }: AppShellProps) {
 
       <nav
         aria-label="Primary mobile"
-        className="md:hidden fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background pb-[env(safe-area-inset-bottom)]"
+        className="md:hidden fixed inset-x-0 bottom-0 z-30"
       >
-        <ul className="grid grid-cols-3 px-2 py-1.5">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  aria-current={isActive ? "page" : undefined}
-                  className={`flex min-h-11 flex-col items-center justify-center gap-1 rounded-full py-1.5 text-[11px] transition-colors duration-150 ${
-                    isActive
-                      ? "bg-[var(--brand-tint)] font-semibold text-[var(--brand-primary)]"
-                      : "font-medium text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Icon
-                    className="size-4 shrink-0 stroke-[1.75]"
-                    aria-hidden="true"
-                  />
-                  <span>{item.label}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="relative h-14 w-full">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 flex items-stretch"
+          >
+            <div className="-mr-px h-full flex-1 border-t border-border bg-card" />
+            <svg
+              width="104"
+              height="56"
+              viewBox="0 0 104 56"
+              fill="none"
+              className="relative z-10 h-14 w-[104px] shrink-0"
+            >
+              <path
+                d="M 0 0.5 L 4 0.5 C 20 0.5 26 34 52 34 C 78 34 84 0.5 100 0.5 L 104 0.5 L 104 56 L 0 56 Z"
+                className="fill-card"
+              />
+              <path
+                d="M 0 0.5 L 4 0.5 C 20 0.5 26 34 52 34 C 78 34 84 0.5 100 0.5 L 104 0.5"
+                className="stroke-border"
+                strokeWidth="1"
+              />
+            </svg>
+            <div className="-ml-px h-full flex-1 border-t border-border bg-card" />
+          </div>
+
+          <ul className="relative z-20 grid h-full grid-cols-[1fr_104px_1fr] items-center">
+            <li className="flex h-full items-center justify-center">
+              <Link
+                href="/summary"
+                aria-current={pathname === "/summary" ? "page" : undefined}
+                className={`flex min-h-11 min-w-16 flex-col items-center justify-center gap-0.5 rounded-full px-3 py-1 text-[11px] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2 ${
+                  pathname === "/summary"
+                    ? "font-semibold text-[var(--brand-primary)]"
+                    : "font-medium text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <BarChart3
+                  className="size-4 shrink-0 stroke-[1.75]"
+                  aria-hidden="true"
+                />
+                <span>{t.nav.summary}</span>
+              </Link>
+            </li>
+
+            <li className="relative flex h-full flex-col items-center justify-end pb-2">
+              <Link
+                href="/chat"
+                aria-label={t.nav.chat}
+                title={t.nav.chat}
+                aria-current={pathname === "/chat" ? "page" : undefined}
+                className="absolute -top-5 left-1/2 flex size-12 -translate-x-1/2 items-center justify-center rounded-full bg-[var(--brand-primary)] text-[var(--brand-primary-text)] transition-colors duration-150 hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                <NourikoMark
+                  className="size-7 shrink-0"
+                  aria-hidden="true"
+                />
+              </Link>
+              <span
+                aria-hidden="true"
+                className={`size-1.5 rounded-full transition-opacity duration-150 ${
+                  pathname === "/chat"
+                    ? "bg-[var(--brand-primary)] opacity-100"
+                    : "bg-transparent opacity-0"
+                }`}
+              />
+            </li>
+
+            <li className="flex h-full items-center justify-center">
+              <Link
+                href="/history"
+                aria-current={pathname === "/history" ? "page" : undefined}
+                className={`flex min-h-11 min-w-16 flex-col items-center justify-center gap-0.5 rounded-full px-3 py-1 text-[11px] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2 ${
+                  pathname === "/history"
+                    ? "font-semibold text-[var(--brand-primary)]"
+                    : "font-medium text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <History
+                  className="size-4 shrink-0 stroke-[1.75]"
+                  aria-hidden="true"
+                />
+                <span>{t.nav.history}</span>
+              </Link>
+            </li>
+          </ul>
+        </div>
+        <div
+          aria-hidden="true"
+          className="h-[env(safe-area-inset-bottom)] w-full bg-card"
+        />
       </nav>
     </div>
   );

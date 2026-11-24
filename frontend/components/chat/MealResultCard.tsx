@@ -288,24 +288,43 @@ export function MealResultCard({
               >
                 <SelectTrigger
                   aria-label={t.chat.mealTimeSelectLabel}
-                  className="h-9 min-w-28 rounded-full border-border bg-card px-3 text-xs shadow-none"
+                  className="h-9 min-w-28 rounded-full border-border bg-card px-3 text-xs shadow-none data-[size=default]:h-9"
                 >
                   <SelectValue>{mealTimeLabels[selectedMealTime]}</SelectValue>
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border border-border bg-card shadow-none ring-0">
-                  <SelectItem value="auto" className="rounded-xl text-xs">
+                <SelectContent
+                  alignItemWithTrigger={false}
+                  sideOffset={6}
+                  className="rounded-[12px] border border-border bg-card p-1 shadow-none ring-0"
+                >
+                  <SelectItem
+                    value="auto"
+                    className="rounded-[8px] py-1.5 pl-2.5 pr-8 text-xs"
+                  >
                     {t.meals.mealTimeAuto}
                   </SelectItem>
-                  <SelectItem value="breakfast" className="rounded-xl text-xs">
+                  <SelectItem
+                    value="breakfast"
+                    className="rounded-[8px] py-1.5 pl-2.5 pr-8 text-xs"
+                  >
                     {t.meals.mealTimes.breakfast}
                   </SelectItem>
-                  <SelectItem value="lunch" className="rounded-xl text-xs">
+                  <SelectItem
+                    value="lunch"
+                    className="rounded-[8px] py-1.5 pl-2.5 pr-8 text-xs"
+                  >
                     {t.meals.mealTimes.lunch}
                   </SelectItem>
-                  <SelectItem value="dinner" className="rounded-xl text-xs">
+                  <SelectItem
+                    value="dinner"
+                    className="rounded-[8px] py-1.5 pl-2.5 pr-8 text-xs"
+                  >
                     {t.meals.mealTimes.dinner}
                   </SelectItem>
-                  <SelectItem value="snack" className="rounded-xl text-xs">
+                  <SelectItem
+                    value="snack"
+                    className="rounded-[8px] py-1.5 pl-2.5 pr-8 text-xs"
+                  >
                     {t.meals.mealTimes.snack}
                   </SelectItem>
                 </SelectContent>

@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { OnboardingPageSkeleton } from "@/components/ui/PageSkeletons";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { apiClient, ApiError } from "@/lib/api";
@@ -203,11 +204,7 @@ export default function OnboardingPage() {
   }
 
   if (isLoading || !isAuthenticated || profile?.onboarding_completed) {
-    return (
-      <Card className="mx-auto w-full max-w-5xl rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-none ring-0">
-        {t.common.loading}
-      </Card>
-    );
+    return <OnboardingPageSkeleton label={t.common.loading} />;
   }
 
   const genderOptions: { value: Gender; label: string }[] = [
@@ -365,7 +362,7 @@ export default function OnboardingPage() {
                         <RadioGroupItem
                           id={`onboarding-gender-${opt.value}`}
                           value={opt.value}
-                          className="sr-only"
+                          className="sr-only absolute inset-0 size-0 border-0 p-0 after:hidden"
                         />
                         {selected ? (
                           <Check
@@ -552,7 +549,7 @@ export default function OnboardingPage() {
                       <RadioGroupItem
                         id={`onboarding-activity-${opt.value}`}
                         value={opt.value}
-                        className="sr-only"
+                        className="sr-only absolute inset-0 size-0 border-0 p-0 after:hidden"
                       />
                       <span className="flex items-center justify-between gap-2">
                         <ActivityLevelBars level={opt.bars} active={selected} />

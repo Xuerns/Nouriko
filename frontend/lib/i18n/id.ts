@@ -538,6 +538,18 @@ export const idDictionary: Dictionary = {
     assistantLabel: "Nouriko",
     analyzingText: "Sedang menyusun rekomendasi nutrisi...",
     analyzingPhotoText: "Sedang menganalisis foto dan menghitung perkiraan nutrisi...",
+    thinkingSteps: [
+      "Memahami kebutuhan dan preferensimu...",
+      "Menghitung perkiraan kalori dan makro...",
+      "Menyesuaikan pilihan menu dengan target harianmu...",
+      "Menyusun rekomendasi dan estimasi harga...",
+    ],
+    photoThinkingSteps: [
+      "Mengenali makanan dan bahan dari fotomu...",
+      "Memperkirakan porsi dan kandungan gizinya...",
+      "Menghitung skor kesehatan dan rincian makro...",
+      "Menyusun ringkasan analisis nutrisi...",
+    ],
     retryButton: "Coba lagi",
     photoAttachedFallback: "Foto dilampirkan",
     estimatedTag: "Estimasi",
@@ -658,6 +670,8 @@ export const idDictionary: Dictionary = {
     title: "Halaman Tidak Ditemukan",
     description:
       "Halaman yang kamu tuju tidak tersedia atau tautannya sudah berubah.",
+    goBack: "Kembali",
     backHome: "Kembali ke Beranda",
+    backToChat: "Buka Chat",
   },
 };

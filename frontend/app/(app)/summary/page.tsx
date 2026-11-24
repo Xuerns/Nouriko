@@ -4,18 +4,30 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  Beef,
   Check,
   ChevronLeft,
   ChevronRight,
-  MessageSquare,
+  Cookie,
+  Droplet,
+  Flame,
+  HeartPulse,
+  Leaf,
+  Moon,
   RotateCcw,
+  Sun,
+  Sunrise,
+  Wallet,
+  Wheat,
 } from "lucide-react";
+import { NourikoMark } from "@/components/layout/NourikoMark";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useI18n } from "@/components/providers/I18nProvider";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { SummaryPageSkeleton } from "@/components/ui/PageSkeletons";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { formatIDR, formatMacro } from "@/components/chat/format";
@@ -32,6 +44,13 @@ import { getFriendlyErrorMessage } from "@/lib/errors";
 import type { DailySummaryResponse, MealTime } from "@/lib/types";
 
 const MEAL_TIME_ORDER: MealTime[] = ["breakfast", "lunch", "dinner", "snack"];
+
+const MEAL_TIME_ICONS = {
+  breakfast: Sunrise,
+  lunch: Sun,
+  dinner: Moon,
+  snack: Cookie,
+} as const;
 
 function MacroProgressBar({
   label,
@@ -67,24 +86,7 @@ function MacroProgressBar({
 }
 
 function SummaryLoadingState({ label }: { label: string }) {
-  return (
-    <div
-      role="status"
-      aria-live="polite"
-      className="grid grid-cols-1 gap-8 lg:grid-cols-12"
-    >
-      <div className="space-y-5 lg:col-span-5">
-        <div className="min-h-56 rounded-3xl border border-border bg-card p-6 flex items-center justify-center text-sm text-muted-foreground">
-          {label}
-        </div>
-        <div className="min-h-60 rounded-3xl border border-border bg-card p-6" />
-      </div>
-      <div className="space-y-4 lg:col-span-7">
-        <div className="min-h-40 rounded-3xl border border-border bg-card p-6" />
-        <div className="min-h-40 rounded-3xl border border-border bg-card p-6" />
-      </div>
-    </div>
-  );
+  return <SummaryPageSkeleton label={label} />;
 }
 
 function SummaryContent() {
@@ -319,6 +321,7 @@ function SummaryContent() {
       target: targets?.target_protein_g ?? 0,
       percent: progress?.protein_g ?? 0,
       colorVar: "var(--macro-protein)",
+      icon: Beef,
     },
     {
       key: "carbs",
@@ -327,6 +330,7 @@ function SummaryContent() {
       target: targets?.target_carbs_g ?? 0,
       percent: progress?.carbs_g ?? 0,
       colorVar: "var(--macro-carbs)",
+      icon: Wheat,
     },
     {
       key: "fat",
@@ -335,6 +339,7 @@ function SummaryContent() {
       target: targets?.target_fat_g ?? 0,
       percent: progress?.fat_g ?? 0,
       colorVar: "var(--macro-fat)",
+      icon: Droplet,
     },
     {
       key: "fiber",
@@ -343,6 +348,7 @@ function SummaryContent() {
       target: targets?.target_fiber_g ?? 0,
       percent: progress?.fiber_g ?? 0,
       colorVar: "var(--macro-fiber)",
+      icon: Leaf,
     },
   ];
 
@@ -426,9 +432,15 @@ function SummaryContent() {
             <Card className="rounded-3xl border border-border bg-card p-6 shadow-none ring-0 gap-5">
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-2">
-                  <h2 className="text-sm font-medium text-muted-foreground">
-                    {t.summary.caloriesHeading}
-                  </h2>
+                  <div className="flex items-center gap-1.5">
+                    <Flame
+                      className="size-4 shrink-0 stroke-[1.75] text-[var(--macro-calories)]"
+                      aria-hidden="true"
+                    />
+                    <h2 className="text-sm font-medium text-muted-foreground">
+                      {t.summary.caloriesHeading}
+                    </h2>
+                  </div>
                   <span className="rounded-full bg-[var(--brand-tint)] px-3 py-1 text-xs font-semibold tabular-nums text-[var(--brand-primary)]">
                     {progress?.calories ?? 0}%
                   </span>
@@ -485,10 +497,10 @@ function SummaryContent() {
                     <Button
                       render={<Link href={remainingChatHref} />}
                       variant="secondary"
-                      className="h-11 w-full rounded-full bg-[var(--brand-tint)] px-4 text-xs font-semibold text-[var(--brand-primary)] hover:bg-[var(--brand-tint)]/80 shadow-none"
+                      className="h-11 w-full gap-2 rounded-full bg-[var(--brand-tint)] px-4 text-xs font-semibold text-[var(--brand-primary)] hover:bg-[var(--brand-tint)]/80 shadow-none"
                     >
-                      <MessageSquare
-                        className="size-4 shrink-0 stroke-[1.75]"
+                      <NourikoMark
+                        className="size-6 shrink-0"
                         aria-hidden="true"
                       />
                       <span>
@@ -505,8 +517,12 @@ function SummaryContent() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground">
-                    {t.summary.spendingHeading}
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <Wallet
+                      className="size-3.5 shrink-0 stroke-[1.75] text-[var(--brand-accent)]"
+                      aria-hidden="true"
+                    />
+                    <span>{t.summary.spendingHeading}</span>
                   </p>
                   <p className="text-lg font-semibold tabular-nums text-[var(--brand-accent)]">
                     {formatIDR(totals?.total_spending_idr ?? 0)}
@@ -519,8 +535,12 @@ function SummaryContent() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <p className="text-xs font-medium text-muted-foreground">
-                    {t.summary.healthScoreHeading}
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <HeartPulse
+                      className="size-3.5 shrink-0 stroke-[1.75] text-[var(--brand-primary)]"
+                      aria-hidden="true"
+                    />
+                    <span>{t.summary.healthScoreHeading}</span>
                   </p>
                   {(totals?.meal_count ?? 0) > 0 && totals?.health_label ? (
                     <div className="flex flex-wrap items-center gap-2">
@@ -548,31 +568,39 @@ function SummaryContent() {
               </h2>
 
               <div className="space-y-4">
-                {macroRows.map((macro) => (
-                  <div key={macro.key} className="space-y-1.5">
-                    <div className="flex items-baseline justify-between gap-3 text-sm">
-                      <span className="font-medium text-foreground">
-                        {macro.label}
-                      </span>
-                      <div className="flex items-baseline gap-2 tabular-nums">
-                        <span className="text-sm font-semibold text-foreground">
-                          {formatMacro(macro.actual)}{" "}
-                          <span className="font-normal text-muted-foreground">
-                            / {formatMacro(macro.target)} {t.profile.gramUnit}
+                {macroRows.map((macro) => {
+                  const Icon = macro.icon;
+                  return (
+                    <div key={macro.key} className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <span className="flex items-center gap-1.5 font-medium text-foreground">
+                          <Icon
+                            className="size-4 shrink-0 stroke-[1.75]"
+                            style={{ color: macro.colorVar }}
+                            aria-hidden="true"
+                          />
+                          <span>{macro.label}</span>
+                        </span>
+                        <div className="flex items-baseline gap-2 tabular-nums">
+                          <span className="text-sm font-semibold text-foreground">
+                            {formatMacro(macro.actual)}{" "}
+                            <span className="font-normal text-muted-foreground">
+                              / {formatMacro(macro.target)} {t.profile.gramUnit}
+                            </span>
                           </span>
-                        </span>
-                        <span className="min-w-9 text-right text-xs text-muted-foreground">
-                          {macro.percent}%
-                        </span>
+                          <span className="min-w-9 text-right text-xs text-muted-foreground">
+                            {macro.percent}%
+                          </span>
+                        </div>
                       </div>
+                      <MacroProgressBar
+                        label={macro.label}
+                        percent={macro.percent}
+                        colorVar={macro.colorVar}
+                      />
                     </div>
-                    <MacroProgressBar
-                      label={macro.label}
-                      percent={macro.percent}
-                      colorVar={macro.colorVar}
-                    />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </Card>
           </div>
@@ -610,6 +638,7 @@ function SummaryContent() {
                 {slotSummaries.map((item) => {
                   const isActive = selectedSlot === item.slot;
                   const isFilled = item.count > 0;
+                  const SlotIcon = MEAL_TIME_ICONS[item.slot];
                   return (
                     <button
                       key={item.slot}
@@ -630,13 +659,21 @@ function SummaryContent() {
                     >
                       <div className="flex items-center justify-between gap-1">
                         <span
-                          className={`truncate text-xs font-medium ${
+                          className={`flex min-w-0 items-center gap-1.5 text-xs font-medium ${
                             isActive
                               ? "text-[var(--brand-primary)]"
                               : "text-foreground"
                           }`}
                         >
-                          {item.label}
+                          <SlotIcon
+                            className={`size-3.5 shrink-0 stroke-[1.75] ${
+                              isActive
+                                ? "text-[var(--brand-primary)]"
+                                : "text-muted-foreground"
+                            }`}
+                            aria-hidden="true"
+                          />
+                          <span className="truncate">{item.label}</span>
                         </span>
                         {isFilled ? (
                           <Check

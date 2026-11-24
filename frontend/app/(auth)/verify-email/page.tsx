@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AuthCardSkeleton } from "@/components/ui/PageSkeletons";
 import { apiClient, ApiError } from "@/lib/api";
 import { getFriendlyErrorMessage } from "@/lib/errors";
 
@@ -125,13 +126,7 @@ function VerifyEmailContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense
-      fallback={
-        <Card className="mx-auto w-full max-w-md rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-none ring-0">
-          ...
-        </Card>
-      }
-    >
+    <Suspense fallback={<AuthCardSkeleton />}>
       <VerifyEmailContent />
     </Suspense>
   );

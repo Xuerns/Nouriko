@@ -5,11 +5,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
+  Beef,
+  Droplet,
+  Flame,
   KeyRound,
+  Leaf,
   RotateCcw,
   Shield,
   SlidersHorizontal,
   Trash2,
+  Wheat,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -37,6 +42,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ProfilePageSkeleton } from "@/components/ui/PageSkeletons";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
@@ -138,7 +144,7 @@ function ActivityLevelBars({ level }: { level: 1 | 2 | 3 }) {
   return (
     <svg
       viewBox="0 0 16 14"
-      className="size-4 shrink-0"
+      className="size-3.5 shrink-0"
       aria-hidden="true"
       fill="currentColor"
     >
@@ -264,11 +270,7 @@ export default function ProfilePage() {
     !profile ||
     !profile.onboarding_completed
   ) {
-    return (
-      <Card className="rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-none ring-0">
-        {t.common.loading}
-      </Card>
-    );
+    return <ProfilePageSkeleton label={t.common.loading} />;
   }
 
   const baseForm = profileToFormState(profile);
@@ -498,26 +500,31 @@ export default function ProfilePage() {
       label: t.profile.dailyCalories,
       value: `${profile.daily_calorie_target ?? "-"} ${t.profile.kcalUnit}`,
       accent: "text-[var(--macro-calories)]",
+      icon: Flame,
     },
     {
       label: t.profile.protein,
       value: `${profile.target_protein_g ?? "-"} ${t.profile.gramUnit}`,
       accent: "text-[var(--macro-protein)]",
+      icon: Beef,
     },
     {
       label: t.profile.carbs,
       value: `${profile.target_carbs_g ?? "-"} ${t.profile.gramUnit}`,
       accent: "text-[var(--macro-carbs)]",
+      icon: Wheat,
     },
     {
       label: t.profile.fat,
       value: `${profile.target_fat_g ?? "-"} ${t.profile.gramUnit}`,
       accent: "text-[var(--macro-fat)]",
+      icon: Droplet,
     },
     {
       label: t.profile.fiber,
       value: `${profile.target_fiber_g ?? "-"} ${t.profile.gramUnit}`,
       accent: "text-[var(--macro-fiber)]",
+      icon: Leaf,
     },
   ];
 
@@ -587,16 +594,32 @@ export default function ProfilePage() {
           </div>
 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-            {targetCards.map((item) => (
-              <div key={item.label} className="rounded-2xl bg-muted px-3 py-2.5">
-                <p className={`text-[11px] font-medium ${item.accent}`}>
-                  {item.label}
-                </p>
-                <p className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">
-                  {item.value}
-                </p>
-              </div>
-            ))}
+            {targetCards.map((item, index) => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={item.label}
+                  className={`rounded-2xl bg-muted px-3 py-2.5 ${
+                    index === 0 ? "col-span-2 sm:col-span-1" : ""
+                  }`}
+                >
+                  <div
+                    className={`flex items-center justify-between gap-1.5 ${item.accent}`}
+                  >
+                    <p className="truncate text-[11px] font-medium">
+                      {item.label}
+                    </p>
+                    <Icon
+                      className="size-3.5 shrink-0 stroke-[1.75]"
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <p className="mt-1 text-sm font-semibold tabular-nums text-foreground">
+                    {item.value}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -604,11 +627,11 @@ export default function ProfilePage() {
       <Tabs defaultValue="body" className="gap-4">
         <TabsList
           aria-label={t.profile.tabsAriaLabel}
-          className="no-scrollbar flex h-auto w-full flex-nowrap justify-start gap-1.5 overflow-x-auto rounded-full border border-border bg-card p-1 sm:w-fit"
+          className="no-scrollbar flex h-auto w-full flex-nowrap justify-start gap-1.5 overflow-x-auto overflow-y-hidden rounded-full border border-border bg-card p-1 group-data-horizontal/tabs:h-auto sm:w-fit"
         >
           <TabsTrigger
             value="body"
-            className="h-9 flex-none rounded-full border border-transparent px-4 text-xs font-medium text-muted-foreground shadow-none data-active:border-[var(--brand-primary)]/30 data-active:bg-[var(--brand-tint)] data-active:text-[var(--brand-primary)] data-active:shadow-none dark:data-active:border-[var(--brand-primary)]/30 dark:data-active:bg-[var(--brand-tint)] dark:data-active:text-[var(--brand-primary)]"
+            className="h-9 flex-none rounded-full border border-transparent px-4 text-xs font-medium text-muted-foreground shadow-none after:hidden data-active:border-[var(--brand-primary)]/30 data-active:bg-[var(--brand-tint)] data-active:text-[var(--brand-primary)] data-active:shadow-none dark:data-active:border-[var(--brand-primary)]/30 dark:data-active:bg-[var(--brand-tint)] dark:data-active:text-[var(--brand-primary)]"
           >
             <SlidersHorizontal
               className="size-3.5 stroke-[1.75]"
@@ -618,14 +641,14 @@ export default function ProfilePage() {
           </TabsTrigger>
           <TabsTrigger
             value="security"
-            className="h-9 flex-none rounded-full border border-transparent px-4 text-xs font-medium text-muted-foreground shadow-none data-active:border-[var(--brand-primary)]/30 data-active:bg-[var(--brand-tint)] data-active:text-[var(--brand-primary)] data-active:shadow-none dark:data-active:border-[var(--brand-primary)]/30 dark:data-active:bg-[var(--brand-tint)] dark:data-active:text-[var(--brand-primary)]"
+            className="h-9 flex-none rounded-full border border-transparent px-4 text-xs font-medium text-muted-foreground shadow-none after:hidden data-active:border-[var(--brand-primary)]/30 data-active:bg-[var(--brand-tint)] data-active:text-[var(--brand-primary)] data-active:shadow-none dark:data-active:border-[var(--brand-primary)]/30 dark:data-active:bg-[var(--brand-tint)] dark:data-active:text-[var(--brand-primary)]"
           >
             <KeyRound className="size-3.5 stroke-[1.75]" aria-hidden="true" />
             <span>{t.profile.tabSecurity}</span>
           </TabsTrigger>
           <TabsTrigger
             value="account"
-            className="h-9 flex-none rounded-full border border-transparent px-4 text-xs font-medium text-muted-foreground shadow-none data-active:border-[var(--brand-primary)]/30 data-active:bg-[var(--brand-tint)] data-active:text-[var(--brand-primary)] data-active:shadow-none dark:data-active:border-[var(--brand-primary)]/30 dark:data-active:bg-[var(--brand-tint)] dark:data-active:text-[var(--brand-primary)]"
+            className="h-9 flex-none rounded-full border border-transparent px-4 text-xs font-medium text-muted-foreground shadow-none after:hidden data-active:border-[var(--brand-primary)]/30 data-active:bg-[var(--brand-tint)] data-active:text-[var(--brand-primary)] data-active:shadow-none dark:data-active:border-[var(--brand-primary)]/30 dark:data-active:bg-[var(--brand-tint)] dark:data-active:text-[var(--brand-primary)]"
           >
             <Shield className="size-3.5 stroke-[1.75]" aria-hidden="true" />
             <span>{t.profile.tabAccount}</span>
@@ -695,15 +718,25 @@ export default function ProfilePage() {
                     >
                       <SelectTrigger
                         id="profile-gender"
-                        className="h-10 w-full rounded-2xl border-border bg-card px-3 text-sm shadow-none"
+                        className="h-10 w-full rounded-2xl border-border bg-card px-3 text-sm shadow-none data-[size=default]:h-10"
                       >
                         <SelectValue>{genderLabels[form.gender]}</SelectValue>
                       </SelectTrigger>
-                      <SelectContent className="rounded-2xl border border-border bg-card shadow-none ring-0">
-                        <SelectItem value="male" className="rounded-xl">
+                      <SelectContent
+                        alignItemWithTrigger={false}
+                        sideOffset={6}
+                        className="rounded-[12px] border border-border bg-card p-1 shadow-none ring-0"
+                      >
+                        <SelectItem
+                          value="male"
+                          className="rounded-[8px] py-2 pl-2.5 pr-8"
+                        >
                           {t.onboarding.genderMale}
                         </SelectItem>
-                        <SelectItem value="female" className="rounded-xl">
+                        <SelectItem
+                          value="female"
+                          className="rounded-[8px] py-2 pl-2.5 pr-8"
+                        >
                           {t.onboarding.genderFemale}
                         </SelectItem>
                       </SelectContent>
@@ -749,7 +782,7 @@ export default function ProfilePage() {
                     onValueChange={(val) =>
                       updateField("activityLevel", val as ActivityLevel)
                     }
-                    className="grid grid-cols-1 gap-2 sm:grid-cols-3"
+                    className="grid grid-cols-3 gap-1.5 sm:gap-2"
                   >
                     {activityOptions.map((opt) => {
                       const selected = form.activityLevel === opt.value;
@@ -757,25 +790,25 @@ export default function ProfilePage() {
                         <Label
                           key={opt.value}
                           htmlFor={`profile-activity-${opt.value}`}
-                          className={`flex min-h-11 cursor-pointer flex-col items-start justify-start gap-1 rounded-2xl border px-3.5 py-3 transition-colors duration-150 ${
+                          className={`relative flex min-h-10 cursor-pointer flex-col items-start justify-center gap-0.5 rounded-[12px] border px-2.5 py-2 transition-colors duration-150 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--brand-primary)] sm:justify-start sm:px-3 sm:py-2 ${
                             selected
-                              ? "border-[var(--brand-primary)] bg-[var(--brand-tint)] text-[var(--brand-primary)]"
+                              ? "border-[var(--brand-primary)]/40 bg-[var(--brand-tint)] text-[var(--brand-primary)]"
                               : "border-border bg-card text-foreground hover:bg-accent"
                           }`}
                         >
                           <RadioGroupItem
                             id={`profile-activity-${opt.value}`}
                             value={opt.value}
-                            className="sr-only"
+                            className="sr-only absolute inset-0 size-0 border-0 p-0 after:hidden"
                           />
-                          <div className="flex w-full items-center justify-between gap-2">
-                            <span className="text-xs font-semibold">
+                          <div className="flex w-full items-center justify-between gap-1.5">
+                            <span className="truncate text-xs font-semibold">
                               {opt.label}
                             </span>
                             <ActivityLevelBars level={opt.level} />
                           </div>
                           <span
-                            className={`text-[11px] font-normal leading-snug ${
+                            className={`hidden text-[11px] font-normal leading-tight sm:block ${
                               selected
                                 ? "text-[var(--brand-primary)]/85"
                                 : "text-muted-foreground"
@@ -787,6 +820,16 @@ export default function ProfilePage() {
                       );
                     })}
                   </RadioGroup>
+                  {(() => {
+                    const activeHint = activityOptions.find(
+                      (opt) => opt.value === form.activityLevel
+                    )?.hint;
+                    return activeHint ? (
+                      <p className="px-0.5 text-[11px] leading-snug text-muted-foreground sm:hidden">
+                        {activeHint}
+                      </p>
+                    ) : null;
+                  })()}
                 </div>
 
                 <Separator className="bg-border" />

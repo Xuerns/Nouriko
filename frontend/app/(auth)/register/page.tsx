@@ -16,6 +16,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AuthSplitSkeleton } from "@/components/ui/PageSkeletons";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { apiClient, ApiError } from "@/lib/api";
 import { getFriendlyErrorMessage } from "@/lib/errors";
@@ -69,11 +70,7 @@ export default function RegisterPage() {
   }
 
   if (isLoading || isAuthenticated) {
-    return (
-      <div className="mx-auto w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center text-sm text-muted-foreground shadow-none">
-        {t.common.loading}
-      </div>
-    );
+    return <AuthSplitSkeleton label={t.common.loading} />;
   }
 
   if (registered) {

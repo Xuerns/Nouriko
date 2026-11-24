@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AuthSplitSkeleton } from "@/components/ui/PageSkeletons";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { ApiError } from "@/lib/api";
 import { getFriendlyErrorMessage } from "@/lib/errors";
@@ -56,11 +57,7 @@ function LoginContent() {
   }
 
   if (isLoading || isAuthenticated) {
-    return (
-      <div className="mx-auto w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center text-sm text-muted-foreground shadow-none">
-        {t.common.loading}
-      </div>
-    );
+    return <AuthSplitSkeleton label={t.common.loading} />;
   }
 
   return (
@@ -220,13 +217,7 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="mx-auto w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center text-sm text-muted-foreground shadow-none">
-          ...
-        </div>
-      }
-    >
+    <Suspense fallback={<AuthSplitSkeleton />}>
       <LoginContent />
     </Suspense>
   );

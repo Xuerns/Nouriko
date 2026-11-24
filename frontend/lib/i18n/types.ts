@@ -350,6 +350,8 @@ export interface Dictionary {
     assistantLabel: string;
     analyzingText: string;
     analyzingPhotoText: string;
+    thinkingSteps: string[];
+    photoThinkingSteps: string[];
     retryButton: string;
     photoAttachedFallback: string;
     estimatedTag: string;
@@ -465,6 +467,8 @@ export interface Dictionary {
   notFound: {
     title: string;
     description: string;
+    goBack: string;
     backHome: string;
+    backToChat: string;
   };
 }
