@@ -211,8 +211,13 @@ export interface Dictionary {
   };
   profile: {
     title: string;
+    subtitle: string;
     summaryHeading: string;
     avatarAlt: string;
+    tabBodyTargets: string;
+    tabSecurity: string;
+    tabAccount: string;
+    tabsAriaLabel: string;
     dailyCalories: string;
     protein: string;
     carbs: string;
@@ -220,9 +225,21 @@ export interface Dictionary {
     fiber: string;
     kcalUnit: string;
     gramUnit: string;
+    cmUnit: string;
+    kgUnit: string;
+    ageUnit: string;
+    heightShortLabel: string;
+    weightShortLabel: string;
+    ageShortLabel: string;
     editProfileHeading: string;
+    editProfileDescription: string;
+    activityLightHint: string;
+    activityModerateHint: string;
+    activityHeavyHint: string;
     macroTargetsHeading: string;
     recalcNote: string;
+    saveProfileHint: string;
+    resetChangesButton: string;
     saveProfileButton: string;
     profileSaved: string;
     changePasswordHeading: string;
@@ -264,12 +281,30 @@ export interface Dictionary {
       label: string;
       prompt: string;
     }[];
+    timeAwareExamples: {
+      breakfast: { label: string; prompt: string };
+      lunch: { label: string; prompt: string };
+      afternoon: { label: string; prompt: string };
+      dinner: { label: string; prompt: string };
+      lateNight: { label: string; prompt: string };
+    };
     photoMenuLabel: string;
     takePhotoLabel: string;
+    takePhotoDescription: string;
     attachPhotoLabel: string;
     removePhotoLabel: string;
     photoHint: string;
     processingPhoto: string;
+    stopButton: string;
+    promptTemplatesLabel: string;
+    promptTemplatesAriaLabel: string;
+    promptNoMatches: string;
+    promptCommands: {
+      key: string;
+      name: string;
+      description: string;
+      insertText: string;
+    }[];
     cameraDialogTitle: string;
     cameraCaptureButton: string;
     cameraSwitchButton: string;

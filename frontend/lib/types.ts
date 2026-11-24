@@ -137,6 +137,7 @@ export interface AnalyzeChatParams {
   photo?: File | null;
   language: Language;
   conversationContext?: ConversationTurn[];
+  signal?: AbortSignal;
 }
 
 export interface ChatMessage {

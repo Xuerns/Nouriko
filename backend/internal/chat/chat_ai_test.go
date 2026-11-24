@@ -569,3 +569,15 @@ func TestSecurityRegression_LLMCannotSpoofFoodAPIMacroSource(t *testing.T) {
 		t.Fatal("is_macro_estimated must not be exposed in Gemini ResponseJsonSchema")
 	}
 }
+
+func TestBuildSystemInstruction_CoversGeneralMealAndSnackRecommendations(t *testing.T) {
+	for _, lang := range []string{"id", "en"} {
+		instr := BuildSystemInstruction(lang)
+		if !strings.Contains(instr, "general meal, snack") {
+			t.Errorf("BuildSystemInstruction(%q) missing general meal/snack intent guidance", lang)
+		}
+		if !strings.Contains(instr, `NEVER classify meal, snack`) {
+			t.Errorf("BuildSystemInstruction(%q) missing anti-false-off-topic guard", lang)
+		}
+	}
+}

@@ -193,16 +193,16 @@ html {
   color-scheme: light;
   accent-color: var(--brand-primary);
   scrollbar-gutter: stable;
-  --scrollbar-thumb: #2f7d60;
-  --scrollbar-thumb-hover: #26674f;
-  --scrollbar-track: #ebe6dc;
+  --scrollbar-thumb: #c8c2b6;
+  --scrollbar-thumb-hover: #a8a296;
+  --scrollbar-track: var(--bg-canvas);
 }
 
 html.dark {
   color-scheme: dark;
-  --scrollbar-thumb: #5bb58e;
-  --scrollbar-thumb-hover: #6ec29e;
-  --scrollbar-track: #1e2320;
+  --scrollbar-thumb: #363e38;
+  --scrollbar-thumb-hover: #4c574f;
+  --scrollbar-track: var(--bg-canvas);
 }
 
 @media (prefers-contrast: more) {
@@ -233,8 +233,8 @@ html,
 
   html::-webkit-scrollbar,
   *::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
   }
 
   html::-webkit-scrollbar-thumb,
@@ -257,6 +257,18 @@ html,
   html::-webkit-scrollbar-corner,
   *::-webkit-scrollbar-corner {
     background: var(--scrollbar-track);
+  }
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+@supports not (scrollbar-width: none) {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
   }
 }
 

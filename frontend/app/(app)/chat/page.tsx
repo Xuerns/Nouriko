@@ -1,9 +1,15 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, RotateCcw } from "lucide-react";
+import {
+  Loader2,
+  RotateCcw,
+  SlidersHorizontal,
+  SquarePen,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useI18n } from "@/components/providers/I18nProvider";
@@ -106,6 +112,7 @@ function ChatContent() {
   const [hasRetryableSubmission, setHasRetryableSubmission] = useState(false);
 
   const lastSubmissionRef = useRef<PendingSubmission | null>(null);
+  const activeAbortRef = useRef<AbortController | null>(null);
   const messagesRef = useRef<ChatMessage[]>([]);
   const savingMealsRef = useRef<Record<string, boolean>>({});
   const savedMealsRef = useRef<Record<string, boolean>>({});
@@ -117,6 +124,8 @@ function ChatContent() {
 
   useEffect(() => {
     return () => {
+      activeAbortRef.current?.abort();
+      activeAbortRef.current = null;
       for (const msg of messagesRef.current) {
         if (msg.photoPreviewUrl) {
           URL.revokeObjectURL(msg.photoPreviewUrl);
@@ -150,6 +159,10 @@ function ChatContent() {
     ) => {
       if (!token) return;
 
+      activeAbortRef.current?.abort();
+      const abortController = new AbortController();
+      activeAbortRef.current = abortController;
+
       setIsSending(true);
       setSendingWithPhoto(Boolean(submission.photo));
       setComposerErrorCode(null);
@@ -160,6 +173,7 @@ function ChatContent() {
           photo: submission.photo,
           language,
           conversationContext: contextSnapshot,
+          signal: abortController.signal,
         });
 
         const assistantMsg: ChatMessage = {
@@ -178,6 +192,9 @@ function ChatContent() {
           return [...filtered, assistantMsg];
         });
       } catch (err) {
+        if (err instanceof ApiError && err.code === "REQUEST_ABORTED") {
+          return;
+        }
         if (handleUnauthorized(err)) {
           return;
         }
@@ -205,6 +222,9 @@ function ChatContent() {
           return [...filtered, errorMsg];
         });
       } finally {
+        if (activeAbortRef.current === abortController) {
+          activeAbortRef.current = null;
+        }
         setIsSending(false);
         setSendingWithPhoto(false);
       }
@@ -275,8 +295,16 @@ function ChatContent() {
     [executeAnalyze, isSending]
   );
 
+  const handleStop = useCallback(() => {
+    if (!activeAbortRef.current) return;
+    activeAbortRef.current.abort();
+    activeAbortRef.current = null;
+  }, []);
+
   const handleClearChat = useCallback(() => {
     if (isSending) return;
+    activeAbortRef.current?.abort();
+    activeAbortRef.current = null;
     for (const msg of messagesRef.current) {
       if (msg.photoPreviewUrl) {
         URL.revokeObjectURL(msg.photoPreviewUrl);
@@ -394,54 +422,60 @@ function ChatContent() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
-      <Card className="shrink-0 rounded-3xl border border-border bg-card p-4 shadow-none ring-0">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="space-y-0.5">
-            <h1 className="text-lg font-semibold tracking-[-0.01em] text-foreground">
-              {t.chat.title}
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              {t.chat.targetSummary}:{" "}
-              <span className="font-semibold tabular-nums text-[var(--brand-primary)]">
-                {profile.daily_calorie_target ?? "-"} {t.profile.kcalUnit}
-              </span>
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {messages.length > 0 ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={isSending}
-                onClick={handleClearChat}
-                className="h-9 rounded-full px-3.5 text-xs shadow-none"
-              >
-                {t.chat.clearChatButton}
-              </Button>
-            ) : null}
-
-            <Button
-              render={<Link href="/profile" />}
-              variant="outline"
-              size="sm"
-              className="h-9 rounded-full px-3.5 text-xs shadow-none"
-            >
-              {t.chat.editProfileLink}
-            </Button>
-          </div>
+      <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3.5">
+        <div className="min-w-0 space-y-0.5">
+          <h1 className="text-base font-semibold leading-tight tracking-[-0.01em] text-foreground">
+            {t.chat.title}
+          </h1>
+          <p className="text-xs leading-tight text-muted-foreground">
+            {t.chat.targetSummary}:{" "}
+            <span className="font-semibold tabular-nums text-[var(--brand-primary)]">
+              {profile.daily_calorie_target ?? "-"} {t.profile.kcalUnit}
+            </span>
+          </p>
         </div>
-      </Card>
+
+        <div className="flex items-center gap-2">
+          {messages.length > 0 ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={isSending}
+              onClick={handleClearChat}
+              className="h-9 rounded-full bg-[var(--brand-tint)] px-3.5 text-xs font-medium text-[var(--brand-primary)] shadow-none hover:bg-[var(--brand-tint)]/80"
+            >
+              <SquarePen
+                className="size-3.5 shrink-0 stroke-[1.75]"
+                aria-hidden="true"
+              />
+              <span>{t.chat.clearChatButton}</span>
+            </Button>
+          ) : null}
+
+          <Button
+            render={<Link href="/profile" />}
+            variant="outline"
+            size="sm"
+            className="h-9 rounded-full border-border bg-card px-3.5 text-xs font-medium text-muted-foreground shadow-none hover:bg-accent hover:text-foreground"
+          >
+            <SlidersHorizontal
+              className="size-3.5 shrink-0 stroke-[1.75]"
+              aria-hidden="true"
+            />
+            <span>{t.chat.editProfileLink}</span>
+          </Button>
+        </div>
+      </div>
 
       <section
         aria-label={t.chat.title}
-        className="min-h-0 flex-1 overflow-y-auto space-y-4 pr-1"
+        className="no-scrollbar min-h-0 flex-1 overflow-y-auto space-y-4"
       >
         {messages.length === 0 && !isSending ? (
           <EmptyChatState displayName={profile.display_name} />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-5">
             {messages.map((msg, msgIdx) => {
               if (msg.role === "user") {
                 return (
@@ -467,33 +501,45 @@ function ChatContent() {
 
               if (msg.errorCode) {
                 return (
-                  <Card
-                    key={msg.id}
-                    className="rounded-3xl rounded-bl-md border border-border bg-card p-4 shadow-none ring-0 gap-3"
-                  >
-                    <Alert variant="error">
-                      {getFriendlyErrorMessage(msg.errorCode, language)}
-                    </Alert>
-                    {hasRetryableSubmission &&
-                    msgIdx === messages.length - 1 ? (
-                      <div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={isSending}
-                          onClick={() => handleRetry(msg.id)}
-                          className="h-9 rounded-full px-4 text-xs shadow-none"
-                        >
-                          <RotateCcw
-                            className="size-3.5 shrink-0 stroke-[1.75]"
-                            aria-hidden="true"
-                          />
-                          <span>{t.chat.retryButton}</span>
-                        </Button>
-                      </div>
-                    ) : null}
-                  </Card>
+                  <div key={msg.id} className="space-y-2">
+                    <div className="flex items-center gap-2 px-1">
+                      <Image
+                        src="/logo.png"
+                        alt=""
+                        width={20}
+                        height={20}
+                        aria-hidden="true"
+                        className="size-5 shrink-0 object-contain"
+                      />
+                      <span className="text-xs font-semibold text-foreground">
+                        {t.chat.assistantLabel}
+                      </span>
+                    </div>
+                    <Card className="rounded-3xl rounded-bl-md border border-border bg-card p-4 shadow-none ring-0 gap-3">
+                      <Alert variant="error">
+                        {getFriendlyErrorMessage(msg.errorCode, language)}
+                      </Alert>
+                      {hasRetryableSubmission &&
+                      msgIdx === messages.length - 1 ? (
+                        <div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={isSending}
+                            onClick={() => handleRetry(msg.id)}
+                            className="h-9 rounded-full px-4 text-xs shadow-none"
+                          >
+                            <RotateCcw
+                              className="size-3.5 shrink-0 stroke-[1.75]"
+                              aria-hidden="true"
+                            />
+                            <span>{t.chat.retryButton}</span>
+                          </Button>
+                        </div>
+                      ) : null}
+                    </Card>
+                  </div>
                 );
               }
 
@@ -513,6 +559,20 @@ function ChatContent() {
 
               return (
                 <div key={msg.id} className="space-y-3">
+                  <div className="flex items-center gap-2 px-1">
+                    <Image
+                      src="/logo.png"
+                      alt=""
+                      width={20}
+                      height={20}
+                      aria-hidden="true"
+                      className="size-5 shrink-0 object-contain"
+                    />
+                    <span className="text-xs font-semibold text-foreground">
+                      {t.chat.assistantLabel}
+                    </span>
+                  </div>
+
                   {resp.intro ? (
                     <p className="px-1 text-[15px] leading-[1.6] text-foreground">
                       {resp.intro}
@@ -571,20 +631,35 @@ function ChatContent() {
             })}
 
             {isSending ? (
-              <div
-                role="status"
-                aria-live="polite"
-                className="flex items-center gap-2.5 rounded-3xl rounded-bl-md border border-border bg-card px-4 py-3.5 text-sm text-muted-foreground"
-              >
-                <Loader2
-                  className="size-4 shrink-0 animate-spin stroke-[1.75] text-[var(--brand-primary)]"
-                  aria-hidden="true"
-                />
-                <span>
-                  {sendingWithPhoto
-                    ? t.chat.analyzingPhotoText
-                    : t.chat.analyzingText}
-                </span>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 px-1">
+                  <Image
+                    src="/logo.png"
+                    alt=""
+                    width={20}
+                    height={20}
+                    aria-hidden="true"
+                    className="size-5 shrink-0 object-contain"
+                  />
+                  <span className="text-xs font-semibold text-foreground">
+                    {t.chat.assistantLabel}
+                  </span>
+                </div>
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="flex items-center gap-2.5 rounded-3xl rounded-bl-md border border-border bg-card px-4 py-3.5 text-sm text-muted-foreground"
+                >
+                  <Loader2
+                    className="size-4 shrink-0 animate-spin stroke-[1.75] text-[var(--brand-primary)]"
+                    aria-hidden="true"
+                  />
+                  <span>
+                    {sendingWithPhoto
+                      ? t.chat.analyzingPhotoText
+                      : t.chat.analyzingText}
+                  </span>
+                </div>
               </div>
             ) : null}
 
@@ -593,7 +668,7 @@ function ChatContent() {
         )}
       </section>
 
-      <div className="shrink-0 space-y-2.5">
+      <div className="shrink-0 min-w-0 space-y-2.5">
         {messages.length === 0 && !isSending ? (
           <PromptSuggestions
             onSelectPrompt={handlePromptSelect}
@@ -610,6 +685,7 @@ function ChatContent() {
         <ChatComposer
           prefillMessage={prefillText}
           onSend={handleSend}
+          onStop={handleStop}
           disabled={isSending}
           onPhotoError={(code) => setComposerErrorCode(code)}
         />
