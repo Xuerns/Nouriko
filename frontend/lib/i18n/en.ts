@@ -219,9 +219,14 @@ export const enDictionary: Dictionary = {
   },
   register: {
     title: "Create Account",
-    submitButton: "Sign up",
+    subtitle: "Fill in the details below to get started.",
+    heroTitle: "Join",
+    heroBrand: "Nouriko",
+    heroAccent: "Today!",
+    heroSubtitle: "Start your journey toward healthier, balanced meals.",
+    submitButton: "Create Account",
     hasAccount: "Already have an account?",
-    loginLink: "Sign in",
+    loginLink: "Sign in here",
     privacyPrefix: "By signing up, you can review how we handle data in our",
     successTitle: "Check Your Email",
     successMessage:
@@ -242,14 +247,34 @@ export const enDictionary: Dictionary = {
   },
   login: {
     title: "Sign in",
+    subtitle: "Welcome back to Nouriko!",
+    heroTitle: "Eat Healthy,",
+    heroAccent: "Live Better",
+    heroSubtitle:
+      "Find nutritious meal recommendations tailored to your daily needs.",
+    feature1: "Smart recommendations with AI",
+    feature2: "Track daily nutrition",
+    feature3: "Manage your menu easily",
+    rememberMe: "Remember me",
+    orDivider: "or",
+    socialGoogle: "Google",
+    socialGithub: "GitHub",
     submitButton: "Sign in",
     forgotPasswordLink: "Forgot password?",
     noAccount: "Do not have an account?",
-    registerLink: "Sign up",
+    registerLink: "Sign up now",
     sessionExpired: "Your session has ended. Please sign in again.",
   },
   forgotPassword: {
-    title: "Forgot Password",
+    title: "Reset Password",
+    subtitle: "We'll send a password reset link to your email.",
+    heroTitle: "Forgot Password?",
+    heroSubtitle:
+      "No worries! Enter your email and we'll send a link to reset your password.",
+    successTitle: "Reset Link Sent!",
+    successSubtitle:
+      "We have sent a link to reset your password to your email.",
+    backToLoginBtn: "Back to Sign in",
     submitButton: "Send Reset Link",
     successMessage:
       "If that email is registered, we have sent a link to reset your password.",

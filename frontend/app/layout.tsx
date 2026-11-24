@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { AppProviders } from "@/components/providers/AppProviders";
-import { cn } from "@/lib/utils";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -18,7 +17,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Nouriko",
   description:
-    "Asisten nutrisi harian berbasis AI untuk memilih makanan bergizi dari bahan yang ada, anggaran makan, atau foto makanan.",
+    "Daily nutrition assistant for meal recommendations based on ingredients, budget, and food photos.",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 const themeInitScript = `
@@ -40,11 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="id"
       suppressHydrationWarning
-      className={cn(
-        "h-full font-sans antialiased",
-        plusJakartaSans.variable,
-        geistMono.variable
-      )}
+      className={`${plusJakartaSans.variable} ${geistMono.variable} h-full antialiased font-sans`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
