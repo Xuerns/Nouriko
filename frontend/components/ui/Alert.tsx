@@ -23,7 +23,7 @@ export function Alert({ variant, children, className = "" }: AlertProps) {
       aria-live="polite"
       className={cn(
         "rounded-2xl border-0 px-4 py-3 text-sm leading-relaxed shadow-none transition-colors",
-        variantStyles,
+        variantClass,
         className
       )}
     >

@@ -14,7 +14,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/PasswordInput";
-import { Separator } from "@/components/ui/separator";
 import { ApiError } from "@/lib/api";
 import { getFriendlyErrorMessage } from "@/lib/errors";
 
@@ -60,7 +59,7 @@ function LoginContent() {
     return (
       <div className="mx-auto w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center text-sm text-muted-foreground shadow-none">
         {t.common.loading}
-      </Card>
+      </div>
     );
   }
 
@@ -215,7 +214,7 @@ function LoginContent() {
           </div>
         </Card>
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -225,7 +224,7 @@ export default function LoginPage() {
       fallback={
         <div className="mx-auto w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center text-sm text-muted-foreground shadow-none">
           ...
-        </Card>
+        </div>
       }
     >
       <LoginContent />

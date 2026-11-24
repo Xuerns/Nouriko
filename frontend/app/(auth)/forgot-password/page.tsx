@@ -175,6 +175,6 @@ export default function ForgotPasswordPage() {
           </div>
         </Card>
       </div>
-    </Card>
+    </div>
   );
 }

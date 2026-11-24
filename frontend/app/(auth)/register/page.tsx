@@ -17,7 +17,6 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/PasswordInput";
-import { Separator } from "@/components/ui/separator";
 import { apiClient, ApiError } from "@/lib/api";
 import { getFriendlyErrorMessage } from "@/lib/errors";
 import { cn } from "@/lib/utils";
@@ -73,7 +72,7 @@ export default function RegisterPage() {
     return (
       <div className="mx-auto w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center text-sm text-muted-foreground shadow-none">
         {t.common.loading}
-      </Card>
+      </div>
     );
   }
 
@@ -267,6 +266,6 @@ export default function RegisterPage() {
           </div>
         </Card>
       </div>
-    </Card>
+    </div>
   );
 }
