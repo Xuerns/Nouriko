@@ -225,6 +225,7 @@ export interface Dictionary {
     saveMealFeedback: string;
     viewSummaryLink: string;
     mealTimeSelectLabel: string;
+    mealDateSelectLabel: string;
     shoppingListHeading: string;
     shoppingItemCol: string;
     shoppingUnitCol: string;
@@ -278,6 +279,16 @@ export interface Dictionary {
     emptyDescription: string;
     goToChatButton: string;
     retryButton: string;
+    remainingLabel: string;
+    overTargetLabel: string;
+    targetMetLabel: string;
+    shortOnLabel: string;
+    findMealsForRemainingButton: string;
+    askLightMealButton: string;
+    allMealTimesFilter: string;
+    slotEmptyLabel: string;
+    slotEmptyListMessage: string;
+    slotFindMealButton: string;
   };
   history: {
     title: string;

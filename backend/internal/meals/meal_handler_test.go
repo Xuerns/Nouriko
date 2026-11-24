@@ -135,18 +135,31 @@ func TestValidateCreateMealRequest_NaNInfAndBounds(t *testing.T) {
 		t.Fatal("expected name > 200 runes to be rejected")
 	}
 
-	// Far future date (> todayWIB + 1 day)
-	futureDate := baseReq()
-	futureDate.MealDate = "2026-11-21"
-	if _, ok := validateCreateMealRequest("user-1", futureDate, now); ok {
-		t.Fatal("expected meal_date > today+1d to be rejected")
+	// Past date (< todayWIB) must be rejected
+	pastDate := baseReq()
+	pastDate.MealDate = "2026-11-18"
+	if _, ok := validateCreateMealRequest("user-1", pastDate, now); ok {
+		t.Fatal("expected meal_date < today to be rejected")
 	}
 
-	// Today + 1 day is allowed (ahead timezones)
+	// Far future date (> todayWIB + maxFutureMealDays)
+	futureDate := baseReq()
+	futureDate.MealDate = "2026-12-20"
+	if _, ok := validateCreateMealRequest("user-1", futureDate, now); ok {
+		t.Fatal("expected meal_date > today+30d to be rejected")
+	}
+
+	// Today + 1 day (tomorrow) and today + 30 days are allowed for meal planning
 	tomorrowDate := baseReq()
 	tomorrowDate.MealDate = "2026-11-20"
 	if _, ok := validateCreateMealRequest("user-1", tomorrowDate, now); !ok {
 		t.Fatal("expected meal_date == today+1d to be allowed")
+	}
+
+	maxFutureDate := baseReq()
+	maxFutureDate.MealDate = "2026-12-19"
+	if _, ok := validateCreateMealRequest("user-1", maxFutureDate, now); !ok {
+		t.Fatal("expected meal_date == today+30d to be allowed")
 	}
 }
 

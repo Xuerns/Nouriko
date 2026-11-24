@@ -30,19 +30,21 @@ interface ChatComposerProps {
   }) => void;
   disabled?: boolean;
   onPhotoError?: (code: string | null) => void;
+  prefillMessage?: string;
 }
 
 export function ChatComposer({
   onSend,
   disabled = false,
   onPhotoError,
+  prefillMessage = "",
 }: ChatComposerProps) {
   const { t } = useI18n();
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(prefillMessage);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const [isPreparingPhoto, setIsPreparingPhoto] = useState(false);

@@ -34,6 +34,7 @@ const (
 	defaultHistoryDays = 30
 	minHistoryDays     = 1
 	maxHistoryDays     = 90
+	maxFutureMealDays  = 30
 	historyFetchLimit  = 1000
 	dateLayout         = "2006-01-02"
 )
@@ -428,14 +429,14 @@ func validateCreateMealRequest(userID string, req *createMealRequest, now time.T
 	nowWIB := now.In(wibZone)
 	todayWIBStr := nowWIB.Format(dateLayout)
 	todayWIB, _ := parseStrictDate(todayWIBStr)
-	maxAllowedDate := todayWIB.AddDate(0, 0, 1)
+	maxAllowedDate := todayWIB.AddDate(0, 0, maxFutureMealDays)
 
 	mealDate := strings.TrimSpace(req.MealDate)
 	if mealDate == "" {
 		mealDate = todayWIBStr
 	} else {
 		parsedDate, valid := parseStrictDate(mealDate)
-		if !valid || parsedDate.Before(minMealDate) || parsedDate.After(maxAllowedDate) {
+		if !valid || parsedDate.Before(todayWIB) || parsedDate.After(maxAllowedDate) {
 			return CreateSavedMealParams{}, false
 		}
 	}
