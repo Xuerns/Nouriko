@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, EyeOff, Lock } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { useI18n } from "@/components/providers/I18nProvider";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { evaluatePasswordStrength } from "@/lib/password";
 import { cn } from "@/lib/utils";
@@ -83,9 +85,10 @@ export function PasswordInput({
           required={required}
           minLength={minLength}
           disabled={disabled}
+          placeholder={placeholder}
           className="h-10 rounded-2xl bg-card pr-10 pl-3.5 text-sm shadow-none [&::-ms-clear]:hidden [&::-ms-reveal]:hidden"
         />
-        <button
+        <Button
           type="button"
           variant="ghost"
           size="icon-sm"
@@ -97,9 +100,9 @@ export function PasswordInput({
           className="absolute top-1/2 right-1 size-8 -translate-y-1/2 rounded-full text-muted-foreground shadow-none hover:bg-accent hover:text-foreground"
         >
           {visible ? (
-            <EyeOff className="h-4 w-4" strokeWidth={1.75} />
+            <EyeOff className="size-4 stroke-[1.75]" aria-hidden="true" />
           ) : (
-            <Eye className="h-4 w-4" strokeWidth={1.75} />
+            <Eye className="size-4 stroke-[1.75]" aria-hidden="true" />
           )}
         </Button>
       </div>
@@ -116,18 +119,14 @@ export function PasswordInput({
                 key={segment}
                 className={cn(
                   "h-1.5 rounded-full transition-colors duration-150",
-                  segment <= filledSegments
-                    ? segmentColorClass
-                    : "bg-muted"
+                  segment <= filledSegments ? segmentColorClass : "bg-muted"
                 )}
               />
             ))}
           </div>
           <p className="text-[11px] text-muted-foreground">
             {t.common.passwordStrengthLabel}:{" "}
-            <span className="font-medium text-foreground">
-              {strengthText}
-            </span>
+            <span className="font-medium text-foreground">{strengthText}</span>
           </p>
         </div>
       ) : null}
