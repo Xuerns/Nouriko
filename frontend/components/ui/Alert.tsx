@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 interface AlertProps {
   variant: "error" | "success" | "info";
@@ -20,7 +21,11 @@ export function Alert({ variant, children, className = "" }: AlertProps) {
     <div
       role="alert"
       aria-live="polite"
-      className={`rounded-2xl shadow-none px-4 py-3 text-sm leading-relaxed ${variantClass} ${className}`}
+      className={cn(
+        "rounded-2xl border-0 px-4 py-3 text-sm leading-relaxed shadow-none transition-colors",
+        variantClass,
+        className
+      )}
     >
       {children}
     </div>
