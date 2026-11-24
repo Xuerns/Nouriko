@@ -6,6 +6,7 @@ import { BrandLogo } from "@/components/layout/BrandLogo";
 import { UtilityControls } from "@/components/layout/UtilityControls";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useI18n } from "@/components/providers/I18nProvider";
+import { Button } from "@/components/ui/button";
 
 export function PublicHeader() {
   const pathname = usePathname();
@@ -15,38 +16,42 @@ export function PublicHeader() {
   const appHref = profile?.onboarding_completed ? "/chat" : "/onboarding";
 
   return (
-    <header className="sticky top-0 z-30 w-full border-b border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950">
-      <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-3 px-4">
+    <header className="sticky top-0 z-30 w-full border-b border-border bg-background">
+      <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between gap-3 px-4 sm:px-6">
         <BrandLogo href="/" isCurrentPage={pathname === "/"} />
 
         <div className="flex items-center gap-2">
           <nav aria-label="Primary" className="flex items-center gap-2">
             {isLoading ? null : isAuthenticated ? (
-              <Link
-                href={appHref}
-                className="rounded-md bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white transition-colors duration-150 hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-950 dark:hover:bg-neutral-300"
+              <Button
+                render={<Link href={appHref} />}
+                size="sm"
+                className="h-9 rounded-full px-4 text-xs font-medium shadow-none"
               >
                 {t.nav.chat}
-              </Link>
+              </Button>
             ) : (
               <>
-                <Link
-                  href="/login"
-                  className="rounded-md border border-neutral-300 dark:border-neutral-700 px-2.5 py-1.5 text-xs font-medium text-neutral-800 dark:text-neutral-200 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900"
+                <Button
+                  render={<Link href="/login" />}
+                  variant="outline"
+                  size="sm"
+                  className="h-9 rounded-full px-4 text-xs font-medium shadow-none"
                 >
                   {t.nav.login}
-                </Link>
-                <Link
-                  href="/register"
-                  className="rounded-md bg-neutral-900 px-2.5 py-1.5 text-xs font-medium text-white transition-colors duration-150 hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-950 dark:hover:bg-neutral-300"
+                </Button>
+                <Button
+                  render={<Link href="/register" />}
+                  size="sm"
+                  className="h-9 rounded-full px-4 text-xs font-medium shadow-none"
                 >
                   {t.nav.register}
-                </Link>
+                </Button>
               </>
             )}
           </nav>
 
-          <div className="border-l border-neutral-300 dark:border-neutral-700 pl-2">
+          <div className="border-l border-border pl-2">
             <UtilityControls />
           </div>
         </div>

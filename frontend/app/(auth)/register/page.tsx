@@ -7,7 +7,12 @@ import { useAuth } from "@/components/providers/AuthProvider";
 import { useI18n } from "@/components/providers/I18nProvider";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/PasswordInput";
+import { Separator } from "@/components/ui/separator";
 import { apiClient, ApiError } from "@/lib/api";
 import { getFriendlyErrorMessage } from "@/lib/errors";
 
@@ -60,59 +65,65 @@ export default function RegisterPage() {
 
   if (isLoading || isAuthenticated) {
     return (
-      <div className="mx-auto max-w-md rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 text-sm text-neutral-600 dark:text-neutral-400">
+      <Card className="mx-auto w-full max-w-md rounded-3xl border border-border bg-card p-6 text-sm text-muted-foreground shadow-none ring-0">
         {t.common.loading}
-      </div>
+      </Card>
     );
   }
 
   if (registered) {
     return (
-      <div className="mx-auto max-w-md rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 space-y-5">
-        <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
+      <Card className="mx-auto w-full max-w-md rounded-3xl border border-border bg-card p-6 shadow-none ring-0 gap-5 sm:p-7">
+        <h1 className="text-[22px] font-semibold tracking-[-0.015em] text-foreground">
           {t.register.successTitle}
         </h1>
         <Alert variant="success">{t.register.successMessage}</Alert>
 
         {devToken ? (
-          <div className="rounded-md border border-neutral-300 dark:border-neutral-700 p-4 space-y-2 text-sm">
-            <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
+          <div className="rounded-2xl bg-muted p-4 space-y-2.5 text-sm">
+            <p className="text-xs font-medium text-muted-foreground">
               {t.register.devTokenLabel}
             </p>
-            <Link
-              href={`/verify-email?token=${encodeURIComponent(devToken)}`}
-              className="inline-block rounded-md bg-neutral-900 px-3.5 py-2 text-xs font-medium text-white transition-colors duration-150 hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-950 dark:hover:bg-neutral-200"
+            <Button
+              render={
+                <Link
+                  href={`/verify-email?token=${encodeURIComponent(devToken)}`}
+                />
+              }
+              size="sm"
+              className="h-10 rounded-full px-5 text-xs shadow-none"
             >
               {t.register.devVerifyLink}
-            </Link>
+            </Button>
           </div>
         ) : (
           <div>
-            <Link
-              href="/verify-email"
-              className="inline-block rounded-md border border-neutral-300 dark:border-neutral-700 px-4 py-2 text-sm font-medium text-neutral-900 dark:text-neutral-100 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900"
+            <Button
+              render={<Link href="/verify-email" />}
+              variant="outline"
+              className="h-10 rounded-full px-5 text-sm shadow-none"
             >
               {t.register.goToVerify}
-            </Link>
+            </Button>
           </div>
         )}
 
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="text-sm text-muted-foreground">
           {t.register.hasAccount}{" "}
           <Link
             href="/login"
-            className="font-medium text-neutral-900 dark:text-neutral-100 underline underline-offset-4"
+            className="font-medium text-foreground underline underline-offset-4 transition-colors duration-150 hover:text-primary"
           >
             {t.register.loginLink}
           </Link>
         </p>
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="mx-auto max-w-md rounded-lg border border-neutral-300 dark:border-neutral-700 p-6 space-y-6">
-      <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
+    <Card className="mx-auto w-full max-w-md rounded-3xl border border-border bg-card p-6 shadow-none ring-0 gap-6 sm:p-7">
+      <h1 className="text-[22px] font-semibold tracking-[-0.015em] text-foreground">
         {t.register.title}
       </h1>
 
@@ -120,13 +131,13 @@ export default function RegisterPage() {
 
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
         <div className="space-y-1.5">
-          <label
+          <Label
             htmlFor="register-email"
-            className="block text-sm font-medium text-neutral-900 dark:text-neutral-100"
+            className="text-sm font-medium text-foreground"
           >
             {t.common.emailLabel}
-          </label>
-          <input
+          </Label>
+          <Input
             id="register-email"
             name="email"
             type="email"
@@ -136,7 +147,7 @@ export default function RegisterPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder={t.common.emailPlaceholder}
-            className="w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-neutral-100 disabled:opacity-60"
+            className="h-11 rounded-2xl bg-card px-3.5 text-sm shadow-none"
           />
         </div>
 
@@ -164,21 +175,23 @@ export default function RegisterPage() {
           disabled={submitting}
         />
 
-        <button
+        <Button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-950 dark:hover:bg-neutral-200 disabled:opacity-60"
+          className="h-11 w-full rounded-full text-sm font-medium shadow-none"
         >
           {submitting ? t.common.submitting : t.register.submitButton}
-        </button>
+        </Button>
       </form>
 
-      <div className="space-y-2 border-t border-neutral-300 dark:border-neutral-700 pt-4 text-xs text-neutral-600 dark:text-neutral-400">
+      <Separator className="bg-border" />
+
+      <div className="space-y-2 text-xs text-muted-foreground">
         <p>
           {t.register.privacyPrefix}{" "}
           <Link
             href="/privacy"
-            className="font-medium text-neutral-900 dark:text-neutral-100 underline underline-offset-4"
+            className="font-medium text-foreground underline underline-offset-4 transition-colors duration-150 hover:text-primary"
           >
             {t.common.privacyPolicy}
           </Link>
@@ -188,12 +201,12 @@ export default function RegisterPage() {
           {t.register.hasAccount}{" "}
           <Link
             href="/login"
-            className="font-medium text-neutral-900 dark:text-neutral-100 underline underline-offset-4"
+            className="font-medium text-foreground underline underline-offset-4 transition-colors duration-150 hover:text-primary"
           >
             {t.register.loginLink}
           </Link>
         </p>
       </div>
-    </div>
+    </Card>
   );
 }

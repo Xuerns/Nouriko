@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { useI18n } from "@/components/providers/I18nProvider";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { evaluatePasswordStrength } from "@/lib/password";
 
 interface PasswordInputProps {
@@ -53,16 +57,20 @@ export function PasswordInput({
           ? 3
           : 0;
 
+  const strengthBarColor =
+    strength === "weak"
+      ? "bg-[var(--score-low-text)]"
+      : strength === "fair"
+        ? "bg-[var(--score-fair-text)]"
+        : "bg-[var(--brand-primary)]";
+
   return (
     <div className="space-y-1.5">
-      <label
-        htmlFor={id}
-        className="block text-sm font-medium text-neutral-900 dark:text-neutral-100"
-      >
+      <Label htmlFor={id} className="text-sm font-medium text-foreground">
         {label}
-      </label>
-      <div className="flex items-stretch gap-2">
-        <input
+      </Label>
+      <div className="flex items-center gap-2">
+        <Input
           id={id}
           name={name}
           type={visible ? "text" : "password"}
@@ -72,42 +80,45 @@ export function PasswordInput({
           required={required}
           minLength={minLength}
           disabled={disabled}
-          className="w-full min-w-0 rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-neutral-100 disabled:opacity-60"
+          className="h-11 rounded-2xl bg-card px-3.5 text-sm shadow-none"
         />
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={() => setVisible((prev) => !prev)}
           disabled={disabled}
           aria-pressed={visible}
-          className="shrink-0 rounded-md border border-neutral-300 dark:border-neutral-700 px-3 py-2 text-xs font-medium text-neutral-800 dark:text-neutral-200 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900 dark:focus:ring-neutral-100 disabled:opacity-60"
+          aria-label={visible ? t.common.hidePassword : t.common.showPassword}
+          className="h-11 shrink-0 rounded-full px-3.5 text-xs shadow-none"
         >
-          {visible ? t.common.hidePassword : t.common.showPassword}
-        </button>
+          {visible ? (
+            <EyeOff className="size-4 stroke-[1.75]" aria-hidden="true" />
+          ) : (
+            <Eye className="size-4 stroke-[1.75]" aria-hidden="true" />
+          )}
+          <span className="hidden sm:inline">
+            {visible ? t.common.hidePassword : t.common.showPassword}
+          </span>
+        </Button>
       </div>
 
-      {hint ? (
-        <p className="text-xs text-neutral-600 dark:text-neutral-400">{hint}</p>
-      ) : null}
+      {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
 
       {showStrength && strength !== "empty" ? (
-        <div className="space-y-1 pt-0.5" aria-live="polite">
+        <div className="space-y-1.5 pt-0.5" aria-live="polite">
           <div className="grid grid-cols-3 gap-1.5" aria-hidden="true">
             {[1, 2, 3].map((segment) => (
               <div
                 key={segment}
-                className={`h-1.5 rounded-sm border border-neutral-300 dark:border-neutral-700 ${
-                  segment <= filledSegments
-                    ? "bg-neutral-900 dark:bg-neutral-100"
-                    : "bg-transparent"
+                className={`h-1.5 rounded-full transition-colors duration-150 ${
+                  segment <= filledSegments ? strengthBarColor : "bg-muted"
                 }`}
               />
             ))}
           </div>
-          <p className="text-xs text-neutral-600 dark:text-neutral-400">
+          <p className="text-xs text-muted-foreground">
             {t.common.passwordStrengthLabel}:{" "}
-            <span className="font-medium text-neutral-900 dark:text-neutral-100">
-              {strengthText}
-            </span>
+            <span className="font-medium text-foreground">{strengthText}</span>
           </p>
         </div>
       ) : null}

@@ -2,6 +2,10 @@
 
 import { useState, type FormEvent } from "react";
 import { useI18n } from "@/components/providers/I18nProvider";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import type { ChatIntent } from "@/lib/types";
 
 interface PhotoCorrectionBarProps {
@@ -65,104 +69,108 @@ export function PhotoCorrectionBar({
   }
 
   return (
-    <div className="rounded-md border border-neutral-300 dark:border-neutral-700 p-3 space-y-3">
+    <div className="rounded-2xl bg-muted p-4 space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="space-y-0.5">
-          <p className="text-xs font-medium text-neutral-800 dark:text-neutral-200">
+          <p className="text-xs font-medium text-foreground">
             {expanded
               ? t.chat.photoCorrectionHeading
               : t.chat.photoCorrectionPrompt}
           </p>
           {detectedItems.length > 0 ? (
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-muted-foreground">
               {t.chat.detectedItemsLabel}: {detectedItems.join(", ")}
             </p>
           ) : null}
         </div>
 
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={() => setExpanded((prev) => !prev)}
           disabled={disabled}
-          className="rounded-md border border-neutral-300 dark:border-neutral-700 px-2.5 py-1 text-xs font-medium text-neutral-900 dark:text-neutral-100 transition-colors duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-900 disabled:opacity-50"
+          className="h-9 rounded-full bg-card px-3.5 text-xs shadow-none"
         >
           {expanded ? t.common.cancel : t.chat.photoCorrectionToggle}
-        </button>
+        </Button>
       </div>
 
       {expanded ? (
-        <form onSubmit={handleSubmit} className="space-y-3 border-t border-neutral-300 dark:border-neutral-700 pt-3">
-          <div className="space-y-1.5">
-            <span className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
-              {t.chat.photoTypeLabel}
-            </span>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setPhotoType("photo_food")}
-                className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors duration-150 ${
-                  photoType === "photo_food"
-                    ? "border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-950"
-                    : "border-neutral-300 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-900"
-                }`}
-              >
-                {t.chat.photoTypeFood}
-              </button>
-              <button
-                type="button"
-                onClick={() => setPhotoType("photo_ingredients")}
-                className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors duration-150 ${
-                  photoType === "photo_ingredients"
-                    ? "border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-950"
-                    : "border-neutral-300 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-900"
-                }`}
-              >
-                {t.chat.photoTypeIngredients}
-              </button>
+        <>
+          <Separator className="bg-border" />
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="space-y-1.5">
+              <span className="block text-xs font-medium text-foreground">
+                {t.chat.photoTypeLabel}
+              </span>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={photoType === "photo_food" ? "default" : "outline"}
+                  onClick={() => setPhotoType("photo_food")}
+                  className="h-9 rounded-full px-4 text-xs shadow-none"
+                >
+                  {t.chat.photoTypeFood}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={
+                    photoType === "photo_ingredients" ? "default" : "outline"
+                  }
+                  onClick={() => setPhotoType("photo_ingredients")}
+                  className="h-9 rounded-full px-4 text-xs shadow-none"
+                >
+                  {t.chat.photoTypeIngredients}
+                </Button>
+              </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="space-y-1">
-              <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
-                {t.chat.photoNameLabel}
-                <input
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-foreground">
+                  {t.chat.photoNameLabel}
+                </Label>
+                <Input
                   type="text"
                   required
                   maxLength={200}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder={t.chat.photoNamePlaceholder}
-                  className="mt-1 w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-1.5 text-sm font-normal text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500"
+                  className="h-10 rounded-2xl bg-card px-3 text-sm shadow-none"
                 />
-              </label>
-            </div>
+              </div>
 
-            <div className="space-y-1">
-              <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
-                {t.chat.photoPortionLabel}
-                <input
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-foreground">
+                  {t.chat.photoPortionLabel}
+                </Label>
+                <Input
                   type="text"
                   maxLength={100}
                   value={portion}
                   onChange={(e) => setPortion(e.target.value)}
                   placeholder={t.chat.photoPortionPlaceholder}
-                  className="mt-1 w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-1.5 text-sm font-normal text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-500"
+                  className="h-10 rounded-2xl bg-card px-3 text-sm shadow-none"
                 />
-              </label>
+              </div>
             </div>
-          </div>
 
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={disabled || !name.trim()}
-              className="rounded-md bg-neutral-900 px-3.5 py-1.5 text-xs font-medium text-white transition-colors duration-150 hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-950 dark:hover:bg-neutral-300 disabled:opacity-50"
-            >
-              {t.chat.photoCorrectionSubmit}
-            </button>
-          </div>
-        </form>
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                size="sm"
+                disabled={disabled || !name.trim()}
+                className="h-9 rounded-full px-4 text-xs shadow-none"
+              >
+                {t.chat.photoCorrectionSubmit}
+              </Button>
+            </div>
+          </form>
+        </>
       ) : null}
     </div>
   );
