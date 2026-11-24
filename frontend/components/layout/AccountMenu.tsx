@@ -315,7 +315,7 @@ export function AccountMenu() {
   }
 
   function handleThemeClick(e: MouseEvent<HTMLButtonElement>) {
-    toggleTheme();
+    toggleTheme(e);
     closeMenuAndRestore(e.detail !== 0);
   }
 

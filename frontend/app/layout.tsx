@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { AppProviders } from "@/components/providers/AppProviders";
+import { cn } from "@/lib/utils";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -16,7 +18,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Nouriko",
   description:
-    "Daily nutrition assistant for meal recommendations based on ingredients, budget, and food photos.",
+    "Asisten nutrisi harian berbasis AI untuk memilih makanan bergizi dari bahan yang ada, anggaran makan, atau foto makanan.",
 };
 
 const themeInitScript = `
@@ -38,12 +40,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="id"
       suppressHydrationWarning
-      className={`${plusJakartaSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={cn(
+        "h-full font-sans antialiased",
+        plusJakartaSans.variable,
+        geistMono.variable
+      )}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className="min-h-full bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+      <body className="min-h-full bg-background text-foreground">
         <AppProviders>{children}</AppProviders>
       </body>
     </html>
