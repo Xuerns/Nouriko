@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { BarChart3, History, MessageSquare } from "lucide-react";
 import { AccountMenu } from "@/components/layout/AccountMenu";
 import { BrandLogo } from "@/components/layout/BrandLogo";
-import { UtilityControls } from "@/components/layout/UtilityControls";
 import { useI18n } from "@/components/providers/I18nProvider";
 
 interface AppShellProps {
@@ -67,9 +66,6 @@ export function AppShell({ children }: AppShellProps) {
           </nav>
 
           <div className="flex items-center gap-2">
-            <div className="hidden sm:block">
-              <UtilityControls />
-            </div>
             <AccountMenu />
           </div>
         </div>

@@ -321,8 +321,13 @@ export const enDictionary: Dictionary = {
   },
   profile: {
     title: "Profile & Account Settings",
+    subtitle: "Manage your body metrics, daily nutrition targets, password, and account data.",
     summaryHeading: "Daily Target Summary",
     avatarAlt: "User profile avatar",
+    tabBodyTargets: "Body & Targets",
+    tabSecurity: "Security",
+    tabAccount: "Privacy & Account",
+    tabsAriaLabel: "Profile sections",
     dailyCalories: "Calorie Target",
     protein: "Protein",
     carbs: "Carbs",
@@ -330,10 +335,24 @@ export const enDictionary: Dictionary = {
     fiber: "Fiber",
     kcalUnit: "kcal",
     gramUnit: "g",
+    cmUnit: "cm",
+    kgUnit: "kg",
+    ageUnit: "yrs",
+    heightShortLabel: "Height",
+    weightShortLabel: "Weight",
+    ageShortLabel: "Age",
     editProfileHeading: "Body Metrics",
+    editProfileDescription:
+      "Your height, weight, age, gender, and activity level are used to estimate personalized daily calories and macros.",
+    activityLightHint: "Mostly seated",
+    activityModerateHint: "Regular walking or light workouts",
+    activityHeavyHint: "Active routine or intense exercise",
     macroTargetsHeading: "Daily Calorie & Macro Targets",
     recalcNote:
       "Changing body metrics automatically recalculates daily targets unless you enter custom target values.",
+    saveProfileHint:
+      "Saved changes apply immediately to Nutrition Chat and Daily Summary.",
+    resetChangesButton: "Reset",
     saveProfileButton: "Save Changes",
     profileSaved: "Profile updated successfully.",
     changePasswordHeading: "Change Password",
@@ -425,33 +444,88 @@ export const enDictionary: Dictionary = {
     emptyHeadingNamed: "Hi {name}, what would you like to eat or cook today?",
     emptyDescription:
       "Ask for meal ideas from ingredients you have, budget-friendly meals, a grocery shopping list, or upload a photo of food or raw ingredients.",
-    examplesHeading: "Example prompts to try",
+    examplesHeading: "Suggested questions",
     examples: [
       {
-        label: "Available ingredients",
-        prompt: "I have eggs, tempeh, spinach, and rice. What can I cook?",
-      },
-      {
-        label: "Meal budget",
-        prompt: "My lunch budget is Rp15.000, suggest healthy ready-to-eat meals.",
-      },
-      {
-        label: "Grocery budget",
+        label: "Affordable nutritious meals today",
         prompt:
-          "I have a Rp30.000 grocery budget for 2 days of cooking, what ingredients should I buy?",
+          "Recommend affordable, nutritious ready-to-eat meals I can buy today.",
       },
       {
-        label: "Limited cookware",
+        label: "High-protein meals easy to find",
         prompt:
-          "I only have a rice cooker and Rp12.000 budget, suggest high-protein non-fried meals.",
+          "Recommend practical high-protein meals that are easy to find or make.",
+      },
+      {
+        label: "Simple healthy meals, minimal cookware",
+        prompt:
+          "Suggest simple, healthy meals I can cook with minimal cookware like a rice cooker.",
       },
     ],
+    timeAwareExamples: {
+      breakfast: {
+        label: "Balanced breakfast for my target",
+        prompt:
+          "Suggest a balanced breakfast that fits my daily nutrition target.",
+      },
+      lunch: {
+        label: "Balanced lunch for my target",
+        prompt:
+          "Suggest a balanced lunch that fits my daily nutrition target.",
+      },
+      afternoon: {
+        label: "Healthy afternoon snack ideas",
+        prompt:
+          "Suggest healthy, filling afternoon snacks that fit my daily nutrition target.",
+      },
+      dinner: {
+        label: "Balanced dinner for my target",
+        prompt:
+          "Suggest a balanced dinner that fits my daily nutrition target.",
+      },
+      lateNight: {
+        label: "Light healthy meal for tonight",
+        prompt:
+          "Suggest a light, healthy meal option that fits my daily nutrition target.",
+      },
+    },
     photoMenuLabel: "Add photo",
     takePhotoLabel: "Take photo",
+    takePhotoDescription: "Use camera for a meal or ingredients",
     attachPhotoLabel: "Attach photo",
     removePhotoLabel: "Remove photo",
     photoHint: "JPG, PNG, or WebP up to 5 MB",
     processingPhoto: "Preparing photo...",
+    stopButton: "Stop",
+    promptTemplatesLabel: "Templates",
+    promptTemplatesAriaLabel: "Quick prompt templates",
+    promptNoMatches: 'No matches for "{query}"',
+    promptCommands: [
+      {
+        key: "ingredients",
+        name: "/ingredients",
+        description: "Meal ideas from ingredients on hand",
+        insertText: "I have these ingredients: ",
+      },
+      {
+        key: "budget",
+        name: "/budget",
+        description: "Healthy meals within your budget",
+        insertText: "My meal budget is Rp",
+      },
+      {
+        key: "grocery",
+        name: "/grocery",
+        description: "Multi-day ingredient shopping list",
+        insertText: "My grocery shopping budget is Rp",
+      },
+      {
+        key: "cookware",
+        name: "/ricecooker",
+        description: "Practical meals with limited cookware",
+        insertText: "I only have a rice cooker and ",
+      },
+    ],
     cameraDialogTitle: "Take photo",
     cameraCaptureButton: "Capture photo",
     cameraSwitchButton: "Switch camera",

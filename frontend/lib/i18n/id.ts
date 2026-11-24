@@ -321,8 +321,13 @@ export const idDictionary: Dictionary = {
   },
   profile: {
     title: "Profil & Pengaturan Akun",
+    subtitle: "Atur data tubuh, target nutrisi harian, kata sandi, dan pengelolaan data akun.",
     summaryHeading: "Ringkasan Target Harian",
     avatarAlt: "Avatar profil pengguna",
+    tabBodyTargets: "Tubuh & Target",
+    tabSecurity: "Keamanan",
+    tabAccount: "Privasi & Akun",
+    tabsAriaLabel: "Bagian profil",
     dailyCalories: "Target Kalori",
     protein: "Protein",
     carbs: "Karbohidrat",
@@ -330,10 +335,24 @@ export const idDictionary: Dictionary = {
     fiber: "Serat",
     kcalUnit: "kkal",
     gramUnit: "g",
+    cmUnit: "cm",
+    kgUnit: "kg",
+    ageUnit: "thn",
+    heightShortLabel: "Tinggi",
+    weightShortLabel: "Berat",
+    ageShortLabel: "Usia",
     editProfileHeading: "Data Tubuh",
+    editProfileDescription:
+      "Tinggi badan, berat badan, usia, jenis kelamin, dan aktivitas digunakan untuk menghitung perkiraan kebutuhan kalori serta makro harianmu.",
+    activityLightHint: "Banyak duduk",
+    activityModerateHint: "Aktif berjalan / olahraga ringan",
+    activityHeavyHint: "Aktivitas fisik tinggi",
     macroTargetsHeading: "Target Kalori & Makro Harian",
     recalcNote:
       "Mengubah data tubuh akan menghitung ulang target harian secara otomatis, kecuali kamu mengisi angka target khusus.",
+    saveProfileHint:
+      "Perubahan yang disimpan langsung diterapkan ke Chat Nutrisi dan Ringkasan Harian.",
+    resetChangesButton: "Atur Ulang",
     saveProfileButton: "Simpan Perubahan",
     profileSaved: "Profil berhasil diperbarui.",
     changePasswordHeading: "Ganti Kata Sandi",
@@ -425,33 +444,88 @@ export const idDictionary: Dictionary = {
     emptyHeadingNamed: "Halo {name}, mau makan atau masak apa hari ini?",
     emptyDescription:
       "Kamu bisa menanyakan menu dari bahan yang ada, rekomendasi sesuai budget, daftar belanja hemat, atau kirim foto makanan dan bahan.",
-    examplesHeading: "Contoh pertanyaan yang bisa langsung dicoba",
+    examplesHeading: "Saran pertanyaan",
     examples: [
       {
-        label: "Bahan di kos",
-        prompt: "Aku punya telur, tempe, bayam, dan nasi. Enaknya masak apa?",
-      },
-      {
-        label: "Budget makan jadi",
-        prompt: "Budget makan siang aku Rp15.000, rekomen menu warteg yang sehat.",
-      },
-      {
-        label: "Budget belanja bahan",
+        label: "Menu bergizi yang hemat hari ini",
         prompt:
-          "Aku punya budget belanja bahan Rp30.000 buat masak 2 hari, beli apa saja?",
+          "Rekomendasikan menu makanan jadi yang bergizi tapi tetap hemat buat hari ini.",
       },
       {
-        label: "Alat masak terbatas",
+        label: "Menu tinggi protein yang gampang dicari",
         prompt:
-          "Cuma punya rice cooker dan budget Rp12.000, ada ide menu tinggi protein tanpa gorengan?",
+          "Rekomendasikan menu tinggi protein yang praktis dan gampang dicari.",
+      },
+      {
+        label: "Ide masak sehat simpel alat seadanya",
+        prompt:
+          "Rekomendasikan ide masak sehat yang simpel dengan alat masak seadanya seperti rice cooker.",
       },
     ],
+    timeAwareExamples: {
+      breakfast: {
+        label: "Sarapan bergizi sesuai targetku",
+        prompt:
+          "Rekomendasikan sarapan bergizi yang sesuai dengan target nutrisi harianku.",
+      },
+      lunch: {
+        label: "Makan siang bergizi sesuai targetku",
+        prompt:
+          "Rekomendasikan makan siang bergizi yang sesuai dengan target nutrisi harianku.",
+      },
+      afternoon: {
+        label: "Camilan sehat buat sore ini",
+        prompt:
+          "Rekomendasikan camilan sehat dan mengenyangkan yang sesuai target nutrisi harianku.",
+      },
+      dinner: {
+        label: "Makan malam bergizi sesuai targetku",
+        prompt:
+          "Rekomendasikan makan malam bergizi yang sesuai dengan target nutrisi harianku.",
+      },
+      lateNight: {
+        label: "Makan ringan sehat buat malam ini",
+        prompt:
+          "Rekomendasikan pilihan makan ringan yang sehat dan sesuai target nutrisi harianku.",
+      },
+    },
     photoMenuLabel: "Tambah foto",
     takePhotoLabel: "Ambil foto",
+    takePhotoDescription: "Pakai kamera untuk makanan atau bahan",
     attachPhotoLabel: "Lampirkan foto",
     removePhotoLabel: "Hapus foto",
     photoHint: "JPG, PNG, atau WebP maksimal 5 MB",
     processingPhoto: "Menyiapkan foto...",
+    stopButton: "Hentikan",
+    promptTemplatesLabel: "Template",
+    promptTemplatesAriaLabel: "Template pertanyaan cepat",
+    promptNoMatches: 'Tidak ada hasil untuk "{query}"',
+    promptCommands: [
+      {
+        key: "ingredients",
+        name: "/bahan",
+        description: "Ide masakan dari bahan yang ada",
+        insertText: "Aku punya bahan: ",
+      },
+      {
+        key: "budget",
+        name: "/budget",
+        description: "Menu sehat sesuai budget makan",
+        insertText: "Budget makan aku Rp",
+      },
+      {
+        key: "grocery",
+        name: "/belanja",
+        description: "Daftar belanja bahan beberapa hari",
+        insertText: "Budget belanja bahan aku Rp",
+      },
+      {
+        key: "cookware",
+        name: "/ricecooker",
+        description: "Menu praktis dengan alat masak terbatas",
+        insertText: "Cuma punya rice cooker dan ",
+      },
+    ],
     cameraDialogTitle: "Ambil foto",
     cameraCaptureButton: "Ambil foto",
     cameraSwitchButton: "Ganti kamera",

@@ -1,24 +1,31 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ChangeEvent,
-  type FormEvent,
-  type KeyboardEvent,
 } from "react";
-import { Camera, ImagePlus, Loader2, Plus, Send, X } from "lucide-react";
+import {
+  Camera,
+  CookingPot,
+  ImagePlus,
+  Loader2,
+  ShoppingBasket,
+  Slash,
+  Utensils,
+  Wallet,
+  X,
+} from "lucide-react";
+import PromptBar, {
+  type PromptBarCommand,
+  type PromptBarSource,
+} from "@/components/PromptBar";
 import { CameraCaptureDialog } from "@/components/chat/CameraCaptureDialog";
 import { useI18n } from "@/components/providers/I18nProvider";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api";
 import { ACCEPTED_PHOTO_INPUT, preparePhotoForUpload } from "@/lib/image";
 
@@ -28,13 +35,25 @@ interface ChatComposerProps {
     photo: File | null;
     photoPreviewUrl?: string;
   }) => void;
+  onStop?: () => void;
   disabled?: boolean;
   onPhotoError?: (code: string | null) => void;
   prefillMessage?: string;
 }
 
+function commandIconFor(key: string) {
+  const cls = "size-4 shrink-0 stroke-[1.75]";
+  if (key === "budget") return <Wallet className={cls} aria-hidden="true" />;
+  if (key === "grocery")
+    return <ShoppingBasket className={cls} aria-hidden="true" />;
+  if (key === "cookware")
+    return <CookingPot className={cls} aria-hidden="true" />;
+  return <Utensils className={cls} aria-hidden="true" />;
+}
+
 export function ChatComposer({
   onSend,
+  onStop,
   disabled = false,
   onPhotoError,
   prefillMessage = "",
@@ -44,7 +63,6 @@ export function ChatComposer({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [message, setMessage] = useState(prefillMessage);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const [isPreparingPhoto, setIsPreparingPhoto] = useState(false);
@@ -52,9 +70,15 @@ export function ChatComposer({
 
   const mountedRef = useRef(true);
   const previewUrlRef = useRef<string | null>(null);
+  const photoFileRef = useRef<File | null>(null);
+
   useEffect(() => {
     previewUrlRef.current = photoPreviewUrl;
   }, [photoPreviewUrl]);
+
+  useEffect(() => {
+    photoFileRef.current = photoFile;
+  }, [photoFile]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -67,33 +91,36 @@ export function ChatComposer({
     };
   }, []);
 
-  async function processSelectedPhoto(selected: File) {
-    setIsPreparingPhoto(true);
-    try {
-      const prepared = await preparePhotoForUpload(selected);
-      if (!mountedRef.current) {
-        return;
+  const processSelectedPhoto = useCallback(
+    async (selected: File) => {
+      setIsPreparingPhoto(true);
+      try {
+        const prepared = await preparePhotoForUpload(selected);
+        if (!mountedRef.current) {
+          return;
+        }
+        if (previewUrlRef.current) {
+          URL.revokeObjectURL(previewUrlRef.current);
+        }
+        const nextPreviewUrl = URL.createObjectURL(prepared);
+        previewUrlRef.current = nextPreviewUrl;
+        setPhotoFile(prepared);
+        setPhotoPreviewUrl(nextPreviewUrl);
+        onPhotoError?.(null);
+      } catch (err) {
+        if (!mountedRef.current) {
+          return;
+        }
+        const code = err instanceof ApiError ? err.code : "PHOTO_INVALID";
+        onPhotoError?.(code);
+      } finally {
+        if (mountedRef.current) {
+          setIsPreparingPhoto(false);
+        }
       }
-      if (previewUrlRef.current) {
-        URL.revokeObjectURL(previewUrlRef.current);
-      }
-      const nextPreviewUrl = URL.createObjectURL(prepared);
-      previewUrlRef.current = nextPreviewUrl;
-      setPhotoFile(prepared);
-      setPhotoPreviewUrl(nextPreviewUrl);
-      onPhotoError?.(null);
-    } catch (err) {
-      if (!mountedRef.current) {
-        return;
-      }
-      const code = err instanceof ApiError ? err.code : "PHOTO_INVALID";
-      onPhotoError?.(code);
-    } finally {
-      if (mountedRef.current) {
-        setIsPreparingPhoto(false);
-      }
-    }
-  }
+    },
+    [onPhotoError]
+  );
 
   async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0];
@@ -102,7 +129,7 @@ export function ChatComposer({
     await processSelectedPhoto(selected);
   }
 
-  function handleTakePhotoClick() {
+  const handleTakePhotoClick = useCallback(() => {
     if (
       typeof navigator !== "undefined" &&
       navigator.mediaDevices &&
@@ -113,71 +140,128 @@ export function ChatComposer({
     }
 
     cameraInputRef.current?.click();
-  }
+  }, []);
 
-  function handleAttachPhotoClick() {
+  const handleAttachPhotoClick = useCallback(() => {
     fileInputRef.current?.click();
-  }
+  }, []);
 
-  function handleCameraCapture(file: File) {
-    setIsCameraOpen(false);
-    void processSelectedPhoto(file);
-  }
+  const handleCameraCapture = useCallback(
+    (file: File) => {
+      setIsCameraOpen(false);
+      void processSelectedPhoto(file);
+    },
+    [processSelectedPhoto]
+  );
 
-  function handleRemovePhoto() {
-    if (photoPreviewUrl) {
-      URL.revokeObjectURL(photoPreviewUrl);
+  const handleRemovePhoto = useCallback(() => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
     }
     setPhotoFile(null);
     setPhotoPreviewUrl(null);
-  }
+  }, []);
 
-  function triggerSend() {
-    if (disabled || isPreparingPhoto) return;
-    const trimmed = message.trim();
-    if (!trimmed && !photoFile) return;
+  const handleSourceAttach = useCallback(
+    (sourceKey?: string) => {
+      if (disabled || isPreparingPhoto) return;
+      if (sourceKey === "take-photo") {
+        handleTakePhotoClick();
+        return;
+      }
+      handleAttachPhotoClick();
+    },
+    [disabled, handleAttachPhotoClick, handleTakePhotoClick, isPreparingPhoto]
+  );
 
-    const nextPreview = photoPreviewUrl ?? undefined;
-    const nextPhoto = photoFile;
+  const handlePromptSend = useCallback(
+    (text: string) => {
+      if (disabled || isPreparingPhoto) return;
+      const trimmed = text.trim();
+      const nextPhoto = photoFileRef.current;
+      if (!trimmed && !nextPhoto) return;
 
-    previewUrlRef.current = null;
-    setMessage("");
-    setPhotoFile(null);
-    setPhotoPreviewUrl(null);
+      const nextPreview = previewUrlRef.current ?? undefined;
+      previewUrlRef.current = null;
+      photoFileRef.current = null;
+      setPhotoFile(null);
+      setPhotoPreviewUrl(null);
 
-    onSend({
-      message: trimmed,
-      photo: nextPhoto,
-      photoPreviewUrl: nextPreview,
-    });
-  }
+      onSend({
+        message: trimmed,
+        photo: nextPhoto,
+        photoPreviewUrl: nextPreview,
+      });
+    },
+    [disabled, isPreparingPhoto, onSend]
+  );
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    triggerSend();
-  }
+  const sources = useMemo<PromptBarSource[]>(
+    () => [
+      {
+        key: "take-photo",
+        name: t.chat.takePhotoLabel,
+        description: t.chat.takePhotoDescription,
+        icon: <Camera className="size-4 shrink-0 stroke-[1.75]" aria-hidden="true" />,
+        attach: true,
+      },
+      {
+        key: "attach-photo",
+        name: t.chat.attachPhotoLabel,
+        description: t.chat.photoHint,
+        icon: <ImagePlus className="size-4 shrink-0 stroke-[1.75]" aria-hidden="true" />,
+        attach: true,
+      },
+    ],
+    [
+      t.chat.attachPhotoLabel,
+      t.chat.photoHint,
+      t.chat.takePhotoDescription,
+      t.chat.takePhotoLabel,
+    ]
+  );
 
-  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      triggerSend();
-    }
-  }
+  const commands = useMemo<PromptBarCommand[]>(
+    () =>
+      t.chat.promptCommands.map((cmd) => ({
+        key: cmd.key,
+        name: cmd.name,
+        description: cmd.description,
+        insertText: cmd.insertText,
+        icon: commandIconFor(cmd.key),
+      })),
+    [t.chat.promptCommands]
+  );
 
-  const canSend =
-    !disabled &&
-    !isPreparingPhoto &&
-    (message.trim().length > 0 || photoFile !== null);
+  const labels = useMemo(
+    () => ({
+      promptAriaLabel: t.chat.inputPlaceholder,
+      addAriaLabel: t.chat.photoMenuLabel,
+      commandsButtonLabel: t.chat.promptTemplatesLabel,
+      commandsAriaLabel: t.chat.promptTemplatesAriaLabel,
+      sourcesAriaLabel: t.chat.photoMenuLabel,
+      sendAriaLabel: t.chat.sendButton,
+      stopAriaLabel: t.chat.stopButton,
+      noMatchesText: t.chat.promptNoMatches,
+    }),
+    [
+      t.chat.inputPlaceholder,
+      t.chat.photoMenuLabel,
+      t.chat.promptNoMatches,
+      t.chat.promptTemplatesAriaLabel,
+      t.chat.promptTemplatesLabel,
+      t.chat.sendButton,
+      t.chat.stopButton,
+    ]
+  );
 
-  return (
-    <>
-      <form
-        onSubmit={handleSubmit}
-        className="rounded-3xl border border-border bg-card p-3 space-y-3"
-      >
+  const attachmentSlot =
+    (photoPreviewUrl && photoFile) || isPreparingPhoto ? (
+      <div className="space-y-2">
         {photoPreviewUrl && photoFile ? (
           <div className="flex items-center justify-between gap-3 rounded-2xl bg-muted p-2.5">
-            <div className="flex items-center gap-3 min-w-0">
+            <div className="flex min-w-0 items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={photoPreviewUrl}
@@ -203,7 +287,10 @@ export function ChatComposer({
               aria-label={t.chat.removePhotoLabel}
               className="h-8 rounded-full px-3 text-xs shadow-none"
             >
-              <X className="size-3.5 shrink-0 stroke-[1.75]" aria-hidden="true" />
+              <X
+                className="size-3.5 shrink-0 stroke-[1.75]"
+                aria-hidden="true"
+              />
               <span>{t.chat.removePhotoLabel}</span>
             </Button>
           </div>
@@ -218,89 +305,57 @@ export function ChatComposer({
             <span>{t.chat.processingPhoto}</span>
           </div>
         ) : null}
+      </div>
+    ) : null;
 
-        <div className="flex items-end gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={ACCEPTED_PHOTO_INPUT}
-            onChange={handleFileChange}
-            className="sr-only"
-            aria-label={t.chat.attachPhotoLabel}
-          />
-          <input
-            ref={cameraInputRef}
-            type="file"
-            accept={ACCEPTED_PHOTO_INPUT}
-            capture="environment"
-            onChange={handleFileChange}
-            className="sr-only"
-            aria-label={t.chat.takePhotoLabel}
-          />
+  return (
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={ACCEPTED_PHOTO_INPUT}
+        onChange={handleFileChange}
+        className="sr-only"
+        aria-label={t.chat.attachPhotoLabel}
+      />
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept={ACCEPTED_PHOTO_INPUT}
+        capture="environment"
+        onChange={handleFileChange}
+        className="sr-only"
+        aria-label={t.chat.takePhotoLabel}
+      />
 
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  disabled={disabled || isPreparingPhoto}
-                  aria-label={t.chat.photoMenuLabel}
-                  title={t.chat.photoMenuLabel}
-                  className="size-11 shrink-0 rounded-full border border-border shadow-none"
-                />
-              }
-            >
-              <Plus className="size-4 stroke-[1.75]" aria-hidden="true" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              side="top"
-              align="start"
-              sideOffset={8}
-              className="w-48 rounded-2xl border border-border bg-card p-1.5 text-card-foreground shadow-none ring-0"
-            >
-              <DropdownMenuItem
-                onClick={handleTakePhotoClick}
-                className="rounded-xl px-3 py-2 text-xs font-medium"
-              >
-                <Camera className="size-4 stroke-[1.75]" aria-hidden="true" />
-                <span>{t.chat.takePhotoLabel}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={handleAttachPhotoClick}
-                className="rounded-xl px-3 py-2 text-xs font-medium"
-              >
-                <ImagePlus className="size-4 stroke-[1.75]" aria-hidden="true" />
-                <span>{t.chat.attachPhotoLabel}</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <Textarea
-            rows={1}
-            maxLength={1500}
-            value={message}
-            disabled={disabled}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            aria-label={t.chat.inputPlaceholder}
-            placeholder={t.chat.inputPlaceholder}
-            className="min-h-11 max-h-32 flex-1 resize-none border-0 bg-transparent px-2 py-2.5 text-sm text-foreground shadow-none placeholder:text-muted-foreground focus-visible:ring-0"
-          />
-
-          <Button
-            type="submit"
-            size="icon"
-            disabled={!canSend}
-            aria-label={t.chat.sendButton}
-            title={t.chat.sendButton}
-            className="size-11 shrink-0 rounded-full shadow-none"
-          >
-            <Send className="size-4 stroke-[1.75]" aria-hidden="true" />
-          </Button>
-        </div>
-      </form>
+      <PromptBar
+        placeholder={t.chat.inputPlaceholder}
+        initialValue={prefillMessage}
+        maxLength={1500}
+        disabled={disabled || isPreparingPhoto}
+        busy={disabled}
+        hasExternalAttachment={photoFile !== null}
+        attachmentSlot={attachmentSlot}
+        sources={sources}
+        commands={commands}
+        models={[]}
+        showCommandsButton
+        commandsButtonIcon={
+          <Slash className="size-3.5 shrink-0 stroke-[1.75]" aria-hidden="true" />
+        }
+        labels={labels}
+        onAttach={handleSourceAttach}
+        onSend={handlePromptSend}
+        onStop={onStop}
+        background="var(--card)"
+        color="var(--foreground)"
+        menuBackground="var(--popover)"
+        sendBackground="var(--brand-primary)"
+        sendColor="var(--brand-primary-text)"
+        width="100%"
+        radius={24}
+        maxRows={5}
+      />
 
       <CameraCaptureDialog
         open={isCameraOpen}

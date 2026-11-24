@@ -211,7 +211,23 @@ export const apiClient = {
     params: AnalyzeChatParams
   ): Promise<ChatAnalyzeResponse> {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 65_000);
+    let timedOut = false;
+    const timeoutId = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, 65_000);
+
+    const externalSignal = params.signal;
+    const handleExternalAbort = () => controller.abort();
+    if (externalSignal) {
+      if (externalSignal.aborted) {
+        clearTimeout(timeoutId);
+        throw new ApiError("REQUEST_ABORTED", 0);
+      }
+      externalSignal.addEventListener("abort", handleExternalAbort, {
+        once: true,
+      });
+    }
 
     const trimmedMessage = (params.message ?? "").trim();
     const cleanContext = (params.conversationContext ?? [])
@@ -259,11 +275,15 @@ export const apiClient = {
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
+        if (!timedOut && externalSignal?.aborted) {
+          throw new ApiError("REQUEST_ABORTED", 0);
+        }
         throw new ApiError("AI_TIMEOUT", 0);
       }
       throw new ApiError("NETWORK_ERROR", 0);
     } finally {
       clearTimeout(timeoutId);
+      externalSignal?.removeEventListener("abort", handleExternalAbort);
     }
 
     let data: unknown = null;
