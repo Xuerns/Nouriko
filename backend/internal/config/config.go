@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -25,10 +26,10 @@ const (
 type Config struct {
 	Mode            Mode          `env:"APP_ENV" envDefault:"local"`
 	Port            string        `env:"PORT" envDefault:"8080"`
-	AppBaseURL      string        `env:"APP_BASE_URL" envDefault:"http://localhost:3000"`
+	AppBaseURL      string        `env:"APP_BASE_URL"`
 	LogLevel        string        `env:"LOG_LEVEL" envDefault:"info"`
 	ShutdownTimeout time.Duration `env:"SHUTDOWN_TIMEOUT" envDefault:"10s"`
-	CORSOrigins     []string      `env:"CORS_ALLOWED_ORIGINS" envSeparator:"," envDefault:"http://localhost:3000"`
+	CORSOrigins     []string      `env:"CORS_ALLOWED_ORIGINS" envSeparator:","`
 
 	Database   Database
 	Auth       Auth
@@ -118,7 +119,15 @@ func Load() (*Config, error) {
 }
 
 func (c *Config) applyDefaults() {
+	if c.AppBaseURL == "" {
+		c.AppBaseURL = defaultAppBaseURL()
+	}
 	c.AppBaseURL = strings.TrimRight(c.AppBaseURL, "/")
+
+	if len(c.CORSOrigins) == 0 {
+		c.CORSOrigins = defaultCORSOrigins(c.AppBaseURL)
+	}
+
 	c.Supabase.URL = strings.TrimRight(c.Supabase.URL, "/")
 	if c.Auth.Issuer == "" && c.Mode == ModeProduction && c.Supabase.URL != "" {
 		c.Auth.Issuer = c.Supabase.URL + "/auth/v1"
@@ -127,6 +136,56 @@ func (c *Config) applyDefaults() {
 		v := c.Mode == ModeLocal
 		c.Database.MigrateOnStart = &v
 	}
+}
+
+func defaultAppBaseURL() string {
+	vercelEnv := strings.TrimSpace(os.Getenv("VERCEL_ENV"))
+	if vercelEnv == "production" {
+		if origin := normalizeVercelOrigin(os.Getenv("VERCEL_PROJECT_PRODUCTION_URL")); origin != "" {
+			return origin
+		}
+	}
+	if origin := normalizeVercelOrigin(os.Getenv("VERCEL_URL")); origin != "" {
+		return origin
+	}
+	return "http://localhost:3000"
+}
+
+func defaultCORSOrigins(appBaseURL string) []string {
+	seen := make(map[string]struct{}, 3)
+	origins := make([]string, 0, 3)
+	add := func(origin string) {
+		origin = strings.TrimRight(strings.TrimSpace(origin), "/")
+		if origin == "" {
+			return
+		}
+		if _, exists := seen[origin]; exists {
+			return
+		}
+		seen[origin] = struct{}{}
+		origins = append(origins, origin)
+	}
+
+	add(normalizeVercelOrigin(os.Getenv("VERCEL_PROJECT_PRODUCTION_URL")))
+	add(normalizeVercelOrigin(os.Getenv("VERCEL_URL")))
+	if len(origins) == 0 {
+		add(appBaseURL)
+	}
+	if len(origins) == 0 {
+		add("http://localhost:3000")
+	}
+	return origins
+}
+
+func normalizeVercelOrigin(raw string) string {
+	v := strings.TrimRight(strings.TrimSpace(raw), "/")
+	if v == "" {
+		return ""
+	}
+	if strings.HasPrefix(v, "http://") || strings.HasPrefix(v, "https://") {
+		return v
+	}
+	return "https://" + v
 }
 
 // Validate checks that the settings required by the selected mode are present.

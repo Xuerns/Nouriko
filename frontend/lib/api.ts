@@ -16,9 +16,35 @@ import type {
   UpdateProfilePayload,
 } from "@/lib/types";
 
-const API_BASE_URL = (
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
-).replace(/\/+$/, "");
+const PUBLIC_API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(
+  /\/+$/,
+  ""
+);
+
+function resolveApiUrl(path: string): string {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+
+  if (typeof window === "undefined") {
+    const internalBase = (
+      process.env.API_INTERNAL_URL?.trim() ||
+      PUBLIC_API_BASE_URL ||
+      "http://localhost:8080"
+    ).trim();
+    const baseWithSlash = internalBase.endsWith("/")
+      ? internalBase
+      : `${internalBase}/`;
+    return new URL(
+      normalizedPath.replace(/^\/+/, ""),
+      baseWithSlash
+    ).toString();
+  }
+
+  if (!PUBLIC_API_BASE_URL) {
+    return normalizedPath;
+  }
+
+  return `${PUBLIC_API_BASE_URL}${normalizedPath}`;
+}
 
 export class ApiError extends Error {
   readonly code: string;
@@ -58,7 +84,7 @@ async function request<T>({
 
   let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(resolveApiUrl(path), {
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -266,7 +292,7 @@ export const apiClient = {
 
     let response: Response;
     try {
-      response = await fetch(`${API_BASE_URL}/api/v1/chat/analyze`, {
+      response = await fetch(resolveApiUrl("/api/v1/chat/analyze"), {
         method: "POST",
         headers,
         body,

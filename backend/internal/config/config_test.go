@@ -142,3 +142,36 @@ func TestSupabaseAuthAPIKeyFallbackAndAppBaseURLTrim(t *testing.T) {
 		t.Fatalf("expected AnonKey preference, got %q", cfg.Supabase.AuthAPIKey())
 	}
 }
+
+func TestVercelOriginDefaults(t *testing.T) {
+	setEnv(t, map[string]string{
+		"APP_ENV":                       "production",
+		"DATABASE_URL":                  "postgres://u:p@pooler.supabase.com:6543/postgres?sslmode=require",
+		"SUPABASE_URL":                  "https://abc.supabase.co",
+		"SUPABASE_SECRET_KEY":           "sb_secret_x",
+		"GEMINI_API_KEY":                "key",
+		"VERCEL_ENV":                    "production",
+		"VERCEL_PROJECT_PRODUCTION_URL": "nouriko.vercel.app",
+		"VERCEL_URL":                    "nouriko-abc123.vercel.app",
+	})
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.AppBaseURL != "https://nouriko.vercel.app" {
+		t.Fatalf("expected production Vercel AppBaseURL, got %q", cfg.AppBaseURL)
+	}
+	if len(cfg.CORSOrigins) != 2 || cfg.CORSOrigins[0] != "https://nouriko.vercel.app" || cfg.CORSOrigins[1] != "https://nouriko-abc123.vercel.app" {
+		t.Fatalf("unexpected Vercel CORSOrigins: %v", cfg.CORSOrigins)
+	}
+
+	t.Setenv("VERCEL_ENV", "preview")
+	cfg, err = Load()
+	if err != nil {
+		t.Fatalf("unexpected error in preview: %v", err)
+	}
+	if cfg.AppBaseURL != "https://nouriko-abc123.vercel.app" {
+		t.Fatalf("expected preview Vercel AppBaseURL, got %q", cfg.AppBaseURL)
+	}
+}
