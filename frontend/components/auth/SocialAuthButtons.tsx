@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/components/providers/I18nProvider";
-import { useTheme } from "@/components/providers/ThemeProvider";
 import { Alert } from "@/components/ui/Alert";
 import {
   generateGoogleNonce,
@@ -41,7 +40,6 @@ export function SocialAuthButtons({
   onError,
 }: SocialAuthButtonsProps) {
   const { language, hydrated, t } = useI18n();
-  const { theme } = useTheme();
 
   const shouldShowDivider = showDivider ?? mode !== "reauth";
 
@@ -144,7 +142,7 @@ export function SocialAuthButtons({
         host.replaceChildren();
         gsi.renderButton(host, {
           type: "standard",
-          theme: theme === "dark" ? "filled_black" : "outline",
+          theme: "outline",
           size: "large",
           shape: "pill",
           text: mode === "register" ? "signup_with" : "continue_with",
@@ -173,7 +171,7 @@ export function SocialAuthButtons({
       hostEl?.replaceChildren();
       window.google?.accounts?.id?.cancel();
     };
-  }, [containerWidth, hydrated, language, mode, nonceVersion, theme]);
+  }, [containerWidth, hydrated, language, mode, nonceVersion]);
 
   if (!GOOGLE_CLIENT_ID) {
     if (mode === "reauth") {
@@ -207,6 +205,7 @@ export function SocialAuthButtons({
       <div className="flex min-h-[44px] w-full flex-col items-center justify-center">
         <div
           ref={buttonHostRef}
+          style={{ colorScheme: "light" }}
           className={cn(
             "flex w-full justify-center shadow-none",
             loadState !== "ready" && "hidden"
