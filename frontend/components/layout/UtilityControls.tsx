@@ -4,6 +4,11 @@ import { Moon, Sun } from "lucide-react";
 import { useI18n } from "@/components/providers/I18nProvider";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { Language } from "@/lib/types";
 
 const LANGUAGES: readonly { code: Language; label: string }[] = [
@@ -42,31 +47,39 @@ export function UtilityControls() {
         })}
       </div>
 
-      <Button
-        type="button"
-        variant="outline"
-        size="icon"
-        onClick={(event) => toggleTheme(event)}
-        title={t.common.themeLabel}
-        className="size-10 sm:size-9 cursor-pointer rounded-full border-border bg-[var(--bg-subtle)] text-foreground shadow-none transition-colors duration-150 hover:bg-accent dark:border-border dark:bg-[var(--bg-subtle)] dark:hover:bg-accent active:translate-y-0"
-      >
-        <Sun
-          className="size-4 dark:hidden"
-          strokeWidth={1.75}
-          aria-hidden="true"
-        />
-        <span className="sr-only dark:hidden">
-          {`${t.common.themeLabel}: ${t.common.themeLight}`}
-        </span>
-        <Moon
-          className="hidden size-4 dark:block"
-          strokeWidth={1.75}
-          aria-hidden="true"
-        />
-        <span className="sr-only hidden dark:inline">
-          {`${t.common.themeLabel}: ${t.common.themeDark}`}
-        </span>
-      </Button>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={(event) => toggleTheme(event)}
+              className="size-10 sm:size-9 cursor-pointer rounded-full border-border bg-[var(--bg-subtle)] text-foreground shadow-none transition-colors duration-150 hover:bg-accent dark:border-border dark:bg-[var(--bg-subtle)] dark:hover:bg-accent active:translate-y-0"
+            />
+          }
+        >
+          <Sun
+            className="size-4 dark:hidden"
+            strokeWidth={1.75}
+            aria-hidden="true"
+          />
+          <span className="sr-only dark:hidden">
+            {`${t.common.themeLabel}: ${t.common.themeLight}`}
+          </span>
+          <Moon
+            className="hidden size-4 dark:block"
+            strokeWidth={1.75}
+            aria-hidden="true"
+          />
+          <span className="sr-only hidden dark:inline">
+            {`${t.common.themeLabel}: ${t.common.themeDark}`}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent className="rounded-xl shadow-none">
+          {t.common.themeLabel}
+        </TooltipContent>
+      </Tooltip>
     </div>
   );
 }

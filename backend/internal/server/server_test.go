@@ -121,6 +121,10 @@ func (stubAuthService) Login(context.Context, string, string) (*auth.LoginResult
 	return nil, auth.ErrInvalidCredentials
 }
 
+func (stubAuthService) LoginWithGoogle(context.Context, auth.GoogleLoginInput) (*auth.LoginResult, error) {
+	return nil, auth.ErrInvalidCredentials
+}
+
 func (stubAuthService) Logout(context.Context, string) error {
 	return nil
 }
@@ -137,7 +141,7 @@ func (stubAuthService) ChangePassword(context.Context, string, string, string, s
 	return auth.ErrInvalidCredentials
 }
 
-func (stubAuthService) DeleteAccount(context.Context, string, string, string) error {
+func (stubAuthService) DeleteAccount(context.Context, auth.DeleteAccountInput) error {
 	return auth.ErrInvalidCredentials
 }
 
@@ -155,6 +159,12 @@ func TestAuthStrictRateLimiterAppliedToSensitiveEndpoints(t *testing.T) {
 		payload  string
 		withAuth bool
 	}{
+		{
+			name:    "google-login",
+			method:  http.MethodPost,
+			path:    "/api/v1/auth/google",
+			payload: `{"id_token":"bad-token","nonce":"0123456789abcdef"}`,
+		},
 		{
 			name:    "verify-email",
 			method:  http.MethodPost,
@@ -233,5 +243,43 @@ func TestAuthStrictRateLimiterAppliedToSensitiveEndpoints(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestStatusReportsGoogleAuthEnabled(t *testing.T) {
+	cfg := testConfig()
+	app := New(Dependencies{
+		Config: cfg,
+		Logger: slog.New(slog.NewJSONHandler(io.Discard, nil)),
+		DB:     stubPinger{},
+	})
+	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/api/v1/status", nil))
+	if err != nil {
+		t.Fatalf("app.Test: %v", err)
+	}
+	var body map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		t.Fatalf("decode status: %v", err)
+	}
+	if body["google_auth_enabled"] != false {
+		t.Fatalf("expected google_auth_enabled=false, got %+v", body)
+	}
+
+	cfg.Auth.GoogleClientID = "client-id.apps.googleusercontent.com"
+	app2 := New(Dependencies{
+		Config: cfg,
+		Logger: slog.New(slog.NewJSONHandler(io.Discard, nil)),
+		DB:     stubPinger{},
+	})
+	resp2, err := app2.Test(httptest.NewRequest(http.MethodGet, "/api/v1/status", nil))
+	if err != nil {
+		t.Fatalf("app2.Test: %v", err)
+	}
+	var body2 map[string]any
+	if err := json.NewDecoder(resp2.Body).Decode(&body2); err != nil {
+		t.Fatalf("decode status 2: %v", err)
+	}
+	if body2["google_auth_enabled"] != true {
+		t.Fatalf("expected google_auth_enabled=true, got %+v", body2)
 	}
 }

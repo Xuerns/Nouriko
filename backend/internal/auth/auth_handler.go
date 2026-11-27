@@ -49,6 +49,8 @@ func (h *Handler) handleAuthError(c fiber.Ctx, err error) error {
 		return httpx.WriteError(c, fiber.StatusConflict, httpx.CodeEmailAlreadyExists)
 	case errors.Is(err, ErrTooManyRequests):
 		return httpx.WriteError(c, fiber.StatusTooManyRequests, httpx.CodeTooManyRequests)
+	case errors.Is(err, ErrOAuthUnavailable):
+		return httpx.WriteError(c, fiber.StatusServiceUnavailable, httpx.CodeOAuthUnavailable)
 	default:
 		if h.logger != nil {
 			h.logger.Error("internal auth handler error",
@@ -127,7 +129,39 @@ func (h *Handler) Login(c fiber.Ctx) error {
 		"access_token": res.AccessToken,
 		"token_type":   res.TokenType,
 		"expires_in":   res.ExpiresIn,
-		"profile":      profile.ToDTO(res.Profile, res.Email),
+		"profile":      profile.ToDTOWithAuth(res.Profile, res.Email, res.AuthProviders, res.HasPassword),
+	})
+}
+
+type googleLoginRequest struct {
+	IDToken  string `json:"id_token"`
+	Nonce    string `json:"nonce"`
+	Language string `json:"language"`
+	Theme    string `json:"theme"`
+}
+
+// GoogleLogin handles POST /api/v1/auth/google.
+func (h *Handler) GoogleLogin(c fiber.Ctx) error {
+	var req googleLoginRequest
+	if err := c.Bind().JSON(&req); err != nil {
+		return httpx.WriteError(c, fiber.StatusBadRequest, httpx.CodeInvalidInput)
+	}
+
+	res, err := h.service.LoginWithGoogle(c.Context(), GoogleLoginInput{
+		IDToken:  req.IDToken,
+		Nonce:    req.Nonce,
+		Language: req.Language,
+		Theme:    req.Theme,
+	})
+	if err != nil {
+		return h.handleAuthError(c, err)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"access_token": res.AccessToken,
+		"token_type":   res.TokenType,
+		"expires_in":   res.ExpiresIn,
+		"profile":      profile.ToDTOWithAuth(res.Profile, res.Email, res.AuthProviders, res.HasPassword),
 	})
 }
 
@@ -213,7 +247,9 @@ func (h *Handler) ChangePassword(c fiber.Ctx) error {
 }
 
 type deleteAccountRequest struct {
-	Password string `json:"password"`
+	Password      string `json:"password"`
+	GoogleIDToken string `json:"google_id_token"`
+	Nonce         string `json:"nonce"`
 }
 
 // DeleteAccount handles DELETE /api/v1/account (auth required, PRD F13).
@@ -228,7 +264,14 @@ func (h *Handler) DeleteAccount(c fiber.Ctx) error {
 		return httpx.WriteError(c, fiber.StatusBadRequest, httpx.CodeInvalidInput)
 	}
 
-	if err := h.service.DeleteAccount(c.Context(), claims.UserID, claims.Email, req.Password); err != nil {
+	if err := h.service.DeleteAccount(c.Context(), DeleteAccountInput{
+		UserID:        claims.UserID,
+		Email:         claims.Email,
+		Password:      req.Password,
+		GoogleIDToken: req.GoogleIDToken,
+		Nonce:         req.Nonce,
+		HasPassword:   claims.HasPassword(),
+	}); err != nil {
 		return h.handleAuthError(c, err)
 	}
 

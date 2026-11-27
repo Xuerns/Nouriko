@@ -34,6 +34,9 @@ export function AccountMenu() {
 
   const isProfileActive = pathname === "/profile";
   const displayName = profile?.display_name?.trim() ?? "";
+  const isSafeAvatarUrl =
+    typeof profile?.profile_url === "string" &&
+    profile.profile_url.startsWith("https://api.dicebear.com/");
   const initials = (displayName || profile?.email || "N")
     .slice(0, 1)
     .toUpperCase();
@@ -69,7 +72,7 @@ export function AccountMenu() {
               : ""
           }`}
         >
-          {profile?.profile_url ? (
+          {isSafeAvatarUrl && profile?.profile_url ? (
             <AvatarImage src={profile.profile_url} alt="" />
           ) : null}
           <AvatarFallback className="text-xs font-semibold">

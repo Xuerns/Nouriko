@@ -5,6 +5,7 @@ import { AuthProvider } from "@/components/providers/AuthProvider";
 import { I18nProvider } from "@/components/providers/I18nProvider";
 import { ThemeProvider, useTheme } from "@/components/providers/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 function ThemedToaster() {
   const { theme } = useTheme();
@@ -27,8 +28,10 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <AuthProvider>
       <I18nProvider>
         <ThemeProvider>
-          {children}
-          <ThemedToaster />
+          <TooltipProvider delay={250}>
+            {children}
+            <ThemedToaster />
+          </TooltipProvider>
         </ThemeProvider>
       </I18nProvider>
     </AuthProvider>

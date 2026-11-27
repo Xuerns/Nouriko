@@ -175,3 +175,35 @@ func TestVercelOriginDefaults(t *testing.T) {
 		t.Fatalf("expected preview Vercel AppBaseURL, got %q", cfg.AppBaseURL)
 	}
 }
+
+func TestGoogleAuthEnabledAndTrim(t *testing.T) {
+	setEnv(t, map[string]string{
+		"APP_ENV":          "local",
+		"DATABASE_URL":     "postgres://u:p@localhost:5432/db?sslmode=disable",
+		"AUTH_JWT_SECRET":  testSecret,
+		"GOOGLE_CLIENT_ID": "   ",
+	})
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.GoogleAuthEnabled() {
+		t.Fatal("expected GoogleAuthEnabled=false when GOOGLE_CLIENT_ID is whitespace")
+	}
+	if cfg.Auth.GoogleClientID != "" {
+		t.Fatalf("expected trimmed empty GoogleClientID, got %q", cfg.Auth.GoogleClientID)
+	}
+
+	t.Setenv("GOOGLE_CLIENT_ID", "  123456-abc.apps.googleusercontent.com  ")
+	cfg, err = Load()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !cfg.GoogleAuthEnabled() {
+		t.Fatal("expected GoogleAuthEnabled=true when GOOGLE_CLIENT_ID is set")
+	}
+	if cfg.Auth.GoogleClientID != "123456-abc.apps.googleusercontent.com" {
+		t.Fatalf("expected trimmed GoogleClientID, got %q", cfg.Auth.GoogleClientID)
+	}
+}

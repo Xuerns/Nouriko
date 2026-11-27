@@ -21,7 +21,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/DatePicker";
 import {
   Select,
   SelectContent,
@@ -258,20 +258,14 @@ export function MealResultCard({
               <span className="text-xs text-muted-foreground">
                 {t.chat.mealDateSelectLabel}
               </span>
-              <Input
-                type="date"
-                min={todayStr}
-                max={maxDateStr}
+              <DatePicker
                 value={selectedMealDate}
+                minDate={todayStr}
+                maxDate={maxDateStr}
                 disabled={saved || isSaving}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  if (next && next >= todayStr && next <= maxDateStr) {
-                    setSelectedMealDate(next);
-                  }
-                }}
-                aria-label={t.chat.mealDateSelectLabel}
-                className="h-9 w-auto rounded-full border-border bg-card px-3 text-xs tabular-nums shadow-none"
+                onChange={setSelectedMealDate}
+                ariaLabel={t.chat.mealDateSelectLabel}
+                size="sm"
               />
             </div>
 

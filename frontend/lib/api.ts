@@ -4,7 +4,9 @@ import type {
   CreateSavedMealRequest,
   CreateSavedMealResponse,
   DailySummaryResponse,
+  DeleteAccountPayload,
   DeleteSavedMealResponse,
+  GoogleLoginPayload,
   Language,
   LoginResponse,
   MealHistoryResponse,
@@ -152,6 +154,14 @@ export const apiClient = {
     });
   },
 
+  loginWithGoogle(payload: GoogleLoginPayload): Promise<LoginResponse> {
+    return request<LoginResponse>({
+      method: "POST",
+      path: "/api/v1/auth/google",
+      body: payload,
+    });
+  },
+
   logout(token: string): Promise<StatusResponse> {
     return request<StatusResponse>({
       method: "POST",
@@ -223,12 +233,15 @@ export const apiClient = {
     });
   },
 
-  deleteAccount(token: string, password: string): Promise<StatusResponse> {
+  deleteAccount(
+    token: string,
+    payload: DeleteAccountPayload
+  ): Promise<StatusResponse> {
     return request<StatusResponse>({
       method: "DELETE",
       path: "/api/v1/account",
       token,
-      body: { password },
+      body: payload,
     });
   },
 

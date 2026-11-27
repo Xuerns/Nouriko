@@ -29,10 +29,46 @@ type recordedCall struct {
 	args []any
 }
 
+type fakeRows struct {
+	pgx.Rows
+	values [][]any
+	idx    int
+	closed bool
+}
+
+func (r *fakeRows) Close()                                       { r.closed = true }
+func (r *fakeRows) Err() error                                   { return nil }
+func (r *fakeRows) CommandTag() pgconn.CommandTag                { return pgconn.NewCommandTag("SELECT") }
+func (r *fakeRows) FieldDescriptions() []pgconn.FieldDescription { return nil }
+func (r *fakeRows) Next() bool {
+	if r.idx >= len(r.values) {
+		return false
+	}
+	r.idx++
+	return true
+}
+func (r *fakeRows) Scan(dest ...any) error {
+	row := r.values[r.idx-1]
+	for i := range dest {
+		switch d := dest[i].(type) {
+		case *string:
+			*d = row[i].(string)
+		default:
+			return errors.New("unsupported fakeRows scan type")
+		}
+	}
+	return nil
+}
+func (r *fakeRows) Values() ([]any, error) { return nil, nil }
+func (r *fakeRows) RawValues() [][]byte    { return nil }
+func (r *fakeRows) Conn() *pgx.Conn        { return nil }
+
 type fakeDBTX struct {
 	execCalls     []recordedCall
+	queryCalls    []recordedCall
 	queryRowCalls []recordedCall
 	execFn        func(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
+	queryFn       func(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	queryRowFn    func(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
@@ -44,7 +80,11 @@ func (f *fakeDBTX) Exec(ctx context.Context, sql string, args ...any) (pgconn.Co
 	return pgconn.NewCommandTag("UPDATE 1"), nil
 }
 
-func (f *fakeDBTX) Query(_ context.Context, _ string, _ ...any) (pgx.Rows, error) {
+func (f *fakeDBTX) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
+	f.queryCalls = append(f.queryCalls, recordedCall{sql: sql, args: args})
+	if f.queryFn != nil {
+		return f.queryFn(ctx, sql, args...)
+	}
 	return nil, errors.New("unexpected Query call")
 }
 
@@ -65,9 +105,10 @@ func TestLocalAuthRepo_Users(t *testing.T) {
 		db := &fakeDBTX{
 			queryRowFn: func(_ context.Context, _ string, _ ...any) pgx.Row {
 				return fakeRow{scanFn: func(dest ...any) error {
+					hash := "$2a$12$hash"
 					*(dest[0].(*string)) = userID
 					*(dest[1].(*string)) = "raka@example.com"
-					*(dest[2].(*string)) = "$2a$12$hash"
+					*(dest[2].(**string)) = &hash
 					*(dest[3].(*bool)) = false
 					*(dest[4].(*int16)) = 0
 					*(dest[5].(**time.Time)) = nil
@@ -119,9 +160,10 @@ func TestLocalAuthRepo_Users(t *testing.T) {
 					t.Errorf("unexpected RecordFailedLogin args: %#v", args)
 				}
 				return fakeRow{scanFn: func(dest ...any) error {
+					hash := "$2a$12$hash"
 					*(dest[0].(*string)) = userID
 					*(dest[1].(*string)) = "raka@example.com"
-					*(dest[2].(*string)) = "$2a$12$hash"
+					*(dest[2].(**string)) = &hash
 					*(dest[3].(*bool)) = true
 					*(dest[4].(*int16)) = 5
 					*(dest[5].(**time.Time)) = &lockedUntil
@@ -261,6 +303,243 @@ func TestLocalAuthRepo_TokensAndAccountDelete(t *testing.T) {
 		var r *LocalAuthRepo
 		if _, err := r.GetLocalUserByID(ctx, userID); err == nil {
 			t.Fatal("expected error from nil repo")
+		}
+	})
+}
+
+func TestLocalAuthRepo_GoogleOAuthTransactions(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Second)
+	userID := "550e8400-e29b-41d4-a716-446655440000"
+
+	t.Run("FindOrCreateGoogleUser clears unverified password and invalidates all tokens (pre-takeover mitigation)", func(t *testing.T) {
+		var clearedPassword, invalidatedTokens, insertedIdentity bool
+		oldHash := "$2a$12$attackerhash"
+
+		db := &fakeDBTX{
+			queryRowFn: func(_ context.Context, sql string, _ ...any) pgx.Row {
+				switch {
+				case strings.Contains(sql, "FROM local_user_identities"):
+					return fakeRow{} // not linked yet
+				case strings.Contains(sql, "WHERE LOWER(email)"):
+					return fakeRow{scanFn: func(dest ...any) error {
+						*(dest[0].(*string)) = userID
+						*(dest[1].(*string)) = "victim@gmail.com"
+						*(dest[2].(**string)) = &oldHash
+						*(dest[3].(*bool)) = false // unverified!
+						*(dest[4].(*int16)) = 0
+						*(dest[5].(**time.Time)) = nil
+						*(dest[6].(*time.Time)) = now
+						*(dest[7].(*time.Time)) = now
+						return nil
+					}}
+				case strings.Contains(sql, "SET password_hash = NULL, email_verified = TRUE"):
+					clearedPassword = true
+					return fakeRow{scanFn: func(dest ...any) error {
+						*(dest[0].(*string)) = userID
+						*(dest[1].(*string)) = "victim@gmail.com"
+						*(dest[2].(**string)) = nil
+						*(dest[3].(*bool)) = true
+						*(dest[4].(*int16)) = 0
+						*(dest[5].(**time.Time)) = nil
+						*(dest[6].(*time.Time)) = now
+						*(dest[7].(*time.Time)) = now
+						return nil
+					}}
+				case strings.Contains(sql, "WHERE id = $1::UUID"):
+					return fakeRow{scanFn: func(dest ...any) error {
+						*(dest[0].(*string)) = userID
+						*(dest[1].(*string)) = "victim@gmail.com"
+						*(dest[2].(**string)) = nil
+						*(dest[3].(*bool)) = true
+						*(dest[4].(*int16)) = 0
+						*(dest[5].(**time.Time)) = nil
+						*(dest[6].(*time.Time)) = now
+						*(dest[7].(*time.Time)) = now
+						return nil
+					}}
+				default:
+					return fakeRow{}
+				}
+			},
+			execFn: func(_ context.Context, sql string, _ ...any) (pgconn.CommandTag, error) {
+				if strings.Contains(sql, "UPDATE local_auth_tokens") && strings.Contains(sql, "used_at IS NULL") {
+					invalidatedTokens = true
+				}
+				if strings.Contains(sql, "INSERT INTO local_user_identities") {
+					insertedIdentity = true
+				}
+				return pgconn.NewCommandTag("UPDATE 1"), nil
+			},
+			queryFn: func(_ context.Context, _ string, _ ...any) (pgx.Rows, error) {
+				return &fakeRows{values: [][]any{{"google"}}}, nil
+			},
+		}
+
+		repo := NewLocalAuthRepoWithDBTX(db)
+		u, providers, err := repo.FindOrCreateGoogleUser(ctx, UpsertGoogleUserParams{
+			Email:          "victim@gmail.com",
+			ProviderUserID: "google-sub-victim",
+		})
+		if err != nil {
+			t.Fatalf("FindOrCreateGoogleUser failed: %v", err)
+		}
+		if !clearedPassword || !invalidatedTokens || !insertedIdentity {
+			t.Fatalf("expected pre-takeover mitigation steps: cleared=%v invalidated=%v inserted=%v", clearedPassword, invalidatedTokens, insertedIdentity)
+		}
+		if u.HasPassword() || !u.EmailVerified {
+			t.Fatalf("expected passwordless verified user, got %+v", u)
+		}
+		if len(providers) != 1 || providers[0] != "google" {
+			t.Fatalf("expected providers=[google], got %v", providers)
+		}
+	})
+
+	t.Run("FindOrCreateGoogleUser creates new passwordless verified user when absent", func(t *testing.T) {
+		var insertedUser, insertedIdentity bool
+		db := &fakeDBTX{
+			queryRowFn: func(_ context.Context, sql string, _ ...any) pgx.Row {
+				switch {
+				case strings.Contains(sql, "FROM local_user_identities"):
+					return fakeRow{}
+				case strings.Contains(sql, "WHERE LOWER(email)"):
+					return fakeRow{}
+				case strings.Contains(sql, "INSERT INTO local_users"):
+					insertedUser = true
+					return fakeRow{scanFn: func(dest ...any) error {
+						*(dest[0].(*string)) = userID
+						*(dest[1].(*string)) = "new@gmail.com"
+						*(dest[2].(**string)) = nil
+						*(dest[3].(*bool)) = true
+						*(dest[4].(*int16)) = 0
+						*(dest[5].(**time.Time)) = nil
+						*(dest[6].(*time.Time)) = now
+						*(dest[7].(*time.Time)) = now
+						return nil
+					}}
+				case strings.Contains(sql, "WHERE id = $1::UUID"):
+					return fakeRow{scanFn: func(dest ...any) error {
+						*(dest[0].(*string)) = userID
+						*(dest[1].(*string)) = "new@gmail.com"
+						*(dest[2].(**string)) = nil
+						*(dest[3].(*bool)) = true
+						*(dest[4].(*int16)) = 0
+						*(dest[5].(**time.Time)) = nil
+						*(dest[6].(*time.Time)) = now
+						*(dest[7].(*time.Time)) = now
+						return nil
+					}}
+				default:
+					return fakeRow{}
+				}
+			},
+			execFn: func(_ context.Context, sql string, _ ...any) (pgconn.CommandTag, error) {
+				if strings.Contains(sql, "INSERT INTO local_user_identities") {
+					insertedIdentity = true
+				}
+				return pgconn.NewCommandTag("INSERT 1"), nil
+			},
+			queryFn: func(_ context.Context, _ string, _ ...any) (pgx.Rows, error) {
+				return &fakeRows{values: [][]any{{"google"}}}, nil
+			},
+		}
+
+		repo := NewLocalAuthRepoWithDBTX(db)
+		u, providers, err := repo.FindOrCreateGoogleUser(ctx, UpsertGoogleUserParams{
+			Email:          "new@gmail.com",
+			ProviderUserID: "google-sub-new",
+		})
+		if err != nil {
+			t.Fatalf("FindOrCreateGoogleUser failed: %v", err)
+		}
+		if !insertedUser || !insertedIdentity {
+			t.Fatalf("expected user + identity inserts, got user=%v identity=%v", insertedUser, insertedIdentity)
+		}
+		if u.HasPassword() || !u.EmailVerified || len(providers) != 1 || providers[0] != "google" {
+			t.Fatalf("unexpected new google user: u=%+v providers=%v", u, providers)
+		}
+	})
+
+	t.Run("FindOrCreateGoogleUser returns ErrConflict when provider_user_id is concurrently bound to another user", func(t *testing.T) {
+		otherUserID := "660e8400-e29b-41d4-a716-446655440000"
+		identityLookupCalls := 0
+		db := &fakeDBTX{
+			queryRowFn: func(_ context.Context, sql string, _ ...any) pgx.Row {
+				switch {
+				case strings.Contains(sql, "FROM local_user_identities"):
+					identityLookupCalls++
+					if identityLookupCalls == 1 {
+						return fakeRow{} // Step 1 misses before concurrent tx commits
+					}
+					// Step 2 re-check after ON CONFLICT DO NOTHING sees sub bound to otherUserID!
+					return fakeRow{scanFn: func(dest ...any) error {
+						*(dest[0].(*string)) = "770e8400-e29b-41d4-a716-446655440000"
+						*(dest[1].(*string)) = otherUserID
+						*(dest[2].(*string)) = OAuthProviderGoogle
+						*(dest[3].(*string)) = "google-sub-race"
+						*(dest[4].(*string)) = "race@gmail.com"
+						*(dest[5].(*time.Time)) = now
+						return nil
+					}}
+				case strings.Contains(sql, "WHERE LOWER(email)"):
+					return fakeRow{scanFn: func(dest ...any) error {
+						*(dest[0].(*string)) = userID
+						*(dest[1].(*string)) = "race@gmail.com"
+						*(dest[2].(**string)) = nil
+						*(dest[3].(*bool)) = true
+						*(dest[4].(*int16)) = 0
+						*(dest[5].(**time.Time)) = nil
+						*(dest[6].(*time.Time)) = now
+						*(dest[7].(*time.Time)) = now
+						return nil
+					}}
+				default:
+					return fakeRow{}
+				}
+			},
+			execFn: func(_ context.Context, sql string, _ ...any) (pgconn.CommandTag, error) {
+				if strings.Contains(sql, "INSERT INTO local_user_identities") {
+					return pgconn.NewCommandTag("INSERT 0 0"), nil
+				}
+				return pgconn.NewCommandTag("UPDATE 1"), nil
+			},
+		}
+
+		repo := NewLocalAuthRepoWithDBTX(db)
+		if _, _, err := repo.FindOrCreateGoogleUser(ctx, UpsertGoogleUserParams{
+			Email:          "race@gmail.com",
+			ProviderUserID: "google-sub-race",
+		}); !errors.Is(err, database.ErrConflict) {
+			t.Fatalf("expected database.ErrConflict on concurrent sub divergence, got %v", err)
+		}
+	})
+
+	t.Run("ConsumeOAuthNonce enforces single-use insertion", func(t *testing.T) {
+		inserted := false
+		db := &fakeDBTX{
+			execFn: func(_ context.Context, sql string, _ ...any) (pgconn.CommandTag, error) {
+				if strings.Contains(sql, "DELETE FROM oauth_consumed_nonces") {
+					return pgconn.NewCommandTag("DELETE 0"), nil
+				}
+				if strings.Contains(sql, "INSERT INTO oauth_consumed_nonces") {
+					if !inserted {
+						inserted = true
+						return pgconn.NewCommandTag("INSERT 0 1"), nil
+					}
+					return pgconn.NewCommandTag("INSERT 0 0"), nil
+				}
+				return pgconn.NewCommandTag("OK"), nil
+			},
+		}
+
+		repo := NewLocalAuthRepoWithDBTX(db)
+		first, err := repo.ConsumeOAuthNonce(ctx, "noncehash123", now.Add(time.Hour))
+		if err != nil || !first {
+			t.Fatalf("expected first ConsumeOAuthNonce=true, got %v err=%v", first, err)
+		}
+		second, err := repo.ConsumeOAuthNonce(ctx, "noncehash123", now.Add(time.Hour))
+		if err != nil || second {
+			t.Fatalf("expected second ConsumeOAuthNonce=false, got %v err=%v", second, err)
 		}
 	})
 }

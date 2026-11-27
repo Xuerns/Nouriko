@@ -18,6 +18,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { HealthLabel, SavedMealDTO } from "@/lib/types";
 
 interface SavedMealItemProps {
@@ -120,33 +125,39 @@ export function SavedMealItem({
 
           {onDelete ? (
             <AlertDialog>
-              <AlertDialogTrigger
-                render={
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    disabled={isDeleting}
-                    aria-label={`${t.meals.deleteButton} ${meal.name}`}
-                    title={
-                      isDeleting ? t.meals.deletingButton : t.meals.deleteButton
-                    }
-                    className="size-11 shrink-0 rounded-full text-[var(--error-text)] hover:bg-[var(--error-bg)] hover:text-[var(--error-text)] shadow-none"
-                  />
-                }
-              >
-                {isDeleting ? (
-                  <Loader2
-                    className="size-4 shrink-0 animate-spin stroke-[1.75]"
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <Trash2
-                    className="size-4 shrink-0 stroke-[1.75]"
-                    aria-hidden="true"
-                  />
-                )}
-              </AlertDialogTrigger>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <AlertDialogTrigger
+                      render={
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          disabled={isDeleting}
+                          aria-label={`${t.meals.deleteButton} ${meal.name}`}
+                          className="size-11 shrink-0 rounded-full text-[var(--error-text)] hover:bg-[var(--error-bg)] hover:text-[var(--error-text)] shadow-none"
+                        />
+                      }
+                    />
+                  }
+                >
+                  {isDeleting ? (
+                    <Loader2
+                      className="size-4 shrink-0 animate-spin stroke-[1.75]"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Trash2
+                      className="size-4 shrink-0 stroke-[1.75]"
+                      aria-hidden="true"
+                    />
+                  )}
+                </TooltipTrigger>
+                <TooltipContent className="rounded-xl shadow-none">
+                  {isDeleting ? t.meals.deletingButton : t.meals.deleteButton}
+                </TooltipContent>
+              </Tooltip>
               <AlertDialogContent className="rounded-3xl border border-border bg-card p-6 shadow-none ring-0">
                 <AlertDialogHeader>
                   <AlertDialogTitle>{t.meals.deleteButton}</AlertDialogTitle>

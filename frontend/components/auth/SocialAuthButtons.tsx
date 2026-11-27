@@ -1,69 +1,233 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/components/providers/I18nProvider";
+import { useTheme } from "@/components/providers/ThemeProvider";
+import { Alert } from "@/components/ui/Alert";
+import {
+  generateGoogleNonce,
+  GOOGLE_CLIENT_ID,
+  loadGoogleGsiScript,
+} from "@/lib/google-auth";
+import { cn } from "@/lib/utils";
 
-export function SocialAuthButtons() {
-  const { t } = useI18n();
+export interface SocialAuthButtonsProps {
+  mode?: "login" | "register" | "reauth";
+  showDivider?: boolean;
+  disabled?: boolean;
+  onCredential: (payload: {
+    idToken: string;
+    nonce: string;
+  }) => void | Promise<void>;
+  onError?: (code: string) => void;
+}
+
+const MIN_GSI_WIDTH = 200;
+const MAX_GSI_WIDTH = 400;
+const DEFAULT_GSI_WIDTH = 320;
+
+function clampGsiWidth(rawWidth: number): number {
+  if (!Number.isFinite(rawWidth) || rawWidth <= 0) {
+    return DEFAULT_GSI_WIDTH;
+  }
+  return Math.max(MIN_GSI_WIDTH, Math.min(MAX_GSI_WIDTH, Math.floor(rawWidth)));
+}
+
+export function SocialAuthButtons({
+  mode = "login",
+  showDivider,
+  disabled = false,
+  onCredential,
+  onError,
+}: SocialAuthButtonsProps) {
+  const { language, t } = useI18n();
+  const { theme } = useTheme();
+
+  const shouldShowDivider = showDivider ?? mode !== "reauth";
+
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const buttonHostRef = useRef<HTMLDivElement | null>(null);
+  const rawNonceRef = useRef<string | null>(null);
+  const onCredentialRef = useRef(onCredential);
+  const onErrorRef = useRef(onError);
+  const disabledRef = useRef(disabled);
+
+  const [nonceVersion, setNonceVersion] = useState(0);
+  const [containerWidth, setContainerWidth] =
+    useState<number>(DEFAULT_GSI_WIDTH);
+  const [loadState, setLoadState] = useState<"loading" | "ready" | "error">(
+    "loading"
+  );
+
+  useEffect(() => {
+    onCredentialRef.current = onCredential;
+    onErrorRef.current = onError;
+    disabledRef.current = disabled;
+  }, [disabled, onCredential, onError]);
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) return;
+    const el = wrapperRef.current;
+    if (!el) return;
+
+    const updateWidth = (rawWidth: number) => {
+      const next = clampGsiWidth(rawWidth);
+      setContainerWidth((prev) => (Math.abs(prev - next) >= 2 ? next : prev));
+    };
+
+    updateWidth(el.getBoundingClientRect().width);
+
+    if (typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      updateWidth(entry.contentRect.width);
+    });
+    observer.observe(el);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) return;
+    let cancelled = false;
+    const hostEl = buttonHostRef.current;
+
+    async function setupGoogleButton() {
+      try {
+        const [{ rawNonce, hashedNonce }] = await Promise.all([
+          generateGoogleNonce(),
+          loadGoogleGsiScript(),
+        ]);
+
+        if (cancelled) return;
+
+        const gsi = window.google?.accounts?.id;
+        const host = buttonHostRef.current;
+        if (!gsi || !host) {
+          throw new Error("Google Identity Services is unavailable");
+        }
+
+        rawNonceRef.current = rawNonce;
+
+        gsi.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          nonce: hashedNonce,
+          ux_mode: "popup",
+          context: mode === "register" ? "signup" : "signin",
+          auto_select: false,
+          callback: (response) => {
+            if (cancelled || disabledRef.current) return;
+
+            const idToken = response?.credential;
+            const currentNonce = rawNonceRef.current;
+            rawNonceRef.current = null;
+            setNonceVersion((v) => v + 1);
+
+            if (!idToken || !currentNonce) {
+              onErrorRef.current?.("INVALID_CREDENTIALS");
+              return;
+            }
+
+            void onCredentialRef.current({
+              idToken,
+              nonce: currentNonce,
+            });
+          },
+        });
+
+        host.replaceChildren();
+        gsi.renderButton(host, {
+          type: "standard",
+          theme: theme === "dark" ? "filled_black" : "outline",
+          size: "large",
+          shape: "pill",
+          text: mode === "register" ? "signup_with" : "continue_with",
+          locale: language,
+          width: containerWidth,
+        });
+
+        if (!cancelled) {
+          setLoadState("ready");
+        }
+      } catch {
+        if (!cancelled) {
+          setLoadState("error");
+          if (mode === "reauth") {
+            onErrorRef.current?.("OAUTH_UNAVAILABLE");
+          }
+        }
+      }
+    }
+
+    void setupGoogleButton();
+
+    return () => {
+      cancelled = true;
+      rawNonceRef.current = null;
+      hostEl?.replaceChildren();
+      window.google?.accounts?.id?.cancel();
+    };
+  }, [containerWidth, language, mode, nonceVersion, theme]);
+
+  if (!GOOGLE_CLIENT_ID) {
+    if (mode === "reauth") {
+      return (
+        <Alert variant="error">{t.profile.deleteDialogGoogleUnavailable}</Alert>
+      );
+    }
+    return null;
+  }
 
   return (
-    <div className="space-y-4 pt-1">
-      {/* Soft Divider */}
-      <div className="relative flex items-center justify-center">
-        <div className="w-full border-t border-border" />
-        <span className="bg-card px-3 text-xs text-muted-foreground uppercase tracking-wider">
-          {t.login.orDivider}
-        </span>
-      </div>
+    <div
+      ref={wrapperRef}
+      aria-disabled={disabled || undefined}
+      className={cn(
+        "w-full space-y-4 shadow-none",
+        shouldShowDivider ? "pt-1" : "pt-0",
+        disabled && "pointer-events-none opacity-60"
+      )}
+    >
+      {shouldShowDivider ? (
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-border" />
+          <span className="shrink-0 text-xs uppercase tracking-wider text-muted-foreground">
+            {t.login.orDivider}
+          </span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+      ) : null}
 
-      {/* Social Buttons Grid */}
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          type="button"
-          onClick={() => {
-            // Informative notice for UI demonstration
-            alert("Fitur login Google akan segera hadir.");
-          }}
-          className="inline-flex h-11 items-center justify-center gap-2.5 rounded-2xl border border-border bg-card px-3 text-sm font-medium text-foreground shadow-none transition-colors duration-150 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]"
-        >
-          {/* Google G Logo */}
-          <svg className="h-4 w-4" viewBox="0 0 24 24">
-            <path
-              fill="#4285F4"
-              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-            />
-            <path
-              fill="#34A853"
-              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-            />
-            <path
-              fill="#EA4335"
-              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-            />
-          </svg>
-          <span>{t.login.socialGoogle}</span>
-        </button>
+      <div className="flex min-h-[44px] w-full flex-col items-center justify-center">
+        <div
+          ref={buttonHostRef}
+          className={cn(
+            "flex w-full justify-center shadow-none",
+            loadState !== "ready" && "hidden"
+          )}
+        />
 
-        <button
-          type="button"
-          onClick={() => {
-            alert("Fitur login GitHub akan segera hadir.");
-          }}
-          className="inline-flex h-11 items-center justify-center gap-2.5 rounded-2xl border border-border bg-card px-3 text-sm font-medium text-foreground shadow-none transition-colors duration-150 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]"
-        >
-          {/* GitHub Mark */}
-          <svg className="h-4 w-4 fill-current text-foreground" viewBox="0 0 24 24">
-            <path
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-            />
-          </svg>
-          <span>{t.login.socialGithub}</span>
-        </button>
+        {loadState === "loading" ? (
+          <div className="flex h-11 w-full max-w-[400px] items-center justify-center rounded-full border border-border bg-muted/40 px-4 text-xs text-muted-foreground shadow-none">
+            {t.login.googleLoading}
+          </div>
+        ) : null}
+
+        {loadState === "error" ? (
+          mode === "reauth" ? (
+            <Alert variant="error">{t.login.googleSignInError}</Alert>
+          ) : (
+            <p className="text-center text-xs text-muted-foreground">
+              {t.login.googleSignInError}
+            </p>
+          )
+        ) : null}
       </div>
     </div>
   );

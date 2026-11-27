@@ -21,7 +21,20 @@ export interface ProfileDTO {
   language: Language;
   theme: Theme;
   onboarding_completed: boolean;
+  auth_providers?: string[];
+  has_password?: boolean;
 }
+
+export interface GoogleLoginPayload {
+  id_token: string;
+  nonce: string;
+  language?: Language;
+  theme?: Theme;
+}
+
+export type DeleteAccountPayload =
+  | { password: string }
+  | { google_id_token: string; nonce: string };
 
 export interface RegisterResponse {
   status: string;

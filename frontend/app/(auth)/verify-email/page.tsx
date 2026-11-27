@@ -7,11 +7,14 @@ import { useI18n } from "@/components/providers/I18nProvider";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { FieldError } from "@/components/ui/FieldError";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthCardSkeleton } from "@/components/ui/PageSkeletons";
 import { apiClient, ApiError } from "@/lib/api";
 import { getFriendlyErrorMessage } from "@/lib/errors";
+import { focusFieldById } from "@/lib/form-validation";
+import { cn } from "@/lib/utils";
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
@@ -19,6 +22,8 @@ function VerifyEmailContent() {
   const initialToken = searchParams.get("token") ?? "";
 
   const [token, setToken] = useState(initialToken);
+  const [tokenError, setTokenError] = useState<string | null>(null);
+  const [tokenDirty, setTokenDirty] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [verified, setVerified] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +56,14 @@ function VerifyEmailContent() {
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+
+    if (!token.trim()) {
+      setTokenError(t.common.tokenRequired);
+      focusFieldById("verify-token");
+      return;
+    }
+
+    setTokenError(null);
     setSubmitting(true);
 
     try {
@@ -75,6 +88,7 @@ function VerifyEmailContent() {
           <Alert variant="success">{t.verifyEmail.successMessage}</Alert>
           <Button
             render={<Link href="/login" />}
+            nativeButton={false}
             className="h-11 rounded-full px-5 text-sm shadow-none"
           >
             {t.verifyEmail.goToLogin}
@@ -89,7 +103,11 @@ function VerifyEmailContent() {
             </p>
           ) : null}
 
-          <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+          <form
+            noValidate
+            onSubmit={(e) => void handleSubmit(e)}
+            className="space-y-4"
+          >
             <div className="space-y-1.5">
               <Label
                 htmlFor="verify-token"
@@ -101,13 +119,35 @@ function VerifyEmailContent() {
                 id="verify-token"
                 name="token"
                 type="text"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
                 required
                 disabled={submitting}
                 value={token}
-                onChange={(e) => setToken(e.target.value)}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setToken(next);
+                  setTokenDirty(true);
+                  if (tokenError && next.trim()) {
+                    setTokenError(null);
+                  }
+                }}
+                onBlur={() => {
+                  if (tokenDirty && !token.trim()) {
+                    setTokenError(t.common.tokenRequired);
+                  }
+                }}
+                aria-invalid={Boolean(tokenError)}
+                aria-describedby={tokenError ? "verify-token-error" : undefined}
                 placeholder={t.verifyEmail.tokenPlaceholder}
-                className="h-11 rounded-2xl bg-card px-3.5 font-mono text-sm shadow-none"
+                className={cn(
+                  "h-11 rounded-2xl bg-card px-3.5 font-mono text-sm shadow-none",
+                  tokenError &&
+                    "border-[var(--error-text)] focus-visible:border-[var(--error-text)]"
+                )}
               />
+              <FieldError id="verify-token-error" message={tokenError} />
             </div>
 
             <Button

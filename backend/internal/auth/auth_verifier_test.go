@@ -10,6 +10,7 @@ import (
 	"Nouriko/internal/config"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
@@ -95,5 +96,95 @@ func TestMiddlewareEnforcesBearerAuth(t *testing.T) {
 	}
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+}
+
+func TestVerifyLocalTokenProvidersAndHasPassword(t *testing.T) {
+	v := newLocalVerifier(t)
+	uid := uuid.NewString()
+
+	// 1. Default SignLocalToken embeds ["email"] -> HasPassword() == true.
+	emailTok, err := SignLocalToken(testJWTSecret, uid, "raka@example.com", "authenticated", time.Hour)
+	if err != nil {
+		t.Fatalf("SignLocalToken: %v", err)
+	}
+	claims, err := v.Verify(emailTok)
+	if err != nil {
+		t.Fatalf("Verify emailTok: %v", err)
+	}
+	if !claims.HasPassword() || len(claims.Providers) != 1 || claims.Providers[0] != "email" {
+		t.Fatalf("unexpected email claims: %+v", claims)
+	}
+
+	// 2. Google-only token -> HasPassword() == false.
+	googleTok, err := SignLocalTokenWithProviders(testJWTSecret, uid, "g@example.com", "authenticated", []string{"google"}, time.Hour)
+	if err != nil {
+		t.Fatalf("SignLocalTokenWithProviders(google): %v", err)
+	}
+	claims, err = v.Verify(googleTok)
+	if err != nil {
+		t.Fatalf("Verify googleTok: %v", err)
+	}
+	if claims.HasPassword() || len(claims.Providers) != 1 || claims.Providers[0] != "google" {
+		t.Fatalf("unexpected google-only claims: %+v", claims)
+	}
+
+	// 3. Linked email+google token -> HasPassword() == true.
+	linkedTok, err := SignLocalTokenWithProviders(testJWTSecret, uid, "linked@example.com", "authenticated", []string{"email", "google"}, time.Hour)
+	if err != nil {
+		t.Fatalf("SignLocalTokenWithProviders(email+google): %v", err)
+	}
+	claims, err = v.Verify(linkedTok)
+	if err != nil {
+		t.Fatalf("Verify linkedTok: %v", err)
+	}
+	if !claims.HasPassword() || len(claims.Providers) != 2 {
+		t.Fatalf("unexpected linked claims: %+v", claims)
+	}
+
+	// 4. Legacy token without app_metadata -> backward-compatible HasPassword() == true, NormalizedProviders() == ["email"].
+	now := time.Now()
+	legacyJWT := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub":   uid,
+		"email": "legacy@example.com",
+		"role":  "authenticated",
+		"aud":   "authenticated",
+		"iat":   now.Unix(),
+		"exp":   now.Add(time.Hour).Unix(),
+	})
+	legacyRaw, err := legacyJWT.SignedString([]byte(testJWTSecret))
+	if err != nil {
+		t.Fatalf("sign legacy jwt: %v", err)
+	}
+	claims, err = v.Verify(legacyRaw)
+	if err != nil {
+		t.Fatalf("Verify legacy: %v", err)
+	}
+	if !claims.HasPassword() || len(claims.NormalizedProviders()) != 1 || claims.NormalizedProviders()[0] != "email" {
+		t.Fatalf("unexpected legacy claims: %+v", claims)
+	}
+
+	// 5. Token with only app_metadata.provider="google" (fallback when providers array omitted).
+	providerOnlyJWT := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub":   uid,
+		"email": "p@example.com",
+		"role":  "authenticated",
+		"aud":   "authenticated",
+		"iat":   now.Unix(),
+		"exp":   now.Add(time.Hour).Unix(),
+		"app_metadata": map[string]any{
+			"provider": "google",
+		},
+	})
+	providerOnlyRaw, err := providerOnlyJWT.SignedString([]byte(testJWTSecret))
+	if err != nil {
+		t.Fatalf("sign provider-only jwt: %v", err)
+	}
+	claims, err = v.Verify(providerOnlyRaw)
+	if err != nil {
+		t.Fatalf("Verify provider-only: %v", err)
+	}
+	if claims.HasPassword() || len(claims.Providers) != 1 || claims.Providers[0] != "google" {
+		t.Fatalf("unexpected provider-only claims: %+v", claims)
 	}
 }

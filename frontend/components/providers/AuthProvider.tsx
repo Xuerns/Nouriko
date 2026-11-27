@@ -12,7 +12,11 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { apiClient, ApiError } from "@/lib/api";
-import type { ProfileDTO } from "@/lib/types";
+import type {
+  GoogleLoginPayload,
+  LoginResponse,
+  ProfileDTO,
+} from "@/lib/types";
 
 const TOKEN_STORAGE_KEY = "nouriko_access_token";
 
@@ -22,6 +26,7 @@ interface AuthContextValue {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<ProfileDTO>;
+  loginWithGoogle: (payload: GoogleLoginPayload) => Promise<ProfileDTO>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<ProfileDTO | null>;
   setProfile: (profile: ProfileDTO) => void;
@@ -123,8 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await apiClient.login({ email, password });
+  const establishSession = useCallback((res: LoginResponse): ProfileDTO => {
     sessionVersionRef.current += 1;
     tokenRef.current = res.access_token;
     try {
@@ -136,6 +140,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfileState(res.profile);
     return res.profile;
   }, []);
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const res = await apiClient.login({ email, password });
+      return establishSession(res);
+    },
+    [establishSession]
+  );
+
+  const loginWithGoogle = useCallback(
+    async (payload: GoogleLoginPayload) => {
+      const res = await apiClient.loginWithGoogle(payload);
+      return establishSession(res);
+    },
+    [establishSession]
+  );
 
   const logout = useCallback(async () => {
     const currentToken = tokenRef.current;
@@ -183,6 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       isAuthenticated: Boolean(token && profile),
       login,
+      loginWithGoogle,
       logout,
       refreshProfile,
       setProfile,
@@ -194,6 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       handleUnauthorized,
       isLoading,
       login,
+      loginWithGoogle,
       logout,
       profile,
       refreshProfile,

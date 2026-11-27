@@ -17,6 +17,7 @@ import {
   Wheat,
 } from "lucide-react";
 import { toast } from "sonner";
+import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useI18n } from "@/components/providers/I18nProvider";
 import { Alert } from "@/components/ui/Alert";
@@ -276,6 +277,7 @@ export default function ProfilePage() {
   const baseForm = profileToFormState(profile);
   const form = formOverride ?? baseForm;
   const dirty = hasFormChanges(form, baseForm);
+  const hasPassword = profile.has_password !== false;
 
   function updateField<K extends keyof ProfileFormState>(
     key: K,
@@ -438,7 +440,33 @@ export default function ProfilePage() {
 
     setDeleteSubmitting(true);
     try {
-      await apiClient.deleteAccount(token, deletePassword);
+      await apiClient.deleteAccount(token, { password: deletePassword });
+      clearSession(false);
+      router.replace("/");
+    } catch (err) {
+      if (handleUnauthorized(err)) return;
+      const code = err instanceof ApiError ? err.code : "INTERNAL_ERROR";
+      setDeleteError(getFriendlyErrorMessage(code, language));
+    } finally {
+      setDeleteSubmitting(false);
+    }
+  }
+
+  async function handleGoogleDeleteAccount({
+    idToken,
+    nonce,
+  }: {
+    idToken: string;
+    nonce: string;
+  }) {
+    if (!token) return;
+    setDeleteError(null);
+    setDeleteSubmitting(true);
+    try {
+      await apiClient.deleteAccount(token, {
+        google_id_token: idToken,
+        nonce,
+      });
       clearSession(false);
       router.replace("/");
     } catch (err) {
@@ -928,88 +956,103 @@ export default function ProfilePage() {
 
         <TabsContent value="security">
           <Card className="rounded-3xl border border-border bg-card py-0 shadow-none ring-0 gap-0">
-            <form
-              noValidate
-              onSubmit={(e) => void handlePasswordSubmit(e)}
-              className="flex flex-col"
-            >
-              <CardHeader className="px-5 pt-4 pb-3">
-                <CardTitle className="text-base font-semibold text-foreground">
-                  {t.profile.changePasswordHeading}
-                </CardTitle>
-                <CardDescription className="text-xs leading-relaxed text-muted-foreground">
-                  {t.profile.changePasswordDescription}
-                </CardDescription>
-              </CardHeader>
+            {hasPassword ? (
+              <form
+                noValidate
+                onSubmit={(e) => void handlePasswordSubmit(e)}
+                className="flex flex-col"
+              >
+                <CardHeader className="px-5 pt-4 pb-3">
+                  <CardTitle className="text-base font-semibold text-foreground">
+                    {t.profile.changePasswordHeading}
+                  </CardTitle>
+                  <CardDescription className="text-xs leading-relaxed text-muted-foreground">
+                    {t.profile.changePasswordDescription}
+                  </CardDescription>
+                </CardHeader>
 
-              <CardContent className="space-y-3.5 px-5 pb-4">
-                {passwordError ? (
-                  <Alert variant="error">{passwordError}</Alert>
-                ) : null}
-                {passwordSuccess ? (
-                  <Alert variant="success">{passwordSuccess}</Alert>
-                ) : null}
+                <CardContent className="space-y-3.5 px-5 pb-4">
+                  {passwordError ? (
+                    <Alert variant="error">{passwordError}</Alert>
+                  ) : null}
+                  {passwordSuccess ? (
+                    <Alert variant="success">{passwordSuccess}</Alert>
+                  ) : null}
 
-                <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-                  <div className="sm:col-span-2">
+                  <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                    <div className="sm:col-span-2">
+                      <PasswordInput
+                        id="profile-current-password"
+                        name="currentPassword"
+                        label={t.common.currentPasswordLabel}
+                        value={currentPassword}
+                        onChange={(val) => {
+                          setPasswordError(null);
+                          setCurrentPassword(val);
+                        }}
+                        autoComplete="current-password"
+                        disabled={passwordSaving}
+                      />
+                    </div>
+
                     <PasswordInput
-                      id="profile-current-password"
-                      name="currentPassword"
-                      label={t.common.currentPasswordLabel}
-                      value={currentPassword}
+                      id="profile-new-password"
+                      name="newPassword"
+                      label={t.common.newPasswordLabel}
+                      value={newPassword}
                       onChange={(val) => {
                         setPasswordError(null);
-                        setCurrentPassword(val);
+                        setNewPassword(val);
                       }}
-                      autoComplete="current-password"
+                      autoComplete="new-password"
+                      minLength={8}
+                      disabled={passwordSaving}
+                      showStrength
+                      hint={t.common.passwordMinHint}
+                    />
+
+                    <PasswordInput
+                      id="profile-confirm-new-password"
+                      name="confirmNewPassword"
+                      label={t.common.confirmPasswordLabel}
+                      value={confirmNewPassword}
+                      onChange={(val) => {
+                        setPasswordError(null);
+                        setConfirmNewPassword(val);
+                      }}
+                      autoComplete="new-password"
+                      minLength={8}
                       disabled={passwordSaving}
                     />
                   </div>
+                </CardContent>
 
-                  <PasswordInput
-                    id="profile-new-password"
-                    name="newPassword"
-                    label={t.common.newPasswordLabel}
-                    value={newPassword}
-                    onChange={(val) => {
-                      setPasswordError(null);
-                      setNewPassword(val);
-                    }}
-                    autoComplete="new-password"
-                    minLength={8}
+                <CardFooter className="flex flex-wrap items-center justify-end gap-3 rounded-b-3xl border-t border-border bg-muted/40 px-5 py-3">
+                  <Button
+                    type="submit"
                     disabled={passwordSaving}
-                    showStrength
-                    hint={t.common.passwordMinHint}
-                  />
-
-                  <PasswordInput
-                    id="profile-confirm-new-password"
-                    name="confirmNewPassword"
-                    label={t.common.confirmPasswordLabel}
-                    value={confirmNewPassword}
-                    onChange={(val) => {
-                      setPasswordError(null);
-                      setConfirmNewPassword(val);
-                    }}
-                    autoComplete="new-password"
-                    minLength={8}
-                    disabled={passwordSaving}
-                  />
-                </div>
-              </CardContent>
-
-              <CardFooter className="flex flex-wrap items-center justify-end gap-3 rounded-b-3xl border-t border-border bg-muted/40 px-5 py-3">
-                <Button
-                  type="submit"
-                  disabled={passwordSaving}
-                  className="h-9 rounded-full px-5 text-xs font-medium shadow-none"
-                >
-                  {passwordSaving
-                    ? t.common.saving
-                    : t.profile.changePasswordButton}
-                </Button>
-              </CardFooter>
-            </form>
+                    className="h-9 rounded-full px-5 text-xs font-medium shadow-none"
+                  >
+                    {passwordSaving
+                      ? t.common.saving
+                      : t.profile.changePasswordButton}
+                  </Button>
+                </CardFooter>
+              </form>
+            ) : (
+              <>
+                <CardHeader className="px-5 pt-5 pb-2">
+                  <CardTitle className="text-base font-semibold text-foreground">
+                    {t.profile.googleManagedHeading}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-5 pb-5">
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {t.profile.googleManagedDescription}
+                  </p>
+                </CardContent>
+              </>
+            )}
           </Card>
         </TabsContent>
 
@@ -1048,7 +1091,9 @@ export default function ProfilePage() {
                     {t.profile.deleteAccountHeading}
                   </h2>
                   <p className="text-xs leading-relaxed text-muted-foreground">
-                    {t.profile.deleteAccountDescription}
+                    {hasPassword
+                      ? t.profile.deleteAccountDescription
+                      : t.profile.deleteAccountGoogleDescription}
                   </p>
                 </div>
 
@@ -1093,43 +1138,78 @@ export default function ProfilePage() {
 
           {deleteError ? <Alert variant="error">{deleteError}</Alert> : null}
 
-          <form
-            noValidate
-            onSubmit={(e) => void handleDeleteAccount(e)}
-            className="space-y-4"
-          >
-            <PasswordInput
-              id="delete-account-password"
-              name="deletePassword"
-              label={t.profile.deleteDialogPasswordLabel}
-              value={deletePassword}
-              onChange={(val) => {
-                setDeleteError(null);
-                setDeletePassword(val);
-              }}
-              autoComplete="current-password"
-              disabled={deleteSubmitting}
-            />
+          {hasPassword ? (
+            <form
+              noValidate
+              onSubmit={(e) => void handleDeleteAccount(e)}
+              className="space-y-4"
+            >
+              <PasswordInput
+                id="delete-account-password"
+                name="deletePassword"
+                label={t.profile.deleteDialogPasswordLabel}
+                value={deletePassword}
+                onChange={(val) => {
+                  setDeleteError(null);
+                  setDeletePassword(val);
+                }}
+                autoComplete="current-password"
+                disabled={deleteSubmitting}
+              />
 
-            <AlertDialogFooter className="mx-0 mb-0 rounded-none border-0 bg-transparent p-0 pt-2">
-              <AlertDialogCancel
-                disabled={deleteSubmitting}
-                className="h-10 rounded-full px-5 shadow-none"
-              >
-                {t.common.cancel}
-              </AlertDialogCancel>
-              <Button
-                type="submit"
-                variant="destructive"
-                disabled={deleteSubmitting}
-                className="h-10 rounded-full bg-[var(--error-bg)] px-5 text-sm font-medium text-[var(--error-text)] shadow-none hover:bg-[var(--error-bg)]/80"
-              >
-                {deleteSubmitting
-                  ? t.profile.deleteDialogDeleting
-                  : t.profile.deleteDialogConfirm}
-              </Button>
-            </AlertDialogFooter>
-          </form>
+              <AlertDialogFooter className="mx-0 mb-0 rounded-none border-0 bg-transparent p-0 pt-2">
+                <AlertDialogCancel
+                  disabled={deleteSubmitting}
+                  className="h-10 rounded-full px-5 shadow-none"
+                >
+                  {t.common.cancel}
+                </AlertDialogCancel>
+                <Button
+                  type="submit"
+                  variant="destructive"
+                  disabled={deleteSubmitting}
+                  className="h-10 rounded-full bg-[var(--error-bg)] px-5 text-sm font-medium text-[var(--error-text)] shadow-none hover:bg-[var(--error-bg)]/80"
+                >
+                  {deleteSubmitting
+                    ? t.profile.deleteDialogDeleting
+                    : t.profile.deleteDialogConfirm}
+                </Button>
+              </AlertDialogFooter>
+            </form>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                {t.profile.deleteDialogGoogleDescription}
+              </p>
+
+              {deleteModalOpen ? (
+                <SocialAuthButtons
+                  mode="reauth"
+                  showDivider={false}
+                  disabled={deleteSubmitting}
+                  onCredential={handleGoogleDeleteAccount}
+                  onError={(code) =>
+                    setDeleteError(getFriendlyErrorMessage(code, language))
+                  }
+                />
+              ) : null}
+
+              {deleteSubmitting ? (
+                <p className="text-center text-xs text-muted-foreground">
+                  {t.profile.deleteDialogDeleting}
+                </p>
+              ) : null}
+
+              <AlertDialogFooter className="mx-0 mb-0 rounded-none border-0 bg-transparent p-0 pt-2">
+                <AlertDialogCancel
+                  disabled={deleteSubmitting}
+                  className="h-10 rounded-full px-5 shadow-none"
+                >
+                  {t.common.cancel}
+                </AlertDialogCancel>
+              </AlertDialogFooter>
+            </div>
+          )}
         </AlertDialogContent>
       </AlertDialog>
     </div>

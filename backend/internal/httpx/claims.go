@@ -14,9 +14,50 @@ const claimsLocalsKey localsKey = "auth_claims"
 
 // Claims holds the verified user identity extracted from a Bearer JWT.
 type Claims struct {
-	UserID string
-	Email  string
-	Role   string
+	UserID    string
+	Email     string
+	Role      string
+	Providers []string
+}
+
+// NormalizedProviders returns deduplicated lowercase provider identifiers,
+// defaulting to ["email"] when none are present in the token.
+func (c Claims) NormalizedProviders() []string {
+	if len(c.Providers) == 0 {
+		return []string{"email"}
+	}
+	seen := make(map[string]struct{}, len(c.Providers))
+	out := make([]string, 0, len(c.Providers))
+	for _, raw := range c.Providers {
+		p := strings.ToLower(strings.TrimSpace(raw))
+		if p == "" {
+			continue
+		}
+		if _, exists := seen[p]; exists {
+			continue
+		}
+		seen[p] = struct{}{}
+		out = append(out, p)
+	}
+	if len(out) == 0 {
+		return []string{"email"}
+	}
+	return out
+}
+
+// HasPassword reports whether the user has an email/password credential.
+// Returns true when Providers is empty for backward compatibility with tokens
+// minted before provider metadata was embedded.
+func (c Claims) HasPassword() bool {
+	if len(c.Providers) == 0 {
+		return true
+	}
+	for _, raw := range c.Providers {
+		if strings.EqualFold(strings.TrimSpace(raw), "email") {
+			return true
+		}
+	}
+	return false
 }
 
 // SetClaims stores verified user claims on the Fiber request context.

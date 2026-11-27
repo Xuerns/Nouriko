@@ -6,6 +6,7 @@ export type ErrorCode =
   | "EMAIL_ALREADY_EXISTS"
   | "WEAK_PASSWORD"
   | "INVALID_OR_EXPIRED_TOKEN"
+  | "OAUTH_UNAVAILABLE"
   | "INVALID_INPUT"
   | "PHOTO_INVALID"
   | "PHOTO_TOO_LARGE"
@@ -34,6 +35,8 @@ const ERROR_MESSAGES: Record<Language, Record<ErrorCode, string>> = {
       "Kata sandi minimal 8 karakter dan tidak boleh terlalu umum. Pilih kata sandi lain.",
     INVALID_OR_EXPIRED_TOKEN:
       "Tautan sudah tidak berlaku atau kedaluwarsa. Minta tautan baru untuk melanjutkan.",
+    OAUTH_UNAVAILABLE:
+      "Masuk dengan Google sedang tidak tersedia saat ini. Gunakan email dan kata sandi atau coba lagi nanti.",
     INVALID_INPUT:
       "Periksa kembali isian formulir kamu, lalu coba kirim lagi.",
     PHOTO_INVALID:
@@ -74,6 +77,8 @@ const ERROR_MESSAGES: Record<Language, Record<ErrorCode, string>> = {
       "Password must be at least 8 characters and not too common. Please choose another password.",
     INVALID_OR_EXPIRED_TOKEN:
       "This link is invalid or has expired. Please request a new link to continue.",
+    OAUTH_UNAVAILABLE:
+      "Sign in with Google is currently unavailable. Please use email and password or try again later.",
     INVALID_INPUT: "Please check your form inputs and try submitting again.",
     PHOTO_INVALID:
       "This photo could not be processed. Please choose a JPG, PNG, or WebP image up to 5 MB.",

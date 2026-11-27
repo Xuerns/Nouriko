@@ -72,7 +72,7 @@ func scanProfile(row pgx.Row) (*Profile, error) {
 }
 
 // UpsertProfile creates a profiles row if absent, or returns the existing row
-// (backfilling profile_url if it was empty).
+// (backfilling profile_url and display_name only when they were empty).
 func (s *Store) UpsertProfile(ctx context.Context, params UpsertProfileParams) (*Profile, error) {
 	if s == nil || s.q == nil {
 		return nil, fmt.Errorf("profile store is not initialized")
@@ -86,17 +86,19 @@ func (s *Store) UpsertProfile(ctx context.Context, params UpsertProfileParams) (
 	if theme == "" {
 		theme = "light"
 	}
+	displayName := strings.TrimSpace(params.DisplayName)
 
 	const query = `
-		INSERT INTO profiles (id, profile_url, language, theme)
-		VALUES ($1::UUID, $2::TEXT, $3::TEXT, $4::TEXT)
+		INSERT INTO profiles (id, profile_url, display_name, language, theme)
+		VALUES ($1::UUID, $2::TEXT, $3::TEXT, $4::TEXT, $5::TEXT)
 		ON CONFLICT (id) DO UPDATE
 		SET
 			profile_url = CASE WHEN profiles.profile_url = '' THEN EXCLUDED.profile_url ELSE profiles.profile_url END,
+			display_name = CASE WHEN profiles.display_name = '' THEN EXCLUDED.display_name ELSE profiles.display_name END,
 			updated_at = NOW()
 		RETURNING ` + profileColumns
 
-	p, err := scanProfile(s.q.QueryRow(ctx, query, params.ID, params.ProfileURL, language, theme))
+	p, err := scanProfile(s.q.QueryRow(ctx, query, params.ID, params.ProfileURL, displayName, language, theme))
 	if err != nil {
 		return nil, fmt.Errorf("upsert profile: %w", err)
 	}

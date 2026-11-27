@@ -23,6 +23,13 @@ export const enDictionary: Dictionary = {
     passwordStrong: "Strong",
     passwordMinHint: "At least 8 characters and not too common.",
     passwordMismatch: "Password confirmation does not match.",
+    emailRequired: "Please enter your email address.",
+    emailInvalid: "Enter an email address in the format name@example.com.",
+    passwordRequired: "Please enter your password.",
+    confirmPasswordRequired: "Please confirm your password.",
+    tokenRequired: "Please enter the verification token.",
+    foodNameRequired: "Please enter the food or ingredient name.",
+    pickDateLabel: "Pick a date",
     emailLabel: "Email",
     emailPlaceholder: "name@example.com",
     passwordLabel: "Password",
@@ -258,7 +265,9 @@ export const enDictionary: Dictionary = {
     rememberMe: "Remember me",
     orDivider: "or",
     socialGoogle: "Google",
-    socialGithub: "GitHub",
+    googleLoading: "Loading Google option...",
+    googleSignInError:
+      "Google sign-in could not be loaded right now. Check your connection or script blocker and try again.",
     submitButton: "Sign in",
     forgotPasswordLink: "Forgot password?",
     noAccount: "Do not have an account?",
@@ -360,6 +369,9 @@ export const enDictionary: Dictionary = {
       "Update your account password to keep your access secure. After saving, use your new password the next time you sign in.",
     changePasswordButton: "Update Password",
     passwordChanged: "Password updated successfully.",
+    googleManagedHeading: "Signed in with Google",
+    googleManagedDescription:
+      "This account signs in with Google and does not use a local Nouriko password. Sign-in security is managed directly through your Google account.",
     privacyHeading: "Privacy & Data",
     privacyDescription:
       "Learn what data Nouriko stores, how it is used for nutrition calculations, and your rights to control your data.",
@@ -367,12 +379,18 @@ export const enDictionary: Dictionary = {
     deleteAccountHeading: "Delete Account",
     deleteAccountDescription:
       "Deleting your account permanently removes your profile, nutrition targets, and all saved meal history. You will be asked to enter your password to confirm before this action takes effect.",
+    deleteAccountGoogleDescription:
+      "Deleting your account permanently removes your profile, nutrition targets, and all saved meal history. You will be asked to re-verify with Google before this action takes effect.",
     deleteAccountButton: "Delete Account",
     deleteDialogTitle: "Delete Account",
     deleteDialogQuestion: "Are you sure you want to delete this account?",
     deleteDialogWarning:
       "This action cannot be undone. All account data and saved history will be permanently deleted.",
     deleteDialogPasswordLabel: "Enter Password",
+    deleteDialogGoogleDescription:
+      "To confirm permanent account deletion, sign in again with the same Google account below.",
+    deleteDialogGoogleUnavailable:
+      "Google verification is currently unavailable in this environment. Please contact the app administrator for help deleting your account.",
     deleteDialogConfirm: "Delete",
     deleteDialogDeleting: "Deleting...",
   },
@@ -387,6 +405,7 @@ export const enDictionary: Dictionary = {
         ],
         items: [
           "Account data: email address and securely hashed password for authentication.",
+          "Google Sign-In data (if you choose to sign in with Google): basic account information consisting of your email address and display name, used solely for authentication.",
           "Body profile data: height, weight, age, gender, activity level, and daily calorie and macro targets.",
           "App preferences: selected language (Indonesian or English) and appearance theme (Light or Dark).",
           "Saved meals that you explicitly choose to save.",
@@ -411,7 +430,7 @@ export const enDictionary: Dictionary = {
         ],
         items: [
           "Update your body metrics, nutrition targets, language, theme, and password at any time.",
-          "Permanently delete your account from the Delete Account section on your Profile page after verifying your password. Deleting your account permanently removes your profile and saved meals.",
+          "Permanently delete your account from the Delete Account section on your Profile page after verifying your password or signing in again with Google. Deleting your account permanently removes your profile and saved meals.",
         ],
       },
       {

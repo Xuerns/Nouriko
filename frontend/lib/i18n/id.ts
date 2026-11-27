@@ -23,6 +23,13 @@ export const idDictionary: Dictionary = {
     passwordStrong: "Kuat",
     passwordMinHint: "Minimal 8 karakter, tidak boleh terlalu umum.",
     passwordMismatch: "Konfirmasi kata sandi tidak cocok.",
+    emailRequired: "Masukkan alamat email kamu.",
+    emailInvalid: "Masukkan email dengan format yang benar, misalnya nama@contoh.com.",
+    passwordRequired: "Masukkan kata sandi kamu.",
+    confirmPasswordRequired: "Masukkan konfirmasi kata sandi.",
+    tokenRequired: "Masukkan kode token terlebih dahulu.",
+    foodNameRequired: "Masukkan nama makanan atau bahan terlebih dahulu.",
+    pickDateLabel: "Pilih tanggal",
     emailLabel: "Email",
     emailPlaceholder: "nama@contoh.com",
     passwordLabel: "Kata Sandi",
@@ -258,7 +265,9 @@ export const idDictionary: Dictionary = {
     rememberMe: "Ingat saya",
     orDivider: "atau",
     socialGoogle: "Google",
-    socialGithub: "GitHub",
+    googleLoading: "Memuat opsi Google...",
+    googleSignInError:
+      "Tombol masuk Google tidak dapat dimuat saat ini. Periksa koneksi atau nonaktifkan pemblokir skrip, lalu coba lagi.",
     submitButton: "Masuk",
     forgotPasswordLink: "Lupa kata sandi?",
     noAccount: "Belum punya akun?",
@@ -360,6 +369,9 @@ export const idDictionary: Dictionary = {
       "Perbarui kata sandi akun kamu secara berkala untuk menjaga keamanan akses. Setelah berhasil diubah, gunakan kata sandi baru saat masuk kembali.",
     changePasswordButton: "Perbarui Kata Sandi",
     passwordChanged: "Kata sandi berhasil diperbarui.",
+    googleManagedHeading: "Masuk dengan Google",
+    googleManagedDescription:
+      "Akun ini masuk menggunakan Google dan tidak menggunakan kata sandi lokal di Nouriko. Keamanan masuk dikelola langsung melalui akun Google kamu.",
     privacyHeading: "Privasi & Data",
     privacyDescription:
       "Pelajari data apa saja yang disimpan Nouriko, cara penggunaannya untuk perhitungan nutrisi, serta hak kontrol penuh atas datamu.",
@@ -367,12 +379,18 @@ export const idDictionary: Dictionary = {
     deleteAccountHeading: "Hapus Akun",
     deleteAccountDescription:
       "Menghapus akun akan menghapus permanen seluruh data profil, target nutrisi, dan riwayat menu tersimpan. Kamu akan diminta memasukkan kata sandi untuk konfirmasi sebelum tindakan ini dijalankan.",
+    deleteAccountGoogleDescription:
+      "Menghapus akun akan menghapus permanen seluruh data profil, target nutrisi, dan riwayat menu tersimpan. Kamu akan diminta melakukan verifikasi ulang melalui Google sebelum tindakan ini dijalankan.",
     deleteAccountButton: "Hapus Akun",
     deleteDialogTitle: "Hapus Akun",
     deleteDialogQuestion: "Apakah kamu yakin ingin menghapus akun ini?",
     deleteDialogWarning:
       "Tindakan ini tidak dapat dibatalkan. Seluruh data akun dan riwayat tersimpan akan dihapus permanen.",
     deleteDialogPasswordLabel: "Masukkan Kata Sandi",
+    deleteDialogGoogleDescription:
+      "Untuk mengonfirmasi penghapusan akun secara permanen, masuk ulang dengan akun Google yang sama di bawah ini.",
+    deleteDialogGoogleUnavailable:
+      "Verifikasi Google belum tersedia di lingkungan ini. Hubungi pengelola aplikasi untuk bantuan penghapusan akun.",
     deleteDialogConfirm: "Hapus",
     deleteDialogDeleting: "Menghapus...",
   },
@@ -387,6 +405,7 @@ export const idDictionary: Dictionary = {
         ],
         items: [
           "Data akun: alamat email dan kata sandi tersandi untuk autentikasi.",
+          "Data masuk dengan Google (jika kamu memilih masuk menggunakan Google): informasi akun dasar berupa alamat email dan nama tampilan yang digunakan semata-mata untuk autentikasi.",
           "Data profil tubuh: tinggi badan, berat badan, usia, jenis kelamin, tingkat aktivitas, serta target kalori dan makro harian.",
           "Preferensi aplikasi: pilihan bahasa (Indonesia atau Inggris) dan tema tampilan (Terang atau Gelap).",
           "Data menu tersimpan yang kamu pilih untuk disimpan secara mandiri.",
@@ -411,7 +430,7 @@ export const idDictionary: Dictionary = {
         ],
         items: [
           "Memperbarui data tubuh, target nutrisi, bahasa, tema, serta kata sandi kapan saja.",
-          "Menghapus akun secara permanen melalui menu Hapus Akun di halaman Profil dengan verifikasi kata sandi. Penghapusan akun akan menghapus seluruh data profil dan menu tersimpan secara permanen.",
+          "Menghapus akun secara permanen melalui menu Hapus Akun di halaman Profil dengan verifikasi kata sandi atau masuk ulang Google. Penghapusan akun akan menghapus seluruh data profil dan menu tersimpan secara permanen.",
         ],
       },
       {

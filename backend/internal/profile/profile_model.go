@@ -53,10 +53,11 @@ func (p *Profile) OnboardingCompleted() bool {
 
 // UpsertProfileParams defines inputs for idempotently creating or ensuring a profile row.
 type UpsertProfileParams struct {
-	ID         string
-	ProfileURL string
-	Language   string
-	Theme      string
+	ID          string
+	ProfileURL  string
+	DisplayName string
+	Language    string
+	Theme       string
 }
 
 // UpdateOnboardingParams defines inputs for completing user onboarding.
@@ -115,12 +116,26 @@ type DTO struct {
 	Language            string   `json:"language"`
 	Theme               string   `json:"theme"`
 	OnboardingCompleted bool     `json:"onboarding_completed"`
+	AuthProviders       []string `json:"auth_providers"`
+	HasPassword         bool     `json:"has_password"`
 }
 
-// ToDTO maps a Profile and verified email into a canonical JSON DTO.
+// ToDTO maps a Profile and verified email into a canonical JSON DTO with default
+// email/password auth metadata for backward compatibility.
 func ToDTO(p *Profile, email string) DTO {
+	return ToDTOWithAuth(p, email, []string{"email"}, true)
+}
+
+// ToDTOWithAuth maps a Profile, verified email, and auth provider metadata into
+// a canonical JSON DTO.
+func ToDTOWithAuth(p *Profile, email string, providers []string, hasPassword bool) DTO {
+	normProviders := normalizeAuthProviders(providers)
 	if p == nil {
-		return DTO{Email: email}
+		return DTO{
+			Email:         email,
+			AuthProviders: normProviders,
+			HasPassword:   hasPassword,
+		}
 	}
 	return DTO{
 		ID:                  p.ID,
@@ -140,7 +155,32 @@ func ToDTO(p *Profile, email string) DTO {
 		Language:            p.Language,
 		Theme:               p.Theme,
 		OnboardingCompleted: p.OnboardingCompleted(),
+		AuthProviders:       normProviders,
+		HasPassword:         hasPassword,
 	}
+}
+
+func normalizeAuthProviders(providers []string) []string {
+	if len(providers) == 0 {
+		return []string{"email"}
+	}
+	seen := make(map[string]struct{}, len(providers))
+	out := make([]string, 0, len(providers))
+	for _, raw := range providers {
+		v := strings.ToLower(strings.TrimSpace(raw))
+		if v == "" {
+			continue
+		}
+		if _, ok := seen[v]; ok {
+			continue
+		}
+		seen[v] = struct{}{}
+		out = append(out, v)
+	}
+	if len(out) == 0 {
+		return []string{"email"}
+	}
+	return out
 }
 
 // ValidateLanguage normalizes and validates UI language ("id" or "en").
@@ -179,4 +219,23 @@ func ValidateDisplayName(raw string) (string, error) {
 		}
 	}
 	return v, nil
+}
+
+// SanitizeGoogleDisplayName strips control characters, trims whitespace, and
+// safely truncates a Google profile name to MaxDisplayNameRunes runes.
+func SanitizeGoogleDisplayName(raw string) string {
+	var b strings.Builder
+	b.Grow(len(raw))
+	for _, r := range raw {
+		if unicode.IsControl(r) {
+			continue
+		}
+		b.WriteRune(r)
+	}
+	cleaned := strings.TrimSpace(b.String())
+	if utf8.RuneCountInString(cleaned) <= MaxDisplayNameRunes {
+		return cleaned
+	}
+	runes := []rune(cleaned)
+	return strings.TrimSpace(string(runes[:MaxDisplayNameRunes]))
 }

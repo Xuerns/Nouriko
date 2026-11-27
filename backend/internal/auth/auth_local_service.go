@@ -17,11 +17,13 @@ import (
 )
 
 const (
-	maxFailedLoginAttempts int16 = 5
-	loginLockoutDuration         = 15 * time.Minute
-	verifyEmailTokenTTL          = 24 * time.Hour
-	resetPasswordTokenTTL        = 30 * time.Minute
-	localAccessTokenTTL          = 24 * time.Hour
+	maxFailedLoginAttempts    int16 = 5
+	loginLockoutDuration            = 15 * time.Minute
+	verifyEmailTokenTTL             = 24 * time.Hour
+	resetPasswordTokenTTL           = 30 * time.Minute
+	localAccessTokenTTL             = 24 * time.Hour
+	googleReauthMaxAge              = 5 * time.Minute
+	googleReauthMaxFutureSkew       = time.Minute
 )
 
 type keyedLockEntry struct {
@@ -63,23 +65,31 @@ func (k *keyedLocker) lock(key string) func() {
 }
 
 // LocalService implements Service for APP_ENV=local using PostgreSQL tables
-// (local_users, local_auth_tokens, profiles) and HS256 JWTs.
+// (local_users, local_user_identities, local_auth_tokens, profiles) and HS256 JWTs.
 type LocalService struct {
-	repo       LocalAuthRepository
-	profiles   profile.Repository
-	jwtSecret  string
-	audience   string
-	appBaseURL string
-	logger     *slog.Logger
-	now        func() time.Time
-	loginLocks keyedLocker
+	repo           LocalAuthRepository
+	profiles       profile.Repository
+	googleVerifier GoogleTokenVerifier
+	replayStore    OAuthReplayStore
+	jwtSecret      string
+	audience       string
+	appBaseURL     string
+	logger         *slog.Logger
+	now            func() time.Time
+	loginLocks     keyedLocker
 }
 
 // Compile-time interface check.
 var _ Service = (*LocalService)(nil)
 
 // NewLocalService constructs a LocalService backed by localRepo and profileRepo.
-func NewLocalService(cfg *config.Config, localRepo LocalAuthRepository, profileRepo profile.Repository, logger *slog.Logger) *LocalService {
+func NewLocalService(
+	cfg *config.Config,
+	localRepo LocalAuthRepository,
+	profileRepo profile.Repository,
+	googleVerifier GoogleTokenVerifier,
+	logger *slog.Logger,
+) *LocalService {
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -95,14 +105,20 @@ func NewLocalService(cfg *config.Config, localRepo LocalAuthRepository, profileR
 	if appBaseURL == "" {
 		appBaseURL = "http://localhost:3000"
 	}
+	var replayStore OAuthReplayStore = localRepo
+	if localRepo == nil {
+		replayStore = newMemOAuthReplayStore()
+	}
 	return &LocalService{
-		repo:       localRepo,
-		profiles:   profileRepo,
-		jwtSecret:  jwtSecret,
-		audience:   audience,
-		appBaseURL: strings.TrimRight(appBaseURL, "/"),
-		logger:     logger,
-		now:        time.Now,
+		repo:           localRepo,
+		profiles:       profileRepo,
+		googleVerifier: googleVerifier,
+		replayStore:    replayStore,
+		jwtSecret:      jwtSecret,
+		audience:       audience,
+		appBaseURL:     strings.TrimRight(appBaseURL, "/"),
+		logger:         logger,
+		now:            time.Now,
 	}
 }
 
@@ -219,11 +235,16 @@ func (s *LocalService) Login(ctx context.Context, rawEmail, password string) (*L
 		return nil, fmt.Errorf("lookup local user: %w", err)
 	}
 
+	if !user.HasPassword() {
+		DummyPasswordCheck(password)
+		return nil, ErrInvalidCredentials
+	}
+
 	if user.LockedUntil != nil && user.LockedUntil.After(s.now()) {
 		return nil, ErrTooManyRequests
 	}
 
-	if !VerifyPassword(user.PasswordHash, password) {
+	if !VerifyPassword(*user.PasswordHash, password) {
 		if _, recErr := s.repo.RecordFailedLogin(ctx, user.ID, maxFailedLoginAttempts, loginLockoutDuration); recErr != nil {
 			s.logger.Warn("failed to record failed login attempt", "user_id", user.ID, "error", recErr)
 		}
@@ -240,7 +261,13 @@ func (s *LocalService) Login(ctx context.Context, rawEmail, password string) (*L
 		}
 	}
 
-	accessToken, err := SignLocalToken(s.jwtSecret, user.ID, user.Email, s.audience, localAccessTokenTTL)
+	providers, err := s.repo.GetUserProviders(ctx, user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch local user providers: %w", err)
+	}
+	providers = normalizeProviderList(providers)
+
+	accessToken, err := SignLocalTokenWithProviders(s.jwtSecret, user.ID, user.Email, s.audience, providers, localAccessTokenTTL)
 	if err != nil {
 		return nil, fmt.Errorf("sign local token: %w", err)
 	}
@@ -261,12 +288,87 @@ func (s *LocalService) Login(ctx context.Context, rawEmail, password string) (*L
 	}
 
 	return &LoginResult{
-		AccessToken: accessToken,
-		TokenType:   "Bearer",
-		ExpiresIn:   int(localAccessTokenTTL.Seconds()),
-		UserID:      user.ID,
-		Email:       user.Email,
-		Profile:     prof,
+		AccessToken:   accessToken,
+		TokenType:     "Bearer",
+		ExpiresIn:     int(localAccessTokenTTL.Seconds()),
+		UserID:        user.ID,
+		Email:         user.Email,
+		AuthProviders: providers,
+		HasPassword:   true,
+		Profile:       prof,
+	}, nil
+}
+
+// LoginWithGoogle verifies a Google ID token and SHA-256 nonce, atomically finds
+// or creates/links the local user, provisions their profile, and signs a local JWT.
+func (s *LocalService) LoginWithGoogle(ctx context.Context, in GoogleLoginInput) (*LoginResult, error) {
+	if s.googleVerifier == nil {
+		return nil, ErrOAuthUnavailable
+	}
+	lang, err := ValidateLanguage(in.Language, true)
+	if err != nil {
+		return nil, ErrInvalidInput
+	}
+	theme, err := ValidateTheme(in.Theme, true)
+	if err != nil {
+		return nil, ErrInvalidInput
+	}
+	if err := validateGoogleTokenInputs(in.IDToken, in.Nonce); err != nil {
+		return nil, err
+	}
+
+	identity, err := s.googleVerifier.VerifyIDToken(ctx, in.IDToken, in.Nonce)
+	if err != nil {
+		return nil, err
+	}
+
+	consumed, err := s.replayStore.ConsumeOAuthNonce(ctx, oauthReplayKey(in.Nonce), oauthReplayExpiry(identity, s.now()))
+	if err != nil {
+		return nil, fmt.Errorf("consume oauth nonce on google login: %w", err)
+	}
+	if !consumed {
+		return nil, ErrInvalidCredentials
+	}
+
+	user, providers, err := s.repo.FindOrCreateGoogleUser(ctx, UpsertGoogleUserParams{
+		Email:          identity.Email,
+		ProviderUserID: identity.Subject,
+	})
+	if err != nil {
+		if errors.Is(err, database.ErrConflict) {
+			return nil, ErrInvalidCredentials
+		}
+		return nil, fmt.Errorf("find or create google user: %w", err)
+	}
+	if len(providers) == 0 {
+		providers = []string{OAuthProviderGoogle}
+	}
+
+	prof, err := s.profiles.UpsertProfile(ctx, profile.UpsertProfileParams{
+		ID:          user.ID,
+		ProfileURL:  DiceBearAvatarURL(user.ID),
+		DisplayName: profile.SanitizeGoogleDisplayName(identity.Name),
+		Language:    lang,
+		Theme:       theme,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("upsert profile on google login: %w", err)
+	}
+
+	accessToken, err := SignLocalTokenWithProviders(s.jwtSecret, user.ID, user.Email, s.audience, providers, localAccessTokenTTL)
+	if err != nil {
+		return nil, fmt.Errorf("sign local token on google login: %w", err)
+	}
+
+	return &LoginResult{
+		AccessToken:   accessToken,
+		TokenType:     "Bearer",
+		ExpiresIn:     int(localAccessTokenTTL.Seconds()),
+		UserID:        user.ID,
+		Email:         user.Email,
+		AuthProviders: providers,
+		HasPassword:   user.HasPassword(),
+		Profile:       prof,
 	}, nil
 }
 
@@ -361,7 +463,7 @@ func (s *LocalService) ChangePassword(ctx context.Context, userID, _, _, current
 		return fmt.Errorf("get local user for change password: %w", err)
 	}
 
-	if !VerifyPassword(user.PasswordHash, currentPassword) {
+	if !user.HasPassword() || !VerifyPassword(*user.PasswordHash, currentPassword) {
 		return ErrInvalidCredentials
 	}
 
@@ -377,14 +479,11 @@ func (s *LocalService) ChangePassword(ctx context.Context, userID, _, _, current
 	return nil
 }
 
-// DeleteAccount verifies the user's password and permanently deletes their
-// profile (cascading saved_meals) and local auth record in a transaction (PRD F13).
-func (s *LocalService) DeleteAccount(ctx context.Context, userID, _, password string) error {
-	if password == "" {
-		return ErrInvalidInput
-	}
-
-	user, err := s.repo.GetLocalUserByID(ctx, userID)
+// DeleteAccount verifies the user's password (for password accounts) or a fresh
+// Google ID token re-authentication (for Google-only accounts), then permanently
+// deletes their profile (cascading saved_meals) and local auth record (PRD F13).
+func (s *LocalService) DeleteAccount(ctx context.Context, in DeleteAccountInput) error {
+	user, err := s.repo.GetLocalUserByID(ctx, in.UserID)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return ErrUnauthorized
@@ -392,11 +491,48 @@ func (s *LocalService) DeleteAccount(ctx context.Context, userID, _, password st
 		return fmt.Errorf("get local user for delete account: %w", err)
 	}
 
-	if !VerifyPassword(user.PasswordHash, password) {
-		return ErrInvalidCredentials
+	if user.HasPassword() {
+		if in.Password == "" {
+			return ErrInvalidInput
+		}
+		if !VerifyPassword(*user.PasswordHash, in.Password) {
+			return ErrInvalidCredentials
+		}
+	} else {
+		if s.googleVerifier == nil {
+			return ErrOAuthUnavailable
+		}
+		if err := validateGoogleTokenInputs(in.GoogleIDToken, in.Nonce); err != nil {
+			return err
+		}
+		identity, err := s.googleVerifier.VerifyIDToken(ctx, in.GoogleIDToken, in.Nonce)
+		if err != nil {
+			return err
+		}
+		now := s.now()
+		if identity.IssuedAt.IsZero() || now.Sub(identity.IssuedAt) > googleReauthMaxAge || identity.IssuedAt.After(now.Add(googleReauthMaxFutureSkew)) {
+			return ErrInvalidCredentials
+		}
+		linked, err := s.repo.GetUserIdentity(ctx, user.ID, OAuthProviderGoogle)
+		if err != nil {
+			if errors.Is(err, database.ErrNotFound) {
+				return ErrInvalidCredentials
+			}
+			return fmt.Errorf("get linked google identity for delete account: %w", err)
+		}
+		if linked.ProviderUserID != identity.Subject {
+			return ErrInvalidCredentials
+		}
+		consumed, err := s.replayStore.ConsumeOAuthNonce(ctx, oauthReplayKey(in.Nonce), oauthReplayExpiry(identity, now))
+		if err != nil {
+			return fmt.Errorf("consume oauth nonce for delete account: %w", err)
+		}
+		if !consumed {
+			return ErrInvalidCredentials
+		}
 	}
 
-	if err := s.repo.DeleteLocalAccount(ctx, userID); err != nil {
+	if err := s.repo.DeleteLocalAccount(ctx, user.ID); err != nil {
 		return fmt.Errorf("delete local account: %w", err)
 	}
 

@@ -29,6 +29,7 @@ const (
 	CodeTooManyRequests      = "TOO_MANY_REQUESTS"
 	CodeInternalError        = "INTERNAL_ERROR"
 	CodeServiceUnavailable   = "SERVICE_UNAVAILABLE"
+	CodeOAuthUnavailable     = "OAUTH_UNAVAILABLE"
 	CodeAIUnavailable        = "AI_UNAVAILABLE"
 	CodeAITimeout            = "AI_TIMEOUT"
 )
