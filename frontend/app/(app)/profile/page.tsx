@@ -240,14 +240,12 @@ export default function ProfilePage() {
   );
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
-  const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
@@ -284,7 +282,6 @@ export default function ProfilePage() {
     value: ProfileFormState[K]
   ) {
     setProfileError(null);
-    setProfileSuccess(null);
     setFormOverride((prev) => ({
       ...(prev ?? baseForm),
       [key]: value,
@@ -294,14 +291,12 @@ export default function ProfilePage() {
   function handleResetForm() {
     setFormOverride(null);
     setProfileError(null);
-    setProfileSuccess(null);
   }
 
   async function handleProfileSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!token || !profile) return;
     setProfileError(null);
-    setProfileSuccess(null);
 
     const parsedHeight = parseFiniteInRange(form.heightCm, 100, 250);
     const parsedWeight = parseFiniteInRange(form.weightKg, 25, 300);
@@ -367,7 +362,7 @@ export default function ProfilePage() {
     }
 
     if (Object.keys(payload).length === 0) {
-      setProfileSuccess(t.profile.profileSaved);
+      toast.success(t.profile.profileSaved);
       return;
     }
 
@@ -376,7 +371,6 @@ export default function ProfilePage() {
       const res = await apiClient.updateProfile(token, payload);
       setProfile(res.profile);
       setFormOverride(null);
-      setProfileSuccess(t.profile.profileSaved);
       toast.success(t.profile.profileSaved);
     } catch (err) {
       if (handleUnauthorized(err)) return;
@@ -391,7 +385,6 @@ export default function ProfilePage() {
     e.preventDefault();
     if (!token) return;
     setPasswordError(null);
-    setPasswordSuccess(null);
 
     if (!currentPassword || !newPassword || !confirmNewPassword) {
       setPasswordError(getFriendlyErrorMessage("INVALID_INPUT", language));
@@ -417,7 +410,6 @@ export default function ProfilePage() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmNewPassword("");
-      setPasswordSuccess(t.profile.passwordChanged);
       toast.success(t.profile.passwordChanged);
     } catch (err) {
       if (handleUnauthorized(err)) return;
@@ -703,9 +695,6 @@ export default function ProfilePage() {
                 {profileError ? (
                   <Alert variant="error">{profileError}</Alert>
                 ) : null}
-                {profileSuccess ? (
-                  <Alert variant="success">{profileSuccess}</Alert>
-                ) : null}
 
                 <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-12">
                   <div className="space-y-1.5 sm:col-span-7">
@@ -974,9 +963,6 @@ export default function ProfilePage() {
                 <CardContent className="space-y-3.5 px-5 pb-4">
                   {passwordError ? (
                     <Alert variant="error">{passwordError}</Alert>
-                  ) : null}
-                  {passwordSuccess ? (
-                    <Alert variant="success">{passwordSuccess}</Alert>
                   ) : null}
 
                   <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">

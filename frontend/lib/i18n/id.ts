@@ -588,6 +588,8 @@ export const idDictionary: Dictionary = {
     cookingStepsHeading: "Langkah memasak ringkas",
     showDetailsButton: "Lihat bahan & cara masak",
     hideDetailsButton: "Sembunyikan detail",
+    openMealDetailLabel: "Detail",
+    closeMealDetailLabel: "Tutup",
     saveMealButton: "Simpan",
     savedMealButton: "Tersimpan",
     savingMealButton: "Menyimpan...",

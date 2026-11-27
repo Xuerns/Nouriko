@@ -384,6 +384,8 @@ export interface Dictionary {
     cookingStepsHeading: string;
     showDetailsButton: string;
     hideDetailsButton: string;
+    openMealDetailLabel: string;
+    closeMealDetailLabel: string;
     saveMealButton: string;
     savedMealButton: string;
     savingMealButton: string;

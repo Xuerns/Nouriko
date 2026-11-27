@@ -588,6 +588,8 @@ export const enDictionary: Dictionary = {
     cookingStepsHeading: "Quick cooking steps",
     showDetailsButton: "Show ingredients & steps",
     hideDetailsButton: "Hide details",
+    openMealDetailLabel: "Details",
+    closeMealDetailLabel: "Close",
     saveMealButton: "Save",
     savedMealButton: "Saved",
     savingMealButton: "Saving...",

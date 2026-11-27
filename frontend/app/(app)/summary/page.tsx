@@ -746,12 +746,13 @@ function SummaryContent() {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col gap-3.5">
+                <div className="flex flex-col gap-2.5 lg:gap-3.5">
                   {filteredMeals.map((meal) => (
                     <SavedMealItem
                       key={meal.id}
                       meal={meal}
                       surface="canvas"
+                      desktopLayout="expanded"
                       onDelete={handleDeleteMeal}
                       isDeleting={Boolean(deletingIds[meal.id])}
                     />
