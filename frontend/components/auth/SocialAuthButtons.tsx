@@ -40,7 +40,7 @@ export function SocialAuthButtons({
   onCredential,
   onError,
 }: SocialAuthButtonsProps) {
-  const { language, t } = useI18n();
+  const { language, hydrated, t } = useI18n();
   const { theme } = useTheme();
 
   const shouldShowDivider = showDivider ?? mode !== "reauth";
@@ -94,7 +94,7 @@ export function SocialAuthButtons({
   }, []);
 
   useEffect(() => {
-    if (!GOOGLE_CLIENT_ID) return;
+    if (!GOOGLE_CLIENT_ID || !hydrated) return;
     let cancelled = false;
     const hostEl = buttonHostRef.current;
 
@@ -102,7 +102,7 @@ export function SocialAuthButtons({
       try {
         const [{ rawNonce, hashedNonce }] = await Promise.all([
           generateGoogleNonce(),
-          loadGoogleGsiScript(),
+          loadGoogleGsiScript(language),
         ]);
 
         if (cancelled) return;
@@ -173,7 +173,7 @@ export function SocialAuthButtons({
       hostEl?.replaceChildren();
       window.google?.accounts?.id?.cancel();
     };
-  }, [containerWidth, language, mode, nonceVersion, theme]);
+  }, [containerWidth, hydrated, language, mode, nonceVersion, theme]);
 
   if (!GOOGLE_CLIENT_ID) {
     if (mode === "reauth") {

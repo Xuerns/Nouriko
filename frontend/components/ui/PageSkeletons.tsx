@@ -422,7 +422,7 @@ export function AuthSplitSkeleton({
     >
       <span className="sr-only">{label}</span>
 
-      <div className="space-y-5 lg:col-span-7">
+      <div className="hidden space-y-5 lg:col-span-7 lg:block">
         <div className="space-y-3">
           <Skeleton className="h-10 w-80 max-w-full rounded-lg" />
           <Skeleton className="h-10 w-64 max-w-full rounded-lg" />
@@ -435,7 +435,7 @@ export function AuthSplitSkeleton({
         </div>
       </div>
 
-      <Card className="w-full rounded-3xl border border-border bg-card p-6 shadow-none ring-0 gap-5 sm:p-8 lg:col-span-5">
+      <Card className="mx-auto w-full max-w-md rounded-3xl border border-border bg-card p-5 shadow-none ring-0 gap-5 sm:p-8 lg:col-span-5 lg:max-w-none">
         <div className="space-y-2">
           <Skeleton className="h-6 w-36 rounded-lg" />
           <Skeleton className="h-4 w-56 rounded-md" />

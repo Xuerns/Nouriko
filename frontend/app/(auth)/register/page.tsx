@@ -210,8 +210,8 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="space-y-4 py-4">
-      <div>
+    <div className="space-y-3 py-1 lg:space-y-4 lg:py-4">
+      <div className="mx-auto w-full max-w-md lg:max-w-none">
         <Button
           render={<Link href="/" />}
           nativeButton={false}
@@ -224,9 +224,9 @@ export default function RegisterPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-14">
-        {/* Left Column: Inspiring Hero & Salad Illustration */}
-        <div className="flex flex-col items-center text-center lg:col-span-7 lg:items-start lg:text-left space-y-6">
+      <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-12 lg:gap-14">
+        {/* Left Column: Inspiring Hero & Salad Illustration (desktop only so form is immediately visible on mobile) */}
+        <div className="hidden flex-col items-start text-left lg:col-span-7 lg:flex space-y-6">
           <div className="space-y-3">
             <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl lg:text-5xl leading-[1.15]">
               {t.register.heroTitle}{" "}
@@ -249,8 +249,8 @@ export default function RegisterPage() {
         </div>
 
         {/* Right Column: Form Card */}
-        <div className="w-full lg:col-span-5">
-          <Card className="w-full rounded-3xl border border-border/80 bg-card p-6 sm:p-9 shadow-none space-y-6">
+        <div className="mx-auto w-full max-w-md lg:col-span-5 lg:max-w-none">
+          <Card className="w-full rounded-3xl border border-border/80 bg-card p-5 sm:p-8 lg:p-9 shadow-none space-y-5 sm:space-y-6">
             <div className="space-y-1">
               <h2 className="text-2xl font-bold tracking-tight text-foreground">
                 {t.register.title}

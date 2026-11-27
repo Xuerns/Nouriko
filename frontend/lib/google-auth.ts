@@ -2,7 +2,7 @@ export const GOOGLE_CLIENT_ID = (
   process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? ""
 ).trim();
 
-const GOOGLE_GSI_SCRIPT_SRC = "https://accounts.google.com/gsi/client";
+const GOOGLE_GSI_SCRIPT_BASE_SRC = "https://accounts.google.com/gsi/client";
 const GOOGLE_GSI_LOAD_TIMEOUT_MS = 10_000;
 
 export interface GoogleCredentialResponse {
@@ -79,27 +79,60 @@ export async function generateGoogleNonce(): Promise<{
   return { rawNonce, hashedNonce };
 }
 
-let gsiScriptPromise: Promise<void> | null = null;
+let loadedGsiLocale: string | null = null;
+let pendingGsiLoad: { locale: string; promise: Promise<void> } | null = null;
 
-export function loadGoogleGsiScript(): Promise<void> {
+function normalizeGsiLocale(locale?: string): "id" | "en" {
+  return locale === "en" ? "en" : "id";
+}
+
+function buildGsiScriptSrc(locale: "id" | "en"): string {
+  return `${GOOGLE_GSI_SCRIPT_BASE_SRC}?hl=${encodeURIComponent(locale)}`;
+}
+
+export function loadGoogleGsiScript(locale?: string): Promise<void> {
   if (typeof window === "undefined" || typeof document === "undefined") {
     return Promise.reject(new Error("Browser environment is required"));
   }
 
-  if (window.google?.accounts?.id) {
+  const targetLocale = normalizeGsiLocale(locale);
+
+  if (window.google?.accounts?.id && loadedGsiLocale === targetLocale) {
     return Promise.resolve();
   }
 
-  if (gsiScriptPromise) {
-    return gsiScriptPromise;
+  if (pendingGsiLoad && pendingGsiLoad.locale === targetLocale) {
+    return pendingGsiLoad.promise;
   }
 
-  gsiScriptPromise = new Promise<void>((resolve, reject) => {
-    const existingScript = document.querySelector<HTMLScriptElement>(
-      `script[src="${GOOGLE_GSI_SCRIPT_SRC}"]`
+  const scriptSrc = buildGsiScriptSrc(targetLocale);
+
+  const promise = new Promise<void>((resolve, reject) => {
+    const existingScripts = document.querySelectorAll<HTMLScriptElement>(
+      `script[src^="${GOOGLE_GSI_SCRIPT_BASE_SRC}"]`
     );
-    const createdScript = !existingScript;
-    const script = existingScript ?? document.createElement("script");
+
+    let matchingScript: HTMLScriptElement | null = null;
+    for (const scriptEl of existingScripts) {
+      if (scriptEl.src === scriptSrc && !matchingScript) {
+        matchingScript = scriptEl;
+      } else if (scriptEl.parentNode) {
+        scriptEl.parentNode.removeChild(scriptEl);
+      }
+    }
+
+    if (loadedGsiLocale !== null && loadedGsiLocale !== targetLocale) {
+      window.google?.accounts?.id?.cancel();
+      window.google = undefined;
+      if (matchingScript?.parentNode) {
+        matchingScript.parentNode.removeChild(matchingScript);
+        matchingScript = null;
+      }
+      loadedGsiLocale = null;
+    }
+
+    const createdScript = !matchingScript;
+    const script = matchingScript ?? document.createElement("script");
 
     let settled = false;
 
@@ -113,7 +146,9 @@ export function loadGoogleGsiScript(): Promise<void> {
       if (settled) return;
       settled = true;
       cleanup();
-      gsiScriptPromise = null;
+      if (pendingGsiLoad?.promise === promise) {
+        pendingGsiLoad = null;
+      }
       if (createdScript && script.parentNode) {
         script.parentNode.removeChild(script);
       }
@@ -128,6 +163,10 @@ export function loadGoogleGsiScript(): Promise<void> {
       }
       settled = true;
       cleanup();
+      loadedGsiLocale = targetLocale;
+      if (pendingGsiLoad?.promise === promise) {
+        pendingGsiLoad = null;
+      }
       resolve();
     };
 
@@ -147,7 +186,7 @@ export function loadGoogleGsiScript(): Promise<void> {
     script.addEventListener("error", handleError, { once: true });
 
     if (createdScript) {
-      script.src = GOOGLE_GSI_SCRIPT_SRC;
+      script.src = scriptSrc;
       script.async = true;
       script.defer = true;
       document.head.appendChild(script);
@@ -156,5 +195,6 @@ export function loadGoogleGsiScript(): Promise<void> {
     }
   });
 
-  return gsiScriptPromise;
+  pendingGsiLoad = { locale: targetLocale, promise };
+  return promise;
 }
