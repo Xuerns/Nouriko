@@ -579,5 +579,129 @@ func TestBuildSystemInstruction_CoversGeneralMealAndSnackRecommendations(t *test
 		if !strings.Contains(instr, `NEVER classify meal, snack`) {
 			t.Errorf("BuildSystemInstruction(%q) missing anti-false-off-topic guard", lang)
 		}
+		if !strings.Contains(instr, "UNREALISTIC, IMPOSSIBLE, OR UNSAFE REQUESTS") {
+			t.Errorf("BuildSystemInstruction(%q) missing unrealistic request guard", lang)
+		}
+	}
+}
+
+func TestChatService_UnrealisticRequestsRefusedDeterministically(t *testing.T) {
+	cases := []struct {
+		name        string
+		message     string
+		lang        string
+		wantBlocked bool
+		wantPrefix  string
+		wantBudget  int
+	}{
+		{
+			name:        "tiny 1rb budget asking for 3 meals",
+			message:     "aku punya 1rb berikan aku 3 makanan",
+			lang:        "id",
+			wantBlocked: true,
+			wantPrefix:  "Maaf,",
+			wantBudget:  1000,
+		},
+		{
+			name:        "no money Indonesian",
+			message:     "aku ga punya uang berikan aku makanan",
+			lang:        "id",
+			wantBlocked: true,
+			wantPrefix:  "Maaf,",
+			wantBudget:  0,
+		},
+		{
+			name:        "sub-1000 budget 500 perak",
+			message:     "cuma punya 500 perak mau makan apa",
+			lang:        "id",
+			wantBlocked: true,
+			wantPrefix:  "Maaf,",
+			wantBudget:  500,
+		},
+		{
+			name:        "unrealistic combined ratio 10rb for 3x makan",
+			message:     "budget 10rb buat 3x makan hari ini",
+			lang:        "id",
+			wantBlocked: true,
+			wantPrefix:  "Maaf,",
+			wantBudget:  10000,
+		},
+		{
+			name:        "realistic 10rb asking for 3 meal options passes through",
+			message:     "budget 10rb kasih 3 opsi makanan",
+			lang:        "id",
+			wantBlocked: false,
+		},
+		{
+			name:        "absurd meal count 50 meals",
+			message:     "berikan aku 50 makanan sehat",
+			lang:        "id",
+			wantBlocked: true,
+			wantPrefix:  "Maaf,",
+			wantBudget:  0,
+		},
+		{
+			name:        "no money English",
+			message:     "I have no money give me food",
+			lang:        "en",
+			wantBlocked: true,
+			wantPrefix:  "Sorry,",
+			wantBudget:  0,
+		},
+		{
+			name:        "no money BUT has ingredients at home passes through",
+			message:     "aku ga punya uang tapi ada telur dan nasi di kos",
+			lang:        "id",
+			wantBlocked: false,
+		},
+		{
+			name:        "realistic 15rb budget for 3 options passes through",
+			message:     "budget 15rb berikan aku 3 makanan",
+			lang:        "id",
+			wantBlocked: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			called := false
+			analyzer := &mockAnalyzer{
+				fn: func(_ context.Context, _ AnalyzeRequest) (*RawAIResponse, error) {
+					called = true
+					return &RawAIResponse{
+						Intent: IntentIngredients,
+						Intro:  "Ini rekomendasi buat kamu.",
+						Meals: []MealOption{
+							{Name: "Nasi Telor Dadar", EstimatedPriceIDR: 10000, HealthScore: 68},
+						},
+					}, nil
+				},
+			}
+			svc := NewChatService(analyzer, &stubFoodPriceStore{}, nil, nil)
+			resp, err := svc.Analyze(context.Background(), AnalyzeInput{
+				Message:  tc.message,
+				Language: tc.lang,
+			})
+			if err != nil {
+				t.Fatalf("Analyze error: %v", err)
+			}
+
+			if tc.wantBlocked {
+				if called {
+					t.Fatalf("expected analyzer NOT to be called for unrealistic request %q", tc.message)
+				}
+				if len(resp.Meals) != 0 || len(resp.ShoppingList) != 0 {
+					t.Fatalf("expected 0 meals and 0 shopping items, got meals=%d shop=%d", len(resp.Meals), len(resp.ShoppingList))
+				}
+				if !strings.HasPrefix(resp.Intro, tc.wantPrefix) {
+					t.Fatalf("expected intro starting with %q, got %q", tc.wantPrefix, resp.Intro)
+				}
+				if resp.BudgetIDR != tc.wantBudget {
+					t.Fatalf("expected budget_idr=%d, got %d", tc.wantBudget, resp.BudgetIDR)
+				}
+			} else if !called {
+				t.Fatalf("expected analyzer to be called for realistic request %q", tc.message)
+			}
+		})
 	}
 }

@@ -18,6 +18,10 @@ import (
 )
 
 func newAuthHandlerTestApp(t *testing.T) (*fiber.App, *memAuthRepo) {
+	return newAuthHandlerTestAppWithGoogle(t, nil)
+}
+
+func newAuthHandlerTestAppWithGoogle(t *testing.T, gv GoogleTokenVerifier) (*fiber.App, *memAuthRepo) {
 	t.Helper()
 	cfg := &config.Config{
 		Mode:       config.ModeLocal,
@@ -27,13 +31,16 @@ func newAuthHandlerTestApp(t *testing.T) (*fiber.App, *memAuthRepo) {
 			Audience:  "authenticated",
 		},
 	}
+	if gv != nil {
+		cfg.Auth.GoogleClientID = "test-google-client-id"
+	}
 	logger := slog.New(slog.NewJSONHandler(io.Discard, nil))
 	repo := newMemAuthRepo()
 	verifier, err := NewVerifier(context.Background(), cfg)
 	if err != nil {
 		t.Fatalf("NewVerifier: %v", err)
 	}
-	svc := NewService(cfg, repo, repo, nil, logger)
+	svc := NewService(cfg, repo, repo, nil, gv, logger)
 	h := NewHandler(svc, logger)
 
 	app := fiber.New()
@@ -41,6 +48,7 @@ func newAuthHandlerTestApp(t *testing.T) (*fiber.App, *memAuthRepo) {
 	api.Post("/auth/register", h.Register)
 	api.Post("/auth/verify-email", h.VerifyEmail)
 	api.Post("/auth/login", h.Login)
+	api.Post("/auth/google", h.GoogleLogin)
 	api.Post("/auth/forgot-password", h.ForgotPassword)
 	api.Post("/auth/reset-password", h.ResetPassword)
 
@@ -309,4 +317,102 @@ func TestAuthHandler_EdgeCasesAndStrictErrorContract(t *testing.T) {
 		"password": "",
 	})
 	assertAuthError(t, resp, body, http.StatusBadRequest, "INVALID_INPUT")
+}
+
+func TestAuthHandler_GoogleSignInAndReauthDelete(t *testing.T) {
+	const validNonce = "0123456789abcdef0123456789abcdef"
+
+	// 1. Unconfigured Google auth -> 503 OAUTH_UNAVAILABLE
+	disabledApp, _ := newAuthHandlerTestAppWithGoogle(t, nil)
+	resp, body := doAuthJSONReq(t, disabledApp, http.MethodPost, "/api/v1/auth/google", "", map[string]any{
+		"id_token": "some-token",
+		"nonce":    validNonce,
+	})
+	assertAuthError(t, resp, body, http.StatusServiceUnavailable, "OAUTH_UNAVAILABLE")
+
+	// 2. Configured Google auth
+	now := time.Now().UTC()
+	gv := &mockGoogleVerifier{
+		fn: func(_ context.Context, idToken, _ string) (*GoogleIdentity, error) {
+			switch idToken {
+			case "valid-token":
+				return &GoogleIdentity{
+					Subject:       "google-sub-handler",
+					Email:         "budi@gmail.com",
+					Name:          "Budi Santoso",
+					EmailVerified: true,
+					IssuedAt:      now.Add(-15 * time.Second),
+				}, nil
+			case "stale-token":
+				return &GoogleIdentity{
+					Subject:       "google-sub-handler",
+					Email:         "budi@gmail.com",
+					Name:          "Budi Santoso",
+					EmailVerified: true,
+					IssuedAt:      now.Add(-10 * time.Minute),
+				}, nil
+			default:
+				return nil, ErrInvalidCredentials
+			}
+		},
+	}
+	app, _ := newAuthHandlerTestAppWithGoogle(t, gv)
+
+	// Invalid input (short nonce) -> 400 INVALID_INPUT
+	resp, body = doAuthJSONReq(t, app, http.MethodPost, "/api/v1/auth/google", "", map[string]any{
+		"id_token": "valid-token",
+		"nonce":    "too-short",
+	})
+	assertAuthError(t, resp, body, http.StatusBadRequest, "INVALID_INPUT")
+
+	// Invalid Google token -> 401 INVALID_CREDENTIALS
+	resp, body = doAuthJSONReq(t, app, http.MethodPost, "/api/v1/auth/google", "", map[string]any{
+		"id_token": "bad-token",
+		"nonce":    validNonce,
+	})
+	assertAuthError(t, resp, body, http.StatusUnauthorized, "INVALID_CREDENTIALS")
+
+	// Valid Google login -> 200 OK with auth_providers=["google"] and has_password=false
+	resp, body = doAuthJSONReq(t, app, http.MethodPost, "/api/v1/auth/google", "", map[string]any{
+		"id_token": "valid-token",
+		"nonce":    validNonce,
+		"language": "en",
+		"theme":    "dark",
+	})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 for google login, got %d (%+v)", resp.StatusCode, body)
+	}
+	accessToken, _ := body["access_token"].(string)
+	profileMap, _ := body["profile"].(map[string]any)
+	if accessToken == "" || profileMap["has_password"] != false || profileMap["display_name"] != "Budi Santoso" {
+		t.Fatalf("unexpected google login response: %+v", body)
+	}
+	provs, _ := profileMap["auth_providers"].([]any)
+	if len(provs) != 1 || provs[0] != "google" {
+		t.Fatalf("expected auth_providers=[google], got %+v", profileMap["auth_providers"])
+	}
+
+	// DELETE /api/v1/account with stale Google token -> 401 INVALID_CREDENTIALS
+	resp, body = doAuthJSONReq(t, app, http.MethodDelete, "/api/v1/account", accessToken, map[string]any{
+		"google_id_token": "stale-token",
+		"nonce":           validNonce,
+	})
+	assertAuthError(t, resp, body, http.StatusUnauthorized, "INVALID_CREDENTIALS")
+
+	// DELETE /api/v1/account replaying the login nonce -> 401 INVALID_CREDENTIALS
+	resp, body = doAuthJSONReq(t, app, http.MethodDelete, "/api/v1/account", accessToken, map[string]any{
+		"google_id_token": "valid-token",
+		"nonce":           validNonce,
+	})
+	assertAuthError(t, resp, body, http.StatusUnauthorized, "INVALID_CREDENTIALS")
+
+	// DELETE /api/v1/account with fresh Google token & fresh nonce -> 200 account_deleted
+	const freshReauthNonce = "fedcba9876543210fedcba9876543210"
+	resp, body = doAuthJSONReq(t, app, http.MethodDelete, "/api/v1/account", accessToken, map[string]any{
+		"google_id_token": "valid-token",
+		"nonce":           freshReauthNonce,
+	})
+	if resp.StatusCode != http.StatusOK || body["status"] != "account_deleted" {
+		t.Fatalf("expected 200 account_deleted for Google re-auth delete, got %d (%+v)", resp.StatusCode, body)
+	}
 }

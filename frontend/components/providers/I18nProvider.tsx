@@ -19,6 +19,7 @@ const LANG_STORAGE_KEY = "nouriko_lang";
 interface I18nContextValue {
   language: Language;
   t: Dictionary;
+  hydrated: boolean;
   setLanguage: (lang: Language) => void;
   toggleLanguage: () => void;
 }
@@ -106,10 +107,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     () => ({
       language,
       t: dictionaries[language],
+      hydrated,
       setLanguage,
       toggleLanguage,
     }),
-    [language, setLanguage, toggleLanguage]
+    [hydrated, language, setLanguage, toggleLanguage]
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

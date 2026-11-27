@@ -36,6 +36,7 @@ func TestEmbeddedMigrationsValidAndPortable(t *testing.T) {
 		"00003_seed_food_prices.sql",
 		"00004_profile_display_name.sql",
 		"00005_profile_avatar_waves.sql",
+		"00006_auth_oauth.sql",
 	}
 	for _, name := range requiredFiles {
 		content, ok := found[name]
@@ -76,6 +77,25 @@ func TestEmbeddedMigrationsValidAndPortable(t *testing.T) {
 	for _, snippet := range expectedSnippets {
 		if !strings.Contains(m2, snippet) {
 			t.Errorf("00002_auth_local.sql missing expected SQL snippet: %q", snippet)
+		}
+	}
+
+	m6 := found["00006_auth_oauth.sql"]
+	expectedM6Snippets := []string{
+		"ALTER TABLE local_users ALTER COLUMN password_hash DROP NOT NULL;",
+		"CREATE TABLE IF NOT EXISTS local_user_identities",
+		"user_id UUID NOT NULL REFERENCES local_users(id) ON DELETE CASCADE",
+		"provider TEXT NOT NULL CHECK (provider IN ('google'))",
+		"UNIQUE (provider, provider_user_id)",
+		"UNIQUE (user_id, provider)",
+		"CREATE INDEX IF NOT EXISTS idx_local_user_identities_user_id ON local_user_identities (user_id);",
+		"WHERE n.nspname = 'auth' AND p.proname = 'uid'",
+		"ALTER TABLE local_user_identities ENABLE ROW LEVEL SECURITY;",
+		"DROP TABLE IF EXISTS local_user_identities;",
+	}
+	for _, snippet := range expectedM6Snippets {
+		if !strings.Contains(m6, snippet) {
+			t.Errorf("00006_auth_oauth.sql missing expected SQL snippet: %q", snippet)
 		}
 	}
 }

@@ -14,4 +14,5 @@ var (
 	ErrEmailAlreadyExists    = errors.New("email already exists")
 	ErrTooManyRequests       = errors.New("too many requests")
 	ErrNotFound              = errors.New("not found")
+	ErrOAuthUnavailable      = errors.New("oauth unavailable")
 )

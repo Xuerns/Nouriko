@@ -8,6 +8,11 @@ import { AccountMenu } from "@/components/layout/AccountMenu";
 import { BrandLogo } from "@/components/layout/BrandLogo";
 import { NourikoMark } from "@/components/layout/NourikoMark";
 import { useI18n } from "@/components/providers/I18nProvider";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface AppShellProps {
   children: ReactNode;
@@ -136,18 +141,26 @@ export function AppShell({ children }: AppShellProps) {
             </li>
 
             <li className="relative flex h-full flex-col items-center justify-end pb-2">
-              <Link
-                href="/chat"
-                aria-label={t.nav.chat}
-                title={t.nav.chat}
-                aria-current={pathname === "/chat" ? "page" : undefined}
-                className="absolute -top-5 left-1/2 flex size-12 -translate-x-1/2 items-center justify-center rounded-full bg-[var(--brand-primary)] text-[var(--brand-primary-text)] transition-colors duration-150 hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              >
-                <NourikoMark
-                  className="size-7 shrink-0"
-                  aria-hidden="true"
-                />
-              </Link>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Link
+                      href="/chat"
+                      aria-label={t.nav.chat}
+                      aria-current={pathname === "/chat" ? "page" : undefined}
+                      className="absolute -top-5 left-1/2 flex size-12 -translate-x-1/2 items-center justify-center rounded-full bg-[var(--brand-primary)] text-[var(--brand-primary-text)] transition-colors duration-150 hover:bg-[var(--brand-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    />
+                  }
+                >
+                  <NourikoMark
+                    className="size-7 shrink-0"
+                    aria-hidden="true"
+                  />
+                </TooltipTrigger>
+                <TooltipContent className="rounded-xl shadow-none">
+                  {t.nav.chat}
+                </TooltipContent>
+              </Tooltip>
               <span
                 aria-hidden="true"
                 className={`size-1.5 rounded-full transition-opacity duration-150 ${

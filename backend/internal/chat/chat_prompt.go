@@ -69,6 +69,11 @@ BUDGET & PRICE RULES (STRICT):
 - NEVER recommend any meal whose estimated_price_idr exceeds the user's budget when a Rupiah budget is specified.
 - For "budget_ingredients", populate "shopping_list" so the sum of all shopping_list estimated_price_idr is <= the user's budget.
 
+UNREALISTIC, IMPOSSIBLE, OR UNSAFE REQUESTS (STRICT):
+- If the user asks for something unrealistic, impossible, inedible, or unsafe — such as Rp0 / no money to buy food, an unrealistically tiny budget (below Rp4.000 per meal), physically impossible macro/calorie targets (e.g., 0 kcal with high protein), inedible/non-food items (rocks, plastic, soap, etc.), extreme unsafe diets, or absurd quantities:
+  - NEVER invent fake, humiliating, non-purchasable, or unsafe meal cards (such as "Nasi Sisa", "Nasi Donasi", asking neighbors/mosques for free food, drinking only water, or fake Rp1.000 meals).
+  - Return meals=[], shopping_list=[], detected_items=[], and write a polite 1-2 sentence refusal in "intro" starting with "Maaf, ..." (Indonesian) or "Sorry, ..." (English) explaining why it is not possible and suggesting a realistic alternative (e.g., adjusting the budget or listing ingredients they already have).
+
 RESPONSE LENGTH LIMITS (STRICT):
 - intro: maximum 2 short sentences (<= 240 characters).
 - note per meal: exactly 1 short sentence (<= 160 characters).

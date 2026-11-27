@@ -39,7 +39,7 @@ func (h *Handler) GetProfile(c fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"profile": ToDTO(p, claims.Email),
+		"profile": ToDTOWithAuth(p, claims.Email, claims.NormalizedProviders(), claims.HasPassword()),
 	})
 }
 
@@ -108,7 +108,7 @@ func (h *Handler) CompleteOnboarding(c fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"profile": ToDTO(updated, claims.Email),
+		"profile": ToDTOWithAuth(updated, claims.Email, claims.NormalizedProviders(), claims.HasPassword()),
 	})
 }
 
@@ -201,7 +201,7 @@ func (h *Handler) UpdateProfile(c fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"profile": ToDTO(updated, claims.Email),
+		"profile": ToDTOWithAuth(updated, claims.Email, claims.NormalizedProviders(), claims.HasPassword()),
 	})
 }
 

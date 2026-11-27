@@ -7,12 +7,15 @@ import { useI18n } from "@/components/providers/I18nProvider";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { FieldError } from "@/components/ui/FieldError";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthCardSkeleton } from "@/components/ui/PageSkeletons";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { apiClient, ApiError } from "@/lib/api";
 import { getFriendlyErrorMessage } from "@/lib/errors";
+import { focusFieldById } from "@/lib/form-validation";
+import { cn } from "@/lib/utils";
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
@@ -22,6 +25,14 @@ function ResetPasswordContent() {
   const [token, setToken] = useState(initialToken);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [tokenError, setTokenError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
+  const [dirty, setDirty] = useState({
+    token: false,
+    password: false,
+    confirm: false,
+  });
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,12 +43,44 @@ function ResetPasswordContent() {
     }
   }, [initialToken]);
 
+  function validateToken(value: string): string | null {
+    return value.trim() ? null : t.common.tokenRequired;
+  }
+
+  function validatePassword(value: string): string | null {
+    if (!value) return t.common.passwordRequired;
+    if (value.length < 8) return t.common.passwordMinHint;
+    return null;
+  }
+
+  function validateConfirm(value: string, currentPassword: string): string | null {
+    if (!value) return t.common.confirmPasswordRequired;
+    if (value !== currentPassword) return t.common.passwordMismatch;
+    return null;
+  }
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
 
-    if (newPassword !== confirmPassword) {
-      setError(t.common.passwordMismatch);
+    const nextTokenErr = validateToken(token);
+    const nextPassErr = validatePassword(newPassword);
+    const nextConfirmErr = validateConfirm(confirmPassword, newPassword);
+
+    setTokenError(nextTokenErr);
+    setPasswordError(nextPassErr);
+    setConfirmError(nextConfirmErr);
+
+    if (nextTokenErr) {
+      focusFieldById("reset-token");
+      return;
+    }
+    if (nextPassErr) {
+      focusFieldById("reset-new-password");
+      return;
+    }
+    if (nextConfirmErr) {
+      focusFieldById("reset-confirm-password");
       return;
     }
 
@@ -67,6 +110,7 @@ function ResetPasswordContent() {
           <Alert variant="success">{t.resetPassword.successMessage}</Alert>
           <Button
             render={<Link href="/login" />}
+            nativeButton={false}
             className="h-11 rounded-full px-5 text-sm shadow-none"
           >
             {t.resetPassword.goToLogin}
@@ -76,7 +120,11 @@ function ResetPasswordContent() {
         <>
           {error ? <Alert variant="error">{error}</Alert> : null}
 
-          <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+          <form
+            noValidate
+            onSubmit={(e) => void handleSubmit(e)}
+            className="space-y-4"
+          >
             <div className="space-y-1.5">
               <Label
                 htmlFor="reset-token"
@@ -88,13 +136,35 @@ function ResetPasswordContent() {
                 id="reset-token"
                 name="token"
                 type="text"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
                 required
                 disabled={submitting}
                 value={token}
-                onChange={(e) => setToken(e.target.value)}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setToken(next);
+                  setDirty((prev) => ({ ...prev, token: true }));
+                  if (tokenError && !validateToken(next)) {
+                    setTokenError(null);
+                  }
+                }}
+                onBlur={() => {
+                  if (dirty.token) {
+                    setTokenError(validateToken(token));
+                  }
+                }}
+                aria-invalid={Boolean(tokenError)}
+                aria-describedby={tokenError ? "reset-token-error" : undefined}
                 placeholder={t.resetPassword.tokenPlaceholder}
-                className="h-11 rounded-2xl bg-card px-3.5 font-mono text-sm shadow-none"
+                className={cn(
+                  "h-11 rounded-2xl bg-card px-3.5 font-mono text-sm shadow-none",
+                  tokenError &&
+                    "border-[var(--error-text)] focus-visible:border-[var(--error-text)]"
+                )}
               />
+              <FieldError id="reset-token-error" message={tokenError} />
             </div>
 
             <PasswordInput
@@ -102,12 +172,27 @@ function ResetPasswordContent() {
               name="newPassword"
               label={t.common.newPasswordLabel}
               value={newPassword}
-              onChange={setNewPassword}
+              onChange={(next) => {
+                setNewPassword(next);
+                setDirty((prev) => ({ ...prev, password: true }));
+                if (passwordError && !validatePassword(next)) {
+                  setPasswordError(null);
+                }
+                if (confirmError && !validateConfirm(confirmPassword, next)) {
+                  setConfirmError(null);
+                }
+              }}
+              onBlur={() => {
+                if (dirty.password) {
+                  setPasswordError(validatePassword(newPassword));
+                }
+              }}
               autoComplete="new-password"
               minLength={8}
               disabled={submitting}
               showStrength
               hint={t.common.passwordMinHint}
+              error={passwordError}
             />
 
             <PasswordInput
@@ -115,10 +200,22 @@ function ResetPasswordContent() {
               name="confirmPassword"
               label={t.common.confirmPasswordLabel}
               value={confirmPassword}
-              onChange={setConfirmPassword}
+              onChange={(next) => {
+                setConfirmPassword(next);
+                setDirty((prev) => ({ ...prev, confirm: true }));
+                if (confirmError && !validateConfirm(next, newPassword)) {
+                  setConfirmError(null);
+                }
+              }}
+              onBlur={() => {
+                if (dirty.confirm) {
+                  setConfirmError(validateConfirm(confirmPassword, newPassword));
+                }
+              }}
               autoComplete="new-password"
               minLength={8}
               disabled={submitting}
+              error={confirmError}
             />
 
             <Button

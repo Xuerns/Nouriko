@@ -34,6 +34,11 @@ type LocalAuthRepository interface {
 	VerifyEmailWithToken(ctx context.Context, tokenHash string) (string, error)
 	ResetPasswordWithToken(ctx context.Context, tokenHash, newPasswordHash string) (string, error)
 	DeleteLocalAccount(ctx context.Context, userID string) error
+
+	FindOrCreateGoogleUser(ctx context.Context, params UpsertGoogleUserParams) (*LocalUser, []string, error)
+	GetUserProviders(ctx context.Context, userID string) ([]string, error)
+	GetUserIdentity(ctx context.Context, userID, provider string) (*LocalUserIdentity, error)
+	ConsumeOAuthNonce(ctx context.Context, nonceHash string, expiresAt time.Time) (bool, error)
 }
 
 // LocalAuthRepo implements LocalAuthRepository backed by PostgreSQL (pgx/v5).
@@ -91,19 +96,24 @@ func (r *LocalAuthRepo) CreateLocalUser(ctx context.Context, params CreateLocalU
 	}
 
 	email := strings.ToLower(strings.TrimSpace(params.Email))
+	var passwordHash *string
+	if params.PasswordHash != "" {
+		pw := params.PasswordHash
+		passwordHash = &pw
+	}
 	var row pgx.Row
 	if strings.TrimSpace(params.ID) != "" {
 		const query = `
 			INSERT INTO local_users (id, email, password_hash)
 			VALUES ($1::UUID, $2::TEXT, $3::TEXT)
 			RETURNING ` + localUserColumns
-		row = r.q.QueryRow(ctx, query, params.ID, email, params.PasswordHash)
+		row = r.q.QueryRow(ctx, query, params.ID, email, passwordHash)
 	} else {
 		const query = `
 			INSERT INTO local_users (email, password_hash)
 			VALUES ($1::TEXT, $2::TEXT)
 			RETURNING ` + localUserColumns
-		row = r.q.QueryRow(ctx, query, email, params.PasswordHash)
+		row = r.q.QueryRow(ctx, query, email, passwordHash)
 	}
 
 	u, err := scanLocalUser(row)
@@ -479,4 +489,296 @@ func (r *LocalAuthRepo) DeleteLocalAccount(ctx context.Context, userID string) e
 		})
 	}
 	return run(r.q)
+}
+
+const localIdentityColumns = `id, user_id, provider, provider_user_id, email, created_at`
+
+func scanLocalUserIdentity(row pgx.Row) (*LocalUserIdentity, error) {
+	var id LocalUserIdentity
+	err := row.Scan(
+		&id.ID,
+		&id.UserID,
+		&id.Provider,
+		&id.ProviderUserID,
+		&id.Email,
+		&id.CreatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, database.ErrNotFound
+		}
+		return nil, err
+	}
+	return &id, nil
+}
+
+// GetUserIdentity fetches a linked OAuth identity for the given user and provider.
+func (r *LocalAuthRepo) GetUserIdentity(ctx context.Context, userID, provider string) (*LocalUserIdentity, error) {
+	if r == nil || r.q == nil {
+		return nil, fmt.Errorf("local auth repo is not initialized")
+	}
+
+	const query = `
+		SELECT ` + localIdentityColumns + `
+		FROM local_user_identities
+		WHERE user_id = $1::UUID
+		  AND provider = $2::TEXT
+	`
+	id, err := scanLocalUserIdentity(r.q.QueryRow(ctx, query, userID, strings.ToLower(strings.TrimSpace(provider))))
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, database.ErrNotFound
+		}
+		return nil, fmt.Errorf("get user identity: %w", err)
+	}
+	return id, nil
+}
+
+func (r *LocalAuthRepo) getIdentityByProviderSub(ctx context.Context, provider, providerUserID string) (*LocalUserIdentity, error) {
+	const query = `
+		SELECT ` + localIdentityColumns + `
+		FROM local_user_identities
+		WHERE provider = $1::TEXT
+		  AND provider_user_id = $2::TEXT
+	`
+	id, err := scanLocalUserIdentity(r.q.QueryRow(ctx, query, provider, providerUserID))
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, database.ErrNotFound
+		}
+		return nil, fmt.Errorf("get identity by provider sub: %w", err)
+	}
+	return id, nil
+}
+
+// GetUserProviders returns the active authentication providers for a local user:
+// "email" when password_hash is present plus any linked OAuth providers.
+func (r *LocalAuthRepo) GetUserProviders(ctx context.Context, userID string) ([]string, error) {
+	if r == nil || r.q == nil {
+		return nil, fmt.Errorf("local auth repo is not initialized")
+	}
+
+	user, err := r.GetLocalUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	providers := make([]string, 0, 2)
+	seen := make(map[string]struct{}, 2)
+	if user.HasPassword() {
+		providers = append(providers, "email")
+		seen["email"] = struct{}{}
+	}
+
+	const query = `
+		SELECT provider
+		FROM local_user_identities
+		WHERE user_id = $1::UUID
+		ORDER BY created_at ASC, provider ASC
+	`
+	rows, err := r.q.Query(ctx, query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("list user identity providers: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var p string
+		if err := rows.Scan(&p); err != nil {
+			return nil, fmt.Errorf("scan user identity provider: %w", err)
+		}
+		p = strings.ToLower(strings.TrimSpace(p))
+		if p == "" {
+			continue
+		}
+		if _, ok := seen[p]; ok {
+			continue
+		}
+		seen[p] = struct{}{}
+		providers = append(providers, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate user identity providers: %w", err)
+	}
+
+	return providers, nil
+}
+
+// FindOrCreateGoogleUser atomically resolves a verified Google identity into a
+// local_users row and its active providers, applying pre-account takeover
+// mitigation if an unverified local password account existed for the same email.
+func (r *LocalAuthRepo) FindOrCreateGoogleUser(ctx context.Context, params UpsertGoogleUserParams) (*LocalUser, []string, error) {
+	if r == nil || r.q == nil {
+		return nil, nil, fmt.Errorf("local auth repo is not initialized")
+	}
+
+	email := strings.ToLower(strings.TrimSpace(params.Email))
+	providerUserID := strings.TrimSpace(params.ProviderUserID)
+	if email == "" || providerUserID == "" {
+		return nil, nil, ErrInvalidInput
+	}
+
+	var (
+		user      *LocalUser
+		providers []string
+	)
+
+	run := func(txRepo *LocalAuthRepo) error {
+		// 1. Existing Google identity lookup by (provider, provider_user_id).
+		existingIdentity, err := txRepo.getIdentityByProviderSub(ctx, OAuthProviderGoogle, providerUserID)
+		if err == nil {
+			u, uErr := txRepo.GetLocalUserByID(ctx, existingIdentity.UserID)
+			if uErr != nil {
+				return uErr
+			}
+			if u.FailedLoginAttempts > 0 || u.LockedUntil != nil {
+				if err := txRepo.ResetLoginLockout(ctx, u.ID); err != nil {
+					return err
+				}
+				u.FailedLoginAttempts = 0
+				u.LockedUntil = nil
+			}
+			provs, pErr := txRepo.GetUserProviders(ctx, u.ID)
+			if pErr != nil {
+				return pErr
+			}
+			user = u
+			providers = provs
+			return nil
+		}
+		if !errors.Is(err, database.ErrNotFound) {
+			return err
+		}
+
+		// 2. Email lookup for linking or pre-takeover mitigation (locked FOR UPDATE inside tx).
+		const lookupUserForUpdateQuery = `
+			SELECT ` + localUserColumns + `
+			FROM local_users
+			WHERE LOWER(email) = LOWER($1::TEXT)
+			FOR UPDATE
+		`
+		u, err := scanLocalUser(txRepo.q.QueryRow(ctx, lookupUserForUpdateQuery, email))
+		switch {
+		case err == nil:
+			if !u.EmailVerified {
+				// Pre-account takeover mitigation: clear unverified pre-registered
+				// password and invalidate all unused verification/reset tokens.
+				const clearUnverifiedQuery = `
+					UPDATE local_users
+					SET password_hash = NULL, email_verified = TRUE, failed_login_attempts = 0, locked_until = NULL, updated_at = NOW()
+					WHERE id = $1::UUID
+					RETURNING ` + localUserColumns
+				u, err = scanLocalUser(txRepo.q.QueryRow(ctx, clearUnverifiedQuery, u.ID))
+				if err != nil {
+					return fmt.Errorf("clear unverified local password on google link: %w", err)
+				}
+				const clearPendingAuthQuery = `
+					UPDATE local_auth_tokens
+					SET used_at = NOW()
+					WHERE user_id = $1::UUID
+					  AND used_at IS NULL
+				`
+				if _, err := txRepo.q.Exec(ctx, clearPendingAuthQuery, u.ID); err != nil {
+					return fmt.Errorf("invalidate unverified user tokens on google link: %w", err)
+				}
+			} else if u.FailedLoginAttempts > 0 || u.LockedUntil != nil {
+				if err := txRepo.ResetLoginLockout(ctx, u.ID); err != nil {
+					return err
+				}
+				u.FailedLoginAttempts = 0
+				u.LockedUntil = nil
+			}
+
+			const insertIdentityQuery = `
+				INSERT INTO local_user_identities (user_id, provider, provider_user_id, email)
+				VALUES ($1::UUID, $2::TEXT, $3::TEXT, $4::TEXT)
+				ON CONFLICT (provider, provider_user_id) DO NOTHING
+			`
+			tag, err := txRepo.q.Exec(ctx, insertIdentityQuery, u.ID, OAuthProviderGoogle, providerUserID, email)
+			if err != nil {
+				if database.IsUniqueViolation(err) {
+					return database.ErrConflict
+				}
+				return fmt.Errorf("insert linked google identity: %w", err)
+			}
+			if tag.RowsAffected() == 0 {
+				// Verify whether another concurrent tx bound this provider subject to a different user.
+				existing, lookupErr := txRepo.getIdentityByProviderSub(ctx, OAuthProviderGoogle, providerUserID)
+				if lookupErr != nil || existing.UserID != u.ID {
+					return database.ErrConflict
+				}
+			}
+
+		case errors.Is(err, database.ErrNotFound):
+			// 3. Create brand-new passwordless verified local_users row + identity.
+			const insertUserQuery = `
+				INSERT INTO local_users (email, password_hash, email_verified)
+				VALUES ($1::TEXT, NULL, TRUE)
+				RETURNING ` + localUserColumns
+			u, err = scanLocalUser(txRepo.q.QueryRow(ctx, insertUserQuery, email))
+			if err != nil {
+				if database.IsUniqueViolation(err) {
+					return database.ErrConflict
+				}
+				return fmt.Errorf("create google local user: %w", err)
+			}
+			const insertIdentityQuery = `
+				INSERT INTO local_user_identities (user_id, provider, provider_user_id, email)
+				VALUES ($1::UUID, $2::TEXT, $3::TEXT, $4::TEXT)
+			`
+			if _, err := txRepo.q.Exec(ctx, insertIdentityQuery, u.ID, OAuthProviderGoogle, providerUserID, email); err != nil {
+				if database.IsUniqueViolation(err) {
+					return database.ErrConflict
+				}
+				return fmt.Errorf("insert new google identity: %w", err)
+			}
+
+		default:
+			return err
+		}
+
+		provs, pErr := txRepo.GetUserProviders(ctx, u.ID)
+		if pErr != nil {
+			return pErr
+		}
+		user = u
+		providers = provs
+		return nil
+	}
+
+	if r.pool != nil {
+		if err := database.WithTx(ctx, r.pool, func(tx pgx.Tx) error {
+			return run(NewLocalAuthRepoWithDBTX(tx))
+		}); err != nil {
+			return nil, nil, err
+		}
+		return user, providers, nil
+	}
+
+	if err := run(r); err != nil {
+		return nil, nil, err
+	}
+	return user, providers, nil
+}
+
+// ConsumeOAuthNonce atomically records a single-use OAuth nonce hash in
+// oauth_consumed_nonces, returning true only on the first consumption.
+func (r *LocalAuthRepo) ConsumeOAuthNonce(ctx context.Context, nonceHash string, expiresAt time.Time) (bool, error) {
+	if r == nil || r.q == nil {
+		return false, fmt.Errorf("local auth repo is not initialized")
+	}
+
+	const pruneExpiredQuery = `DELETE FROM oauth_consumed_nonces WHERE expires_at <= NOW()`
+	_, _ = r.q.Exec(ctx, pruneExpiredQuery)
+
+	const consumeQuery = `
+		INSERT INTO oauth_consumed_nonces (nonce_hash, expires_at)
+		VALUES ($1::TEXT, $2::TIMESTAMPTZ)
+		ON CONFLICT (nonce_hash) DO NOTHING
+	`
+	tag, err := r.q.Exec(ctx, consumeQuery, nonceHash, expiresAt)
+	if err != nil {
+		return false, fmt.Errorf("consume oauth nonce: %w", err)
+	}
+	return tag.RowsAffected() == 1, nil
 }

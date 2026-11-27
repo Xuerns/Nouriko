@@ -52,9 +52,10 @@ type Database struct {
 type Auth struct {
 	// JWTSecret is the HS256 secret. Required in local mode, optional in
 	// production for Supabase projects still on the legacy JWT secret.
-	JWTSecret string `env:"AUTH_JWT_SECRET"`
-	Audience  string `env:"AUTH_JWT_AUDIENCE" envDefault:"authenticated"`
-	Issuer    string `env:"AUTH_JWT_ISSUER"`
+	JWTSecret      string `env:"AUTH_JWT_SECRET"`
+	Audience       string `env:"AUTH_JWT_AUDIENCE" envDefault:"authenticated"`
+	Issuer         string `env:"AUTH_JWT_ISSUER"`
+	GoogleClientID string `env:"GOOGLE_CLIENT_ID"`
 }
 
 // Supabase holds project settings used in production mode.
@@ -128,6 +129,7 @@ func (c *Config) applyDefaults() {
 		c.CORSOrigins = defaultCORSOrigins(c.AppBaseURL)
 	}
 
+	c.Auth.GoogleClientID = strings.TrimSpace(c.Auth.GoogleClientID)
 	c.Supabase.URL = strings.TrimRight(c.Supabase.URL, "/")
 	if c.Auth.Issuer == "" && c.Mode == ModeProduction && c.Supabase.URL != "" {
 		c.Auth.Issuer = c.Supabase.URL + "/auth/v1"
@@ -261,6 +263,11 @@ func (c *Config) JWKSURL() string {
 // IsProduction reports whether the backend runs against Supabase.
 func (c *Config) IsProduction() bool {
 	return c.Mode == ModeProduction
+}
+
+// GoogleAuthEnabled reports whether Google Sign-In is configured.
+func (c *Config) GoogleAuthEnabled() bool {
+	return c != nil && strings.TrimSpace(c.Auth.GoogleClientID) != ""
 }
 
 func hasTLS(dsn string) bool {

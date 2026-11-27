@@ -23,6 +23,11 @@ import {
   PlusSignIcon,
   Tick02Icon
 } from '@hugeicons/core-free-icons';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
 
 export interface PromptBarSource {
   key: string;
@@ -694,26 +699,34 @@ const PromptBar: React.FC<PromptBarProps> = ({
             </button>
           ) : null}
 
-          <button
-            type="button"
-            className="relative inline-grid size-9 flex-none cursor-pointer touch-manipulation place-items-center rounded-full border-0 p-0 outline-none select-none [background:color-mix(in_srgb,var(--pb-ink)_12%,var(--pb-bg))] [color:color-mix(in_srgb,var(--pb-ink)_48%,var(--pb-bg))] [font:inherit] [-webkit-tap-highlight-color:transparent] [transition:background-color_200ms_ease,color_200ms_ease,transform_160ms_cubic-bezier(0.23,1,0.32,1)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-card disabled:cursor-not-allowed data-[armed]:[background:var(--pb-send-bg)] data-[armed]:[color:var(--pb-send-ink)] data-[pressed]:[transform:scale(var(--pb-press))] motion-reduce:data-[pressed]:[transform:none]"
-            disabled={!armed}
-            aria-label={busy ? (labels?.stopAriaLabel ?? 'Stop') : (labels?.sendAriaLabel ?? 'Send')}
-            title={busy ? (labels?.stopAriaLabel ?? 'Stop') : (labels?.sendAriaLabel ?? 'Send')}
-            data-armed={armed ? '' : undefined}
-            data-pressed={pressed ? '' : undefined}
-            onMouseDown={e => e.preventDefault()}
-            onPointerDown={down}
-            onPointerUp={up}
-            onPointerCancel={up}
-            onPointerLeave={up}
-            onClick={() => {
-              if (busy) latest.current.onStop?.();
-              else send();
-            }}
-          >
-            <SendGlyph busy={busy} morphDuration={morphDuration} squash={squash} tilt={tilt} />
-          </button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  type="button"
+                  className="relative inline-grid size-9 flex-none cursor-pointer touch-manipulation place-items-center rounded-full border-0 p-0 outline-none select-none [background:color-mix(in_srgb,var(--pb-ink)_12%,var(--pb-bg))] [color:color-mix(in_srgb,var(--pb-ink)_48%,var(--pb-bg))] [font:inherit] [-webkit-tap-highlight-color:transparent] [transition:background-color_200ms_ease,color_200ms_ease,transform_160ms_cubic-bezier(0.23,1,0.32,1)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-card disabled:cursor-not-allowed data-[armed]:[background:var(--pb-send-bg)] data-[armed]:[color:var(--pb-send-ink)] data-[pressed]:[transform:scale(var(--pb-press))] motion-reduce:data-[pressed]:[transform:none]"
+                  disabled={!armed}
+                  aria-label={busy ? (labels?.stopAriaLabel ?? 'Stop') : (labels?.sendAriaLabel ?? 'Send')}
+                  data-armed={armed ? '' : undefined}
+                  data-pressed={pressed ? '' : undefined}
+                  onMouseDown={e => e.preventDefault()}
+                  onPointerDown={down}
+                  onPointerUp={up}
+                  onPointerCancel={up}
+                  onPointerLeave={up}
+                  onClick={() => {
+                    if (busy) latest.current.onStop?.();
+                    else send();
+                  }}
+                />
+              }
+            >
+              <SendGlyph busy={busy} morphDuration={morphDuration} squash={squash} tilt={tilt} />
+            </TooltipTrigger>
+            <TooltipContent className="rounded-xl shadow-none">
+              {busy ? (labels?.stopAriaLabel ?? 'Stop') : (labels?.sendAriaLabel ?? 'Send')}
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </div>

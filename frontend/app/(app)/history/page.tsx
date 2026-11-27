@@ -3,7 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, RotateCcw } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Flame,
+  HeartPulse,
+  RotateCcw,
+  Wallet,
+} from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useI18n } from "@/components/providers/I18nProvider";
 import { Alert } from "@/components/ui/Alert";
@@ -314,11 +321,15 @@ export default function HistoryPage() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                          <div className="flex flex-col justify-between gap-2 rounded-2xl bg-muted p-3.5">
+                        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                          <div className="col-span-2 flex flex-col justify-between gap-1.5 rounded-2xl bg-muted p-3 sm:col-span-1 sm:p-3.5">
                             <div className="space-y-1">
-                              <p className="text-[11px] font-semibold uppercase leading-[1.4] tracking-[0.06em] text-muted-foreground">
-                                {t.history.totalCaloriesLabel}
+                              <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase leading-[1.4] tracking-[0.06em] text-muted-foreground">
+                                <Flame
+                                  className="size-3.5 shrink-0 stroke-[1.75] text-[var(--macro-calories)]"
+                                  aria-hidden="true"
+                                />
+                                <span>{t.history.totalCaloriesLabel}</span>
                               </p>
                               <p className="text-lg font-semibold leading-tight tabular-nums text-foreground">
                                 {day.total_calories}{" "}
@@ -347,26 +358,34 @@ export default function HistoryPage() {
                           </div>
 
                           <div
-                            className={`flex flex-col justify-between gap-2 rounded-2xl p-3.5 ${
+                            className={`flex flex-col justify-between gap-1.5 rounded-2xl p-3 sm:gap-2 sm:p-3.5 ${
                               hasSpending
                                 ? "bg-[var(--brand-accent-tint)]"
                                 : "bg-muted"
                             }`}
                           >
-                            <p className="text-[11px] font-semibold uppercase leading-[1.4] tracking-[0.06em] text-muted-foreground">
-                              {t.history.totalSpendingLabel}
+                            <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase leading-[1.4] tracking-[0.06em] text-muted-foreground">
+                              <Wallet
+                                className="size-3.5 shrink-0 stroke-[1.75] text-[var(--brand-accent)]"
+                                aria-hidden="true"
+                              />
+                              <span>{t.history.totalSpendingLabel}</span>
                             </p>
-                            <p className="text-lg font-semibold leading-tight tabular-nums text-[var(--brand-accent)]">
+                            <p className="text-base font-semibold leading-tight tabular-nums text-[var(--brand-accent)] sm:text-lg">
                               {formatIDR(day.total_spending_idr)}
                             </p>
                           </div>
 
-                          <div className="flex flex-col justify-between gap-2 rounded-2xl bg-muted p-3.5">
-                            <p className="text-[11px] font-semibold uppercase leading-[1.4] tracking-[0.06em] text-muted-foreground">
-                              {t.history.averageScoreLabel}
+                          <div className="flex flex-col justify-between gap-1.5 rounded-2xl bg-muted p-3 sm:gap-2 sm:p-3.5">
+                            <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase leading-[1.4] tracking-[0.06em] text-muted-foreground">
+                              <HeartPulse
+                                className="size-3.5 shrink-0 stroke-[1.75] text-[var(--brand-primary)]"
+                                aria-hidden="true"
+                              />
+                              <span>{t.history.averageScoreLabel}</span>
                             </p>
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="text-lg font-semibold leading-tight tabular-nums text-foreground">
+                            <div className="flex flex-wrap items-center justify-between gap-1.5">
+                              <p className="text-base font-semibold leading-tight tabular-nums text-foreground sm:text-lg">
                                 {day.average_health_score}
                                 <span className="text-xs font-normal text-muted-foreground">
                                   /100
@@ -381,9 +400,9 @@ export default function HistoryPage() {
                           </div>
                         </div>
 
-                        <CollapsibleContent className="space-y-4 pt-1">
+                        <CollapsibleContent className="space-y-3.5 pt-1">
                           <Separator className="bg-border" />
-                          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3">
                             {day.meals.map((meal) => (
                               <SavedMealItem key={meal.id} meal={meal} />
                             ))}

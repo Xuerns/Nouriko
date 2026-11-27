@@ -27,8 +27,8 @@ import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { SummaryPageSkeleton } from "@/components/ui/PageSkeletons";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { formatIDR, formatMacro } from "@/components/chat/format";
 import { getHealthBadgeClass } from "@/components/chat/MealResultCard";
@@ -376,16 +376,10 @@ function SummaryContent() {
             <ChevronLeft className="size-4 stroke-[1.75]" aria-hidden="true" />
           </Button>
 
-          <Input
-            type="date"
+          <DatePicker
             value={selectedDate}
-            onChange={(e) => {
-              if (e.target.value) {
-                updateDate(e.target.value);
-              }
-            }}
-            aria-label={t.summary.dateInputLabel}
-            className="h-11 w-auto rounded-2xl bg-card px-3.5 text-sm tabular-nums shadow-none"
+            onChange={updateDate}
+            ariaLabel={t.summary.dateInputLabel}
           />
 
           <Button
@@ -752,12 +746,13 @@ function SummaryContent() {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col gap-3.5">
+                <div className="flex flex-col gap-2.5 lg:gap-3.5">
                   {filteredMeals.map((meal) => (
                     <SavedMealItem
                       key={meal.id}
                       meal={meal}
                       surface="canvas"
+                      desktopLayout="expanded"
                       onDelete={handleDeleteMeal}
                       isDeleting={Boolean(deletingIds[meal.id])}
                     />

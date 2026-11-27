@@ -92,7 +92,11 @@ func run(cfg *config.Config, logger *slog.Logger) error {
 	mealRepo := meals.NewStore(db.Pool)
 
 	adminClient := auth.NewAdminClient(cfg)
-	authService := auth.NewService(cfg, localAuthRepo, profileRepo, adminClient, logger)
+	var googleVerifier auth.GoogleTokenVerifier
+	if cfg.GoogleAuthEnabled() {
+		googleVerifier = auth.NewGoogleJWKSVerifier(ctx, cfg.Auth.GoogleClientID)
+	}
+	authService := auth.NewService(cfg, localAuthRepo, profileRepo, adminClient, googleVerifier, logger)
 
 	app := server.New(server.Dependencies{
 		Config:        cfg,

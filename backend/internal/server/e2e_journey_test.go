@@ -34,6 +34,7 @@ const testLocalSecret = "0123456789abcdef0123456789abcdef"
 type e2eMemStore struct {
 	mu         sync.Mutex
 	users      map[string]*auth.LocalUser
+	identities map[string]*auth.LocalUserIdentity
 	tokens     map[string]*auth.LocalAuthToken
 	profiles   map[string]*profile.Profile
 	savedMeals map[string]meals.SavedMeal
@@ -43,6 +44,7 @@ type e2eMemStore struct {
 func newE2EMemStore() *e2eMemStore {
 	return &e2eMemStore{
 		users:      make(map[string]*auth.LocalUser),
+		identities: make(map[string]*auth.LocalUserIdentity),
 		tokens:     make(map[string]*auth.LocalAuthToken),
 		profiles:   make(map[string]*profile.Profile),
 		savedMeals: make(map[string]meals.SavedMeal),
@@ -63,7 +65,12 @@ func (f *e2eMemStore) CreateLocalUser(_ context.Context, p auth.CreateLocalUserP
 		id = uuid.NewString()
 	}
 	now := time.Now()
-	u := &auth.LocalUser{ID: id, Email: email, PasswordHash: p.PasswordHash, CreatedAt: now, UpdatedAt: now}
+	var pwHash *string
+	if p.PasswordHash != "" {
+		h := p.PasswordHash
+		pwHash = &h
+	}
+	u := &auth.LocalUser{ID: id, Email: email, PasswordHash: pwHash, CreatedAt: now, UpdatedAt: now}
 	f.users[id] = u
 	cp := *u
 	return &cp, nil
@@ -139,7 +146,8 @@ func (f *e2eMemStore) UpdatePasswordHash(_ context.Context, userID, passwordHash
 	if !ok {
 		return database.ErrNotFound
 	}
-	u.PasswordHash = passwordHash
+	h := passwordHash
+	u.PasswordHash = &h
 	if resetLockout {
 		u.FailedLoginAttempts = 0
 		u.LockedUntil = nil
@@ -330,9 +338,68 @@ func (f *e2eMemStore) DeleteLocalAccount(ctx context.Context, userID string) err
 			delete(f.tokens, hash)
 		}
 	}
+	for k, id := range f.identities {
+		if id.UserID == userID {
+			delete(f.identities, k)
+		}
+	}
 	f.mu.Unlock()
 	_ = f.DeleteProfile(ctx, userID)
 	return f.DeleteLocalUser(ctx, userID)
+}
+
+func (f *e2eMemStore) GetUserProviders(_ context.Context, userID string) ([]string, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	u, ok := f.users[userID]
+	if !ok {
+		return nil, database.ErrNotFound
+	}
+	out := make([]string, 0, 2)
+	if u.HasPassword() {
+		out = append(out, "email")
+	}
+	for _, id := range f.identities {
+		if id.UserID == userID {
+			out = append(out, id.Provider)
+		}
+	}
+	return out, nil
+}
+
+func (f *e2eMemStore) GetUserIdentity(_ context.Context, userID, provider string) (*auth.LocalUserIdentity, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for _, id := range f.identities {
+		if id.UserID == userID && id.Provider == provider {
+			cp := *id
+			return &cp, nil
+		}
+	}
+	return nil, database.ErrNotFound
+}
+
+func (f *e2eMemStore) FindOrCreateGoogleUser(_ context.Context, p auth.UpsertGoogleUserParams) (*auth.LocalUser, []string, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	email := strings.ToLower(strings.TrimSpace(p.Email))
+	sub := strings.TrimSpace(p.ProviderUserID)
+	key := auth.OAuthProviderGoogle + ":" + sub
+	if existing, ok := f.identities[key]; ok {
+		u := f.users[existing.UserID]
+		cp := *u
+		return &cp, []string{auth.OAuthProviderGoogle}, nil
+	}
+	now := time.Now()
+	u := &auth.LocalUser{ID: uuid.NewString(), Email: email, EmailVerified: true, CreatedAt: now, UpdatedAt: now}
+	f.users[u.ID] = u
+	f.identities[key] = &auth.LocalUserIdentity{ID: uuid.NewString(), UserID: u.ID, Provider: auth.OAuthProviderGoogle, ProviderUserID: sub, Email: email, CreatedAt: now}
+	cp := *u
+	return &cp, []string{auth.OAuthProviderGoogle}, nil
+}
+
+func (f *e2eMemStore) ConsumeOAuthNonce(_ context.Context, _ string, _ time.Time) (bool, error) {
+	return true, nil
 }
 
 func (f *e2eMemStore) ListFoodPricesByBudget(_ context.Context, _ int, _ string, _ int) ([]chat.FoodPrice, error) {
@@ -643,7 +710,7 @@ func newFullE2ETestApp(t *testing.T, analyzer chat.Analyzer, foodLookup nutritio
 	if err != nil {
 		t.Fatalf("NewVerifier: %v", err)
 	}
-	authSvc := auth.NewService(cfg, repo, repo, nil, logger)
+	authSvc := auth.NewService(cfg, repo, repo, nil, nil, logger)
 	app := New(Dependencies{
 		Config:        cfg,
 		Logger:        logger,

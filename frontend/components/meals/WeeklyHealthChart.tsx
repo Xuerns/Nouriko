@@ -3,6 +3,11 @@
 import { useId } from "react";
 import { useI18n } from "@/components/providers/I18nProvider";
 import { Card } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { formatShortChartDate } from "@/lib/date";
 import type { WeeklyHealthTrendPoint } from "@/lib/types";
 
@@ -126,57 +131,65 @@ export function WeeklyHealthChart({ points }: WeeklyHealthChartProps) {
             : `${item.label} · ${t.history.noDataLabel}`;
 
           return (
-            <div
-              key={item.key}
-              title={tooltipText}
-              className="flex flex-col items-center gap-2 rounded-2xl px-1 py-2.5 transition-colors duration-150 hover:bg-muted/60 sm:px-2"
-            >
-              <span
-                className={`text-xs font-semibold tabular-nums ${
-                  item.hasScore ? "text-foreground" : "text-muted-foreground"
-                }`}
+            <Tooltip key={item.key}>
+              <TooltipTrigger
+                render={
+                  <div
+                    tabIndex={0}
+                    className="flex flex-col items-center gap-2 rounded-2xl px-1 py-2.5 transition-colors duration-150 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] sm:px-2"
+                  />
+                }
               >
-                {item.hasScore ? item.score : "-"}
-              </span>
+                <span
+                  className={`text-xs font-semibold tabular-nums ${
+                    item.hasScore ? "text-foreground" : "text-muted-foreground"
+                  }`}
+                >
+                  {item.hasScore ? item.score : "-"}
+                </span>
 
-              <svg
-                viewBox="0 0 100 240"
-                role="img"
-                aria-label={tooltipText}
-                className="h-auto w-full max-w-[54px] overflow-visible"
-              >
-                <defs>
-                  <clipPath id={clipId}>
-                    <rect
-                      x="0"
-                      y={fillY}
-                      width="100"
-                      height={fillHeight}
-                      className="transition-all duration-300"
-                    />
-                  </clipPath>
-                </defs>
+                <svg
+                  viewBox="0 0 100 240"
+                  role="img"
+                  aria-label={tooltipText}
+                  className="h-auto w-full max-w-[54px] overflow-visible"
+                >
+                  <defs>
+                    <clipPath id={clipId}>
+                      <rect
+                        x="0"
+                        y={fillY}
+                        width="100"
+                        height={fillHeight}
+                        className="transition-all duration-300"
+                      />
+                    </clipPath>
+                  </defs>
 
-                <path
-                  d={HUMAN_SILHOUETTE_PATH}
-                  fill="var(--muted)"
-                  stroke="var(--border)"
-                  strokeWidth="1.5"
-                />
-
-                {item.hasScore ? (
                   <path
                     d={HUMAN_SILHOUETTE_PATH}
-                    fill={fillColor}
-                    clipPath={`url(#${clipId})`}
+                    fill="var(--muted)"
+                    stroke="var(--border)"
+                    strokeWidth="1.5"
                   />
-                ) : null}
-              </svg>
 
-              <p className="text-center text-xs font-medium leading-tight text-foreground">
-                {item.day}
-              </p>
-            </div>
+                  {item.hasScore ? (
+                    <path
+                      d={HUMAN_SILHOUETTE_PATH}
+                      fill={fillColor}
+                      clipPath={`url(#${clipId})`}
+                    />
+                  ) : null}
+                </svg>
+
+                <p className="text-center text-xs font-medium leading-tight text-foreground">
+                  {item.day}
+                </p>
+              </TooltipTrigger>
+              <TooltipContent className="rounded-xl shadow-none">
+                {tooltipText}
+              </TooltipContent>
+            </Tooltip>
           );
         })}
       </div>

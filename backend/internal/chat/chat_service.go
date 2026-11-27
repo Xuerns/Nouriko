@@ -52,6 +52,10 @@ func (s *ChatService) Analyze(ctx context.Context, input AnalyzeInput) (*ChatAna
 		lang = "id"
 	}
 
+	if refusal, blocked := DetectUnrealisticRequest(input.Message, len(input.PhotoBytes) > 0, lang); blocked {
+		return refusal, nil
+	}
+
 	detectedBudget := ExtractBudgetIDR(input.Message)
 	refPrices := s.fetchReferencePrices(ctx, detectedBudget)
 

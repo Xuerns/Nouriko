@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { ChevronDown } from "lucide-react";
 import FadeContent from "@/components/FadeContent";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,6 +11,100 @@ import type { Dictionary } from "@/lib/i18n/types";
 
 interface WorkflowShowcaseProps {
   t: Dictionary;
+}
+
+interface StepPreviewCardProps {
+  stepIndex: number;
+  previews: Dictionary["landing"]["stepPreviews"];
+  live?: boolean;
+}
+
+function StepPreviewCard({
+  stepIndex,
+  previews,
+  live = false,
+}: StepPreviewCardProps) {
+  return (
+    <Card
+      aria-live={live ? "polite" : undefined}
+      className="rounded-3xl border border-border bg-card py-3.5 shadow-none ring-0 [--card-spacing:--spacing(4)]"
+    >
+      <CardContent className="flex min-h-[110px] flex-col justify-between gap-2.5">
+        {stepIndex === 0 ? (
+          <>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+              {previews.profile.label}
+            </p>
+            <p className="text-xs tabular-nums text-muted-foreground">
+              {previews.profile.bodyMeta}
+            </p>
+            <div className="flex items-baseline justify-between gap-3 rounded-2xl bg-muted px-3.5 py-2.5">
+              <span className="text-[13px] text-muted-foreground">
+                {previews.profile.targetLabel}
+              </span>
+              <span className="text-base font-semibold tabular-nums text-[var(--brand-primary)]">
+                {previews.profile.targetValue}
+              </span>
+            </div>
+            <p className="text-xs leading-[1.5] tabular-nums text-muted-foreground">
+              {previews.profile.macrosSummary}
+            </p>
+          </>
+        ) : stepIndex === 1 ? (
+          <>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+              {previews.chat.label}
+            </p>
+            <div className="rounded-2xl rounded-br-md bg-muted px-3.5 py-2.5 text-[13px] font-medium leading-[1.5] text-foreground">
+              {previews.chat.userMessage}
+            </div>
+            <div className="space-y-1 text-xs leading-[1.5] text-muted-foreground">
+              <p>{previews.chat.attachmentNote}</p>
+              <p className="font-medium text-[var(--brand-primary)]">
+                {previews.chat.replyNote}
+              </p>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+                {previews.tracking.label}
+              </p>
+              <Badge className="h-6 rounded-full border-0 bg-[var(--score-good-bg)] px-2.5 text-[11px] font-semibold tabular-nums text-[var(--score-good-text)] shadow-none">
+                {previews.tracking.scoreBadge}
+              </Badge>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-baseline justify-between gap-2 text-[13px]">
+                <span className="text-muted-foreground">
+                  {previews.tracking.caloriesLabel}
+                </span>
+                <span className="font-semibold tabular-nums text-foreground">
+                  {previews.tracking.caloriesValue}
+                </span>
+              </div>
+              <Progress
+                value={previews.tracking.progressPercent}
+                aria-label={previews.tracking.caloriesLabel}
+                className="gap-0 [&_[data-slot=progress-track]]:h-2 [&_[data-slot=progress-track]]:bg-muted [&_[data-slot=progress-indicator]]:rounded-full [&_[data-slot=progress-indicator]]:bg-[var(--brand-primary)]"
+              />
+            </div>
+
+            <div className="flex items-center justify-between gap-2 border-t border-border pt-2.5 text-xs">
+              <span className="text-muted-foreground">
+                {previews.tracking.spendLabel}
+              </span>
+              <span className="font-semibold tabular-nums text-foreground">
+                {previews.tracking.spendValue}
+              </span>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 export function WorkflowShowcase({ t }: WorkflowShowcaseProps) {
@@ -52,85 +147,13 @@ export function WorkflowShowcase({ t }: WorkflowShowcaseProps) {
               />
             </div>
 
-            <Card
-              aria-live="polite"
-              className="rounded-3xl border border-border bg-card py-3.5 shadow-none ring-0 [--card-spacing:--spacing(4)]"
-            >
-              <CardContent className="flex min-h-[110px] flex-col justify-between gap-2.5">
-                {activeStep === 0 ? (
-                  <>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-                      {previews.profile.label}
-                    </p>
-                    <p className="text-xs tabular-nums text-muted-foreground">
-                      {previews.profile.bodyMeta}
-                    </p>
-                    <div className="flex items-baseline justify-between gap-3 rounded-2xl bg-muted px-3.5 py-2.5">
-                      <span className="text-[13px] text-muted-foreground">
-                        {previews.profile.targetLabel}
-                      </span>
-                      <span className="text-base font-semibold tabular-nums text-[var(--brand-primary)]">
-                        {previews.profile.targetValue}
-                      </span>
-                    </div>
-                    <p className="text-xs leading-[1.5] tabular-nums text-muted-foreground">
-                      {previews.profile.macrosSummary}
-                    </p>
-                  </>
-                ) : activeStep === 1 ? (
-                  <>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-                      {previews.chat.label}
-                    </p>
-                    <div className="rounded-2xl rounded-br-md bg-muted px-3.5 py-2.5 text-[13px] font-medium leading-[1.5] text-foreground">
-                      {previews.chat.userMessage}
-                    </div>
-                    <div className="space-y-1 text-xs leading-[1.5] text-muted-foreground">
-                      <p>{previews.chat.attachmentNote}</p>
-                      <p className="font-medium text-[var(--brand-primary)]">
-                        {previews.chat.replyNote}
-                      </p>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-                        {previews.tracking.label}
-                      </p>
-                      <Badge className="h-6 rounded-full border-0 bg-[var(--score-good-bg)] px-2.5 text-[11px] font-semibold tabular-nums text-[var(--score-good-text)] shadow-none">
-                        {previews.tracking.scoreBadge}
-                      </Badge>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-baseline justify-between gap-2 text-[13px]">
-                        <span className="text-muted-foreground">
-                          {previews.tracking.caloriesLabel}
-                        </span>
-                        <span className="font-semibold tabular-nums text-foreground">
-                          {previews.tracking.caloriesValue}
-                        </span>
-                      </div>
-                      <Progress
-                        value={previews.tracking.progressPercent}
-                        aria-label={previews.tracking.caloriesLabel}
-                        className="gap-0 [&_[data-slot=progress-track]]:h-2 [&_[data-slot=progress-track]]:bg-muted [&_[data-slot=progress-indicator]]:rounded-full [&_[data-slot=progress-indicator]]:bg-[var(--brand-primary)]"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between gap-2 border-t border-border pt-2.5 text-xs">
-                      <span className="text-muted-foreground">
-                        {previews.tracking.spendLabel}
-                      </span>
-                      <span className="font-semibold tabular-nums text-foreground">
-                        {previews.tracking.spendValue}
-                      </span>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+            <div className="hidden lg:block">
+              <StepPreviewCard
+                stepIndex={activeStep}
+                previews={previews}
+                live
+              />
+            </div>
           </div>
         </div>
 
@@ -140,44 +163,63 @@ export function WorkflowShowcase({ t }: WorkflowShowcaseProps) {
 
             return (
               <li key={step.step} className="py-1.5">
-                <button
-                  type="button"
-                  aria-pressed={isActive}
-                  onClick={() => setActiveStep(index)}
-                  className={`grid min-h-11 w-full cursor-pointer grid-cols-[2.5rem_1fr] sm:grid-cols-[3.25rem_1fr] items-start gap-3.5 sm:gap-5 rounded-2xl px-3.5 py-3.5 sm:px-4 sm:py-4 text-left transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                <div
+                  className={`rounded-2xl transition-colors duration-150 ${
                     isActive
                       ? "bg-[var(--bg-subtle)]"
                       : "bg-transparent hover:bg-[var(--bg-subtle)]/60"
                   }`}
                 >
-                  <span
-                    className={`text-xl sm:text-2xl font-semibold leading-none tracking-tight tabular-nums transition-colors duration-150 ${
-                      isActive
-                        ? "text-[var(--brand-accent)]"
-                        : "text-[var(--text-muted)]"
-                    }`}
+                  <button
+                    type="button"
+                    aria-expanded={isActive}
+                    onClick={() => setActiveStep(index)}
+                    className="grid min-h-11 w-full cursor-pointer grid-cols-[2.5rem_1fr_auto] sm:grid-cols-[3.25rem_1fr_auto] lg:grid-cols-[3.25rem_1fr] items-start gap-3.5 sm:gap-5 rounded-2xl px-3.5 py-3.5 sm:px-4 sm:py-4 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
-                    {step.step}
-                  </span>
-
-                  <span className="block space-y-1.5">
-                    <span className="block text-base font-semibold leading-[1.35] text-foreground text-balance">
-                      {step.title}
-                    </span>
-                    <span className="block text-sm leading-[1.55] text-muted-foreground text-pretty">
-                      {step.description}
-                    </span>
                     <span
-                      className={`inline-block pt-0.5 text-xs font-semibold transition-colors duration-150 ${
+                      className={`text-xl sm:text-2xl font-semibold leading-none tracking-tight tabular-nums transition-colors duration-150 ${
                         isActive
-                          ? "text-[var(--brand-primary)]"
-                          : "text-muted-foreground"
+                          ? "text-[var(--brand-accent)]"
+                          : "text-[var(--text-muted)]"
                       }`}
                     >
-                      {step.highlight}
+                      {step.step}
                     </span>
-                  </span>
-                </button>
+
+                    <span className="block space-y-1.5">
+                      <span className="block text-base font-semibold leading-[1.35] text-foreground text-balance">
+                        {step.title}
+                      </span>
+                      <span className="block text-sm leading-[1.55] text-muted-foreground text-pretty">
+                        {step.description}
+                      </span>
+                      <span
+                        className={`inline-block pt-0.5 text-xs font-semibold transition-colors duration-150 ${
+                          isActive
+                            ? "text-[var(--brand-primary)]"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {step.highlight}
+                      </span>
+                    </span>
+
+                    <ChevronDown
+                      className={`mt-1 size-4 shrink-0 stroke-[1.75] transition-transform duration-150 lg:hidden ${
+                        isActive
+                          ? "rotate-180 text-[var(--brand-primary)]"
+                          : "text-muted-foreground"
+                      }`}
+                      aria-hidden="true"
+                    />
+                  </button>
+
+                  {isActive ? (
+                    <div className="px-3.5 pb-3.5 sm:px-4 sm:pb-4 lg:hidden">
+                      <StepPreviewCard stepIndex={index} previews={previews} />
+                    </div>
+                  ) : null}
+                </div>
               </li>
             );
           })}

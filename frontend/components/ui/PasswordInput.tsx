@@ -4,8 +4,14 @@ import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useI18n } from "@/components/providers/I18nProvider";
 import { Button } from "@/components/ui/button";
+import { FieldError } from "@/components/ui/FieldError";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { evaluatePasswordStrength } from "@/lib/password";
 import { cn } from "@/lib/utils";
 
@@ -15,12 +21,14 @@ interface PasswordInputProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  onBlur?: () => void;
   autoComplete: "current-password" | "new-password";
   required?: boolean;
   minLength?: number;
   disabled?: boolean;
   showStrength?: boolean;
   hint?: string;
+  error?: string | null;
   placeholder?: string;
 }
 
@@ -30,12 +38,14 @@ export function PasswordInput({
   label,
   value,
   onChange,
+  onBlur,
   autoComplete,
   required = true,
   minLength,
   disabled = false,
   showStrength = false,
   hint,
+  error = null,
   placeholder,
 }: PasswordInputProps) {
   const { t } = useI18n();
@@ -68,6 +78,11 @@ export function PasswordInput({
         : "bg-[var(--brand-primary)]";
 
   const toggleLabel = visible ? t.common.hidePassword : t.common.showPassword;
+  const hintId = hint ? `${id}-hint` : undefined;
+  const errorId = `${id}-error`;
+  const describedBy =
+    [hintId, error ? errorId : undefined].filter(Boolean).join(" ") ||
+    undefined;
 
   return (
     <div className="space-y-1.5">
@@ -81,34 +96,53 @@ export function PasswordInput({
           type={visible ? "text" : "password"}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
           autoComplete={autoComplete}
           required={required}
           minLength={minLength}
           disabled={disabled}
           placeholder={placeholder}
-          className="h-10 rounded-2xl bg-card pr-10 pl-3.5 text-sm shadow-none [&::-ms-clear]:hidden [&::-ms-reveal]:hidden"
-        />
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          onClick={() => setVisible((prev) => !prev)}
-          disabled={disabled}
-          aria-pressed={visible}
-          aria-label={toggleLabel}
-          title={toggleLabel}
-          className="absolute top-1/2 right-1 size-8 -translate-y-1/2 rounded-full text-muted-foreground shadow-none hover:bg-accent hover:text-foreground"
-        >
-          {visible ? (
-            <EyeOff className="size-4 stroke-[1.75]" aria-hidden="true" />
-          ) : (
-            <Eye className="size-4 stroke-[1.75]" aria-hidden="true" />
+          aria-invalid={Boolean(error)}
+          aria-describedby={describedBy}
+          className={cn(
+            "h-10 rounded-2xl bg-card pr-10 pl-3.5 text-sm shadow-none [&::-ms-clear]:hidden [&::-ms-reveal]:hidden",
+            error &&
+              "border-[var(--error-text)] focus-visible:border-[var(--error-text)]"
           )}
-        </Button>
+        />
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setVisible((prev) => !prev)}
+                disabled={disabled}
+                aria-pressed={visible}
+                aria-label={toggleLabel}
+                className="absolute top-1/2 right-1 size-8 -translate-y-1/2 rounded-full text-muted-foreground shadow-none hover:bg-accent hover:text-foreground"
+              />
+            }
+          >
+            {visible ? (
+              <EyeOff className="size-4 stroke-[1.75]" aria-hidden="true" />
+            ) : (
+              <Eye className="size-4 stroke-[1.75]" aria-hidden="true" />
+            )}
+          </TooltipTrigger>
+          <TooltipContent className="rounded-xl shadow-none">
+            {toggleLabel}
+          </TooltipContent>
+        </Tooltip>
       </div>
 
+      <FieldError id={errorId} message={error} />
+
       {hint ? (
-        <p className="text-[11px] leading-snug text-muted-foreground">{hint}</p>
+        <p id={hintId} className="text-[11px] leading-snug text-muted-foreground">
+          {hint}
+        </p>
       ) : null}
 
       {showStrength && strength !== "empty" ? (

@@ -1,27 +1,38 @@
 "use client";
 
 import { useState } from "react";
+import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import {
+  Beef,
   Bookmark,
   Camera,
   Check,
-  ChevronDown,
-  ChevronUp,
+  ChevronRight,
+  Droplet,
+  Flame,
+  Leaf,
   Loader2,
   ShoppingBasket,
   Utensils,
+  Wallet,
+  Wheat,
+  X,
 } from "lucide-react";
 import { useI18n } from "@/components/providers/I18nProvider";
 import { formatIDR, formatMacro } from "@/components/chat/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { DatePicker } from "@/components/ui/DatePicker";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { Input } from "@/components/ui/input";
+  Dialog,
+  DialogClose,
+  DialogDescription,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -79,7 +90,7 @@ export function MealResultCard({
   saveError = null,
 }: MealResultCardProps) {
   const { t } = useI18n();
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [selectedMealTime, setSelectedMealTime] = useState<"auto" | MealTime>(
     "auto"
   );
@@ -110,121 +121,214 @@ export function MealResultCard({
     {
       label: t.chat.caloriesLabel,
       value: `${Math.round(meal.calories)} ${t.profile.kcalUnit}`,
+      icon: Flame,
+      colorVar: "var(--macro-calories)",
     },
     {
       label: t.chat.proteinLabel,
       value: `${formatMacro(meal.protein_g)} ${t.profile.gramUnit}`,
+      icon: Beef,
+      colorVar: "var(--macro-protein)",
     },
     {
       label: t.chat.carbsLabel,
       value: `${formatMacro(meal.carbs_g)} ${t.profile.gramUnit}`,
+      icon: Wheat,
+      colorVar: "var(--macro-carbs)",
     },
     {
       label: t.chat.fatLabel,
       value: `${formatMacro(meal.fat_g)} ${t.profile.gramUnit}`,
+      icon: Droplet,
+      colorVar: "var(--macro-fat)",
     },
     {
       label: t.chat.fiberLabel,
       value: `${formatMacro(meal.fiber_g)} ${t.profile.gramUnit}`,
+      icon: Leaf,
+      colorVar: "var(--macro-fiber)",
     },
   ];
 
+  const compactSummaryText = meal.note || meal.portion || "";
+
   return (
-    <Card className="rounded-3xl border border-border bg-card p-5 shadow-none ring-0 gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
-          <div className="flex items-center gap-2">
-            <SourceIcon source={meal.input_source} />
-            <h3 className="text-base font-semibold leading-snug text-foreground">
-              {meal.name}
-            </h3>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger
+        render={
+          <button
+            type="button"
+            className="group w-full cursor-pointer rounded-2xl border border-border bg-card px-4 py-3.5 text-left shadow-none transition-colors duration-150 hover:border-[var(--border-strong)] hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]"
+          />
+        }
+      >
+        <div className="space-y-1.5">
+          {/* Row 1: Title + Health Score Badge */}
+          <div className="flex items-center justify-between gap-2.5">
+            <div className="flex min-w-0 items-center gap-2">
+              <SourceIcon source={meal.input_source} />
+              <h3 className="truncate text-sm font-semibold leading-snug text-foreground sm:text-[15px]">
+                {meal.name}
+              </h3>
+            </div>
+
+            <Badge
+              className={`h-6 shrink-0 rounded-full border-0 px-2.5 text-[11px] font-semibold tabular-nums ${getHealthBadgeClass(meal.health_label)}`}
+            >
+              {meal.health_score} · {healthLabelText}
+            </Badge>
           </div>
-          {meal.portion ? (
-            <p className="text-xs text-muted-foreground">{meal.portion}</p>
-          ) : null}
+
+          {/* Row 2: Key metrics (Calories, Protein, Price) */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs tabular-nums text-muted-foreground">
+            <span className="font-medium text-foreground">
+              {Math.round(meal.calories)} {t.profile.kcalUnit}
+            </span>
+            <span aria-hidden="true">·</span>
+            <span>
+              {t.chat.proteinLabel} {formatMacro(meal.protein_g)}{" "}
+              {t.profile.gramUnit}
+            </span>
+            {meal.estimated_price_idr > 0 ? (
+              <>
+                <span aria-hidden="true">·</span>
+                <span className="font-semibold text-[var(--brand-accent)]">
+                  {formatIDR(meal.estimated_price_idr)}
+                </span>
+              </>
+            ) : null}
+          </div>
+
+          {/* Row 3: Note/Portion preview or Saved indicator + Details cue */}
+          <div className="flex items-center justify-between gap-3 pt-0.5">
+            {saved ? (
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--brand-primary)]">
+                <Check className="size-3.5 stroke-[2]" aria-hidden="true" />
+                <span>{t.chat.savedMealButton}</span>
+              </span>
+            ) : (
+              <p className="min-w-0 truncate text-xs text-muted-foreground">
+                {compactSummaryText}
+              </p>
+            )}
+
+            <span className="inline-flex shrink-0 items-center gap-0.5 text-xs font-medium text-[var(--brand-primary)] transition-transform duration-150 group-hover:translate-x-0.5">
+              <span>{t.chat.openMealDetailLabel}</span>
+              <ChevronRight
+                className="size-3.5 stroke-[2]"
+                aria-hidden="true"
+              />
+            </span>
+          </div>
         </div>
+      </DialogTrigger>
 
-        <Badge
-          className={`h-7 shrink-0 rounded-full border-0 px-3 text-xs font-semibold tabular-nums ${getHealthBadgeClass(meal.health_label)}`}
+      <DialogPortal>
+        <DialogOverlay className="overflow-hidden overscroll-contain bg-black/40 supports-backdrop-filter:backdrop-blur-md" />
+        <DialogPrimitive.Popup
+          data-slot="dialog-content"
+          className="fixed top-1/2 left-1/2 z-50 grid max-h-[88dvh] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto overscroll-contain rounded-3xl border border-border bg-card p-5 text-sm text-card-foreground shadow-none ring-0 outline-none duration-150 sm:max-w-lg sm:p-6 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
         >
-          {meal.health_score} · {healthLabelText}
-        </Badge>
-      </div>
+          <DialogHeader className="gap-2 pr-9">
+            <div className="flex flex-wrap items-start justify-between gap-2.5">
+              <div className="min-w-0 space-y-1">
+                <div className="flex items-center gap-2">
+                  <SourceIcon source={meal.input_source} />
+                  <DialogTitle className="text-base font-semibold leading-snug text-foreground sm:text-lg">
+                    {meal.name}
+                  </DialogTitle>
+                </div>
+                {meal.portion ? (
+                  <DialogDescription className="text-xs text-muted-foreground">
+                    {meal.portion}
+                  </DialogDescription>
+                ) : (
+                  <DialogDescription className="sr-only">
+                    {meal.name}
+                  </DialogDescription>
+                )}
+              </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-        {meal.estimated_price_idr > 0 ? (
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground">
-              {t.chat.priceLabel}:
-            </span>
-            <span className="font-semibold tabular-nums text-[var(--brand-accent)]">
-              {formatIDR(meal.estimated_price_idr)}
-            </span>
-          </div>
-        ) : (
-          <span />
-        )}
+              <Badge
+                className={`h-7 shrink-0 rounded-full border-0 px-3 text-xs font-semibold tabular-nums ${getHealthBadgeClass(meal.health_label)}`}
+              >
+                {meal.health_score} · {healthLabelText}
+              </Badge>
+            </div>
+          </DialogHeader>
 
-        <span className="text-xs text-[var(--text-muted)]">
-          {t.chat.estimatedTag}
-        </span>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 rounded-2xl bg-muted p-3 sm:grid-cols-5">
-        {macros.map((macro) => (
-          <div key={macro.label} className="space-y-0.5 px-1">
-            <p className="text-[11px] text-muted-foreground">{macro.label}</p>
-            <p className="text-sm font-semibold tabular-nums text-foreground">
-              {macro.value}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      {meal.note ? (
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          {meal.note}
-        </p>
-      ) : null}
-
-      {hasDetails ? (
-        <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen}>
-          <CollapsibleTrigger
+          <DialogClose
             render={
               <Button
                 type="button"
                 variant="ghost"
-                size="sm"
-                className="h-9 rounded-full px-3 text-xs font-medium text-foreground shadow-none"
+                size="icon-sm"
+                aria-label={t.chat.closeMealDetailLabel}
+                className="absolute top-4 right-4 size-8 rounded-full text-muted-foreground shadow-none hover:bg-accent hover:text-foreground"
               />
             }
           >
-            {detailsOpen ? (
-              <ChevronUp
-                className="size-3.5 shrink-0 stroke-[1.75]"
-                aria-hidden="true"
-              />
-            ) : (
-              <ChevronDown
-                className="size-3.5 shrink-0 stroke-[1.75]"
-                aria-hidden="true"
-              />
-            )}
-            <span>
-              {detailsOpen
-                ? t.chat.hideDetailsButton
-                : t.chat.showDetailsButton}
-            </span>
-          </CollapsibleTrigger>
+            <X className="size-4 stroke-[1.75]" aria-hidden="true" />
+          </DialogClose>
 
-          <CollapsibleContent className="pt-2">
-            <div className="rounded-2xl bg-muted p-4 space-y-3 text-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+            {meal.estimated_price_idr > 0 ? (
+              <div className="flex items-center gap-1.5">
+                <Wallet
+                  className="size-3.5 shrink-0 stroke-[1.75] text-[var(--brand-accent)]"
+                  aria-hidden="true"
+                />
+                <span className="text-xs text-muted-foreground">
+                  {t.chat.priceLabel}:
+                </span>
+                <span className="font-semibold tabular-nums text-[var(--brand-accent)]">
+                  {formatIDR(meal.estimated_price_idr)}
+                </span>
+              </div>
+            ) : (
+              <span />
+            )}
+
+            <span className="text-xs text-[var(--text-muted)]">
+              {t.chat.estimatedTag}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 rounded-2xl bg-muted p-3 sm:grid-cols-5">
+            {macros.map((macro) => {
+              const Icon = macro.icon;
+              return (
+                <div key={macro.label} className="space-y-0.5 px-1">
+                  <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <Icon
+                      className="size-3.5 shrink-0 stroke-[1.75]"
+                      style={{ color: macro.colorVar }}
+                      aria-hidden="true"
+                    />
+                    <span>{macro.label}</span>
+                  </p>
+                  <p className="whitespace-nowrap text-sm font-semibold tabular-nums text-foreground">
+                    {macro.value}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+
+          {meal.note ? (
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {meal.note}
+            </p>
+          ) : null}
+
+          {hasDetails ? (
+            <div className="space-y-3 rounded-2xl bg-muted p-4 text-sm">
               {hasMissing ? (
                 <div className="space-y-1.5">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
                     {t.chat.missingIngredientsHeading}
                   </p>
-                  <ul className="list-disc pl-5 space-y-1 text-foreground">
+                  <ul className="list-disc space-y-1 pl-5 text-foreground">
                     {meal.missing_ingredients.map((item, idx) => (
                       <li key={`${item}-${idx}`}>{item}</li>
                     ))}
@@ -237,7 +341,7 @@ export function MealResultCard({
                   <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
                     {t.chat.cookingStepsHeading}
                   </p>
-                  <ol className="list-decimal pl-5 space-y-1 text-foreground">
+                  <ol className="list-decimal space-y-1 pl-5 text-foreground">
                     {meal.cooking_steps.map((step, idx) => (
                       <li key={`${step}-${idx}`}>{step}</li>
                     ))}
@@ -245,143 +349,139 @@ export function MealResultCard({
                 </div>
               ) : null}
             </div>
-          </CollapsibleContent>
-        </Collapsible>
-      ) : null}
+          ) : null}
 
-      <Separator className="bg-border" />
+          <Separator className="bg-border" />
 
-      <div className="space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">
-                {t.chat.mealDateSelectLabel}
-              </span>
-              <Input
-                type="date"
-                min={todayStr}
-                max={maxDateStr}
-                value={selectedMealDate}
+          <div className="space-y-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    {t.chat.mealDateSelectLabel}
+                  </span>
+                  <DatePicker
+                    value={selectedMealDate}
+                    minDate={todayStr}
+                    maxDate={maxDateStr}
+                    disabled={saved || isSaving}
+                    onChange={setSelectedMealDate}
+                    ariaLabel={t.chat.mealDateSelectLabel}
+                    size="sm"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    {t.chat.mealTimeSelectLabel}
+                  </span>
+                  <Select
+                    value={selectedMealTime}
+                    disabled={saved || isSaving}
+                    onValueChange={(val) =>
+                      setSelectedMealTime((val ?? "auto") as "auto" | MealTime)
+                    }
+                  >
+                    <SelectTrigger
+                      aria-label={t.chat.mealTimeSelectLabel}
+                      className="h-9 min-w-28 rounded-full border-border bg-card px-3 text-xs shadow-none data-[size=default]:h-9"
+                    >
+                      <SelectValue>
+                        {mealTimeLabels[selectedMealTime]}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent
+                      alignItemWithTrigger={false}
+                      sideOffset={6}
+                      className="rounded-[12px] border border-border bg-card p-1 shadow-none ring-0"
+                    >
+                      <SelectItem
+                        value="auto"
+                        className="rounded-[8px] py-1.5 pl-2.5 pr-8 text-xs"
+                      >
+                        {t.meals.mealTimeAuto}
+                      </SelectItem>
+                      <SelectItem
+                        value="breakfast"
+                        className="rounded-[8px] py-1.5 pl-2.5 pr-8 text-xs"
+                      >
+                        {t.meals.mealTimes.breakfast}
+                      </SelectItem>
+                      <SelectItem
+                        value="lunch"
+                        className="rounded-[8px] py-1.5 pl-2.5 pr-8 text-xs"
+                      >
+                        {t.meals.mealTimes.lunch}
+                      </SelectItem>
+                      <SelectItem
+                        value="dinner"
+                        className="rounded-[8px] py-1.5 pl-2.5 pr-8 text-xs"
+                      >
+                        {t.meals.mealTimes.dinner}
+                      </SelectItem>
+                      <SelectItem
+                        value="snack"
+                        className="rounded-[8px] py-1.5 pl-2.5 pr-8 text-xs"
+                      >
+                        {t.meals.mealTimes.snack}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant={saved ? "secondary" : "default"}
                 disabled={saved || isSaving}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  if (next && next >= todayStr && next <= maxDateStr) {
-                    setSelectedMealDate(next);
-                  }
-                }}
-                aria-label={t.chat.mealDateSelectLabel}
-                className="h-9 w-auto rounded-full border-border bg-card px-3 text-xs tabular-nums shadow-none"
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">
-                {t.chat.mealTimeSelectLabel}
-              </span>
-              <Select
-                value={selectedMealTime}
-                disabled={saved || isSaving}
-                onValueChange={(val) =>
-                  setSelectedMealTime((val ?? "auto") as "auto" | MealTime)
+                onClick={() =>
+                  void onSave?.(
+                    meal,
+                    selectedMealTime === "auto" ? undefined : selectedMealTime,
+                    selectedMealDate
+                  )
                 }
+                aria-pressed={saved}
+                className={`h-9 rounded-full px-4 text-xs font-medium shadow-none ${
+                  saved
+                    ? "bg-[var(--brand-tint)] text-[var(--brand-primary)] opacity-100"
+                    : ""
+                }`}
               >
-                <SelectTrigger
-                  aria-label={t.chat.mealTimeSelectLabel}
-                  className="h-9 min-w-28 rounded-full border-border bg-card px-3 text-xs shadow-none data-[size=default]:h-9"
-                >
-                  <SelectValue>{mealTimeLabels[selectedMealTime]}</SelectValue>
-                </SelectTrigger>
-                <SelectContent
-                  alignItemWithTrigger={false}
-                  sideOffset={6}
-                  className="rounded-[12px] border border-border bg-card p-1 shadow-none ring-0"
-                >
-                  <SelectItem
-                    value="auto"
-                    className="rounded-[8px] py-1.5 pl-2.5 pr-8 text-xs"
-                  >
-                    {t.meals.mealTimeAuto}
-                  </SelectItem>
-                  <SelectItem
-                    value="breakfast"
-                    className="rounded-[8px] py-1.5 pl-2.5 pr-8 text-xs"
-                  >
-                    {t.meals.mealTimes.breakfast}
-                  </SelectItem>
-                  <SelectItem
-                    value="lunch"
-                    className="rounded-[8px] py-1.5 pl-2.5 pr-8 text-xs"
-                  >
-                    {t.meals.mealTimes.lunch}
-                  </SelectItem>
-                  <SelectItem
-                    value="dinner"
-                    className="rounded-[8px] py-1.5 pl-2.5 pr-8 text-xs"
-                  >
-                    {t.meals.mealTimes.dinner}
-                  </SelectItem>
-                  <SelectItem
-                    value="snack"
-                    className="rounded-[8px] py-1.5 pl-2.5 pr-8 text-xs"
-                  >
-                    {t.meals.mealTimes.snack}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                {isSaving ? (
+                  <Loader2
+                    className="size-3.5 shrink-0 animate-spin stroke-[1.75]"
+                    aria-hidden="true"
+                  />
+                ) : saved ? (
+                  <Check
+                    className="size-3.5 shrink-0 stroke-[1.75]"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Bookmark
+                    className="size-3.5 shrink-0 stroke-[1.75]"
+                    aria-hidden="true"
+                  />
+                )}
+                <span>
+                  {isSaving
+                    ? t.chat.savingMealButton
+                    : saved
+                      ? t.chat.savedMealButton
+                      : t.chat.saveMealButton}
+                </span>
+              </Button>
             </div>
+
+            {saveError ? (
+              <p role="alert" className="text-xs text-[var(--error-text)]">
+                {saveError}
+              </p>
+            ) : null}
           </div>
-
-          <Button
-            type="button"
-            variant={saved ? "secondary" : "default"}
-            disabled={saved || isSaving}
-            onClick={() =>
-              void onSave?.(
-                meal,
-                selectedMealTime === "auto" ? undefined : selectedMealTime,
-                selectedMealDate
-              )
-            }
-            aria-pressed={saved}
-            className={`h-9 rounded-full px-4 text-xs font-medium shadow-none ${
-              saved
-                ? "bg-[var(--brand-tint)] text-[var(--brand-primary)] opacity-100"
-                : ""
-            }`}
-          >
-            {isSaving ? (
-              <Loader2
-                className="size-3.5 shrink-0 animate-spin stroke-[1.75]"
-                aria-hidden="true"
-              />
-            ) : saved ? (
-              <Check
-                className="size-3.5 shrink-0 stroke-[1.75]"
-                aria-hidden="true"
-              />
-            ) : (
-              <Bookmark
-                className="size-3.5 shrink-0 stroke-[1.75]"
-                aria-hidden="true"
-              />
-            )}
-            <span>
-              {isSaving
-                ? t.chat.savingMealButton
-                : saved
-                  ? t.chat.savedMealButton
-                  : t.chat.saveMealButton}
-            </span>
-          </Button>
-        </div>
-
-        {saveError ? (
-          <p role="alert" className="text-xs text-[var(--error-text)]">
-            {saveError}
-          </p>
-        ) : null}
-      </div>
-    </Card>
+        </DialogPrimitive.Popup>
+      </DialogPortal>
+    </Dialog>
   );
 }

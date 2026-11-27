@@ -152,7 +152,7 @@ func PostProcess(raw *RawAIResponse, opts PostProcessOptions) (*ChatAnalyzeRespo
 		}
 	}
 
-	// Strict Budget Filter: 0 options exceeding budget may be returned.
+	// Strict Budget Filter: 0 options exceeding budget (or zero-priced fake budget meals) may be returned.
 	var removedMeals []MealOption
 	if effectiveBudget > 0 && intent != IntentPhotoFood {
 		out.BudgetIDR = effectiveBudget
@@ -160,6 +160,9 @@ func PostProcess(raw *RawAIResponse, opts PostProcessOptions) (*ChatAnalyzeRespo
 		for _, m := range sanitizedMeals {
 			if m.EstimatedPriceIDR > effectiveBudget {
 				removedMeals = append(removedMeals, m)
+				continue
+			}
+			if intent == IntentBudgetMeals && m.EstimatedPriceIDR <= 0 {
 				continue
 			}
 			kept = append(kept, m)

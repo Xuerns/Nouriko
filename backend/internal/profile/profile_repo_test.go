@@ -93,11 +93,14 @@ func TestStoreProfileRepository(t *testing.T) {
 	userID := "550e8400-e29b-41d4-a716-446655440000"
 	avatarURL := "https://api.dicebear.com/10.x/waves/svg?seed=" + userID
 
-	t.Run("UpsertProfile applies defaults for language and theme", func(t *testing.T) {
+	t.Run("UpsertProfile applies defaults for language and theme and supports display_name backfill", func(t *testing.T) {
 		db := &fakeDBTX{
-			queryRowFn: func(_ context.Context, _ string, args ...any) pgx.Row {
-				if args[2] != "id" || args[3] != "light" {
-					t.Errorf("expected default language=id and theme=light, got %#v %#v", args[2], args[3])
+			queryRowFn: func(_ context.Context, sql string, args ...any) pgx.Row {
+				if !strings.Contains(sql, "CASE WHEN profiles.display_name = '' THEN EXCLUDED.display_name ELSE profiles.display_name END") {
+					t.Errorf("expected conditional display_name backfill SQL, got %s", sql)
+				}
+				if len(args) != 5 || args[2] != "Raka" || args[3] != "id" || args[4] != "light" {
+					t.Errorf("expected display_name=Raka, default language=id, theme=light, got %#v", args)
 				}
 				return fakeRow{scanFn: func(dest ...any) error {
 					*(dest[0].(*string)) = userID
@@ -106,19 +109,21 @@ func TestStoreProfileRepository(t *testing.T) {
 					*(dest[13].(*string)) = "light"
 					*(dest[14].(*time.Time)) = now
 					*(dest[15].(*time.Time)) = now
+					*(dest[16].(*string)) = "Raka"
 					return nil
 				}}
 			},
 		}
 		store := NewStoreWithDBTX(db)
 		p, err := store.UpsertProfile(ctx, UpsertProfileParams{
-			ID:         userID,
-			ProfileURL: avatarURL,
+			ID:          userID,
+			ProfileURL:  avatarURL,
+			DisplayName: "  Raka  ",
 		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if p.ProfileURL != avatarURL || p.OnboardingCompleted() {
+		if p.ProfileURL != avatarURL || p.DisplayName != "Raka" || p.OnboardingCompleted() {
 			t.Fatalf("unexpected profile result: %+v", p)
 		}
 	})
@@ -168,4 +173,30 @@ func TestStoreProfileRepository(t *testing.T) {
 			t.Fatal("expected error from nil store")
 		}
 	})
+}
+
+func TestSanitizeGoogleDisplayNameAndDTOAuth(t *testing.T) {
+	cleaned := SanitizeGoogleDisplayName("  \x00Raka\n\t Pratama\x1f  ")
+	if cleaned != "Raka Pratama" {
+		t.Fatalf("expected control chars stripped and trimmed, got %q", cleaned)
+	}
+
+	longName := strings.Repeat("é", MaxDisplayNameRunes+15)
+	truncated := SanitizeGoogleDisplayName(longName)
+	if len([]rune(truncated)) != MaxDisplayNameRunes {
+		t.Fatalf("expected %d runes, got %d", MaxDisplayNameRunes, len([]rune(truncated)))
+	}
+	if _, err := ValidateDisplayName(truncated); err != nil {
+		t.Fatalf("sanitized display name must pass ValidateDisplayName: %v", err)
+	}
+
+	dto := ToDTO(&Profile{ID: "u1"}, "raka@example.com")
+	if !dto.HasPassword || len(dto.AuthProviders) != 1 || dto.AuthProviders[0] != "email" {
+		t.Fatalf("unexpected default ToDTO auth metadata: %+v", dto)
+	}
+
+	googleDTO := ToDTOWithAuth(&Profile{ID: "u2"}, "g@example.com", []string{"google"}, false)
+	if googleDTO.HasPassword || len(googleDTO.AuthProviders) != 1 || googleDTO.AuthProviders[0] != "google" {
+		t.Fatalf("unexpected Google ToDTOWithAuth metadata: %+v", googleDTO)
+	}
 }

@@ -111,9 +111,10 @@ func New(deps Dependencies) *fiber.App {
 
 	api.Get("/status", func(c fiber.Ctx) error {
 		return c.JSON(fiber.Map{
-			"status":     "ok",
-			"mode":       deps.Config.Mode,
-			"ai_enabled": activeAnalyzer != nil,
+			"status":              "ok",
+			"mode":                deps.Config.Mode,
+			"ai_enabled":          activeAnalyzer != nil,
+			"google_auth_enabled": deps.Config.GoogleAuthEnabled(),
 		})
 	})
 
@@ -138,6 +139,7 @@ func New(deps Dependencies) *fiber.App {
 		api.Post("/auth/register", authStrictLimiter, authHandler.Register)
 		api.Post("/auth/verify-email", authStrictLimiter, authHandler.VerifyEmail)
 		api.Post("/auth/login", authStrictLimiter, authHandler.Login)
+		api.Post("/auth/google", authStrictLimiter, authHandler.GoogleLogin)
 		api.Post("/auth/forgot-password", authStrictLimiter, authHandler.ForgotPassword)
 		api.Post("/auth/reset-password", authStrictLimiter, authHandler.ResetPassword)
 

@@ -283,3 +283,35 @@ func TestProfileHandler_GetOnboardingAndPatch(t *testing.T) {
 	resp, body = doProfileJSONReq(t, app, http.MethodGet, "/api/v1/profile", "valid-token", nil)
 	assertProfileError(t, resp, body, http.StatusNotFound, "NOT_FOUND")
 }
+
+func TestProfileHandler_ReturnsAuthProviderMetadata(t *testing.T) {
+	repo := newMemProfileRepo()
+	userID := uuid.NewString()
+	_, _ = repo.UpsertProfile(context.Background(), UpsertProfileParams{
+		ID:          userID,
+		ProfileURL:  "https://api.dicebear.com/10.x/waves/svg?seed=" + userID,
+		DisplayName: "Google User",
+		Language:    "id",
+		Theme:       "light",
+	})
+	claims := &httpx.Claims{
+		UserID:    userID,
+		Email:     "google@example.com",
+		Role:      "authenticated",
+		Providers: []string{"google"},
+	}
+	app := newProfileTestApp(repo, claims)
+
+	resp, body := doProfileJSONReq(t, app, http.MethodGet, "/api/v1/profile", "valid-token", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("GET /profile failed: %d %+v", resp.StatusCode, body)
+	}
+	profileMap := body["profile"].(map[string]any)
+	if profileMap["has_password"] != false {
+		t.Fatalf("expected has_password=false for google-only claims, got %+v", profileMap)
+	}
+	providers, ok := profileMap["auth_providers"].([]any)
+	if !ok || len(providers) != 1 || providers[0] != "google" {
+		t.Fatalf("expected auth_providers=[\"google\"], got %+v", profileMap["auth_providers"])
+	}
+}

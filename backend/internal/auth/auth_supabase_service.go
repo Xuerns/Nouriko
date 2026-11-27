@@ -21,41 +21,66 @@ import (
 // SupabaseService implements Service for APP_ENV=production using Supabase Auth
 // REST endpoints (/auth/v1/*), AdminClient.DeleteUser, and PostgreSQL profiles.
 type SupabaseService struct {
-	baseURL    string
-	apiKey     string
-	appBaseURL string
-	profiles   profile.Repository
-	admin      *AdminClient
-	httpClient *http.Client
-	logger     *slog.Logger
+	baseURL        string
+	apiKey         string
+	appBaseURL     string
+	googleClientID string
+	googleVerifier GoogleTokenVerifier
+	replayStore    OAuthReplayStore
+	profiles       profile.Repository
+	admin          *AdminClient
+	httpClient     *http.Client
+	logger         *slog.Logger
+	now            func() time.Time
 }
 
 // Compile-time interface check.
 var _ Service = (*SupabaseService)(nil)
 
 // NewSupabaseService creates a production Supabase-backed Service.
-func NewSupabaseService(cfg *config.Config, profileRepo profile.Repository, admin *AdminClient, logger *slog.Logger, httpClient *http.Client) *SupabaseService {
+func NewSupabaseService(
+	cfg *config.Config,
+	profileRepo profile.Repository,
+	admin *AdminClient,
+	googleVerifier GoogleTokenVerifier,
+	logger *slog.Logger,
+	httpClient *http.Client,
+) *SupabaseService {
 	if logger == nil {
 		logger = slog.Default()
 	}
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: 10 * time.Second}
 	}
-	var baseURL, apiKey, appBaseURL string
+	var baseURL, apiKey, appBaseURL, googleClientID string
 	if cfg != nil {
 		baseURL = strings.TrimRight(cfg.Supabase.URL, "/")
 		apiKey = cfg.Supabase.AuthAPIKey()
 		appBaseURL = strings.TrimRight(cfg.AppBaseURL, "/")
+		googleClientID = strings.TrimSpace(cfg.Auth.GoogleClientID)
 	}
 	return &SupabaseService{
-		baseURL:    baseURL,
-		apiKey:     apiKey,
-		appBaseURL: appBaseURL,
-		profiles:   profileRepo,
-		admin:      admin,
-		httpClient: httpClient,
-		logger:     logger,
+		baseURL:        baseURL,
+		apiKey:         apiKey,
+		appBaseURL:     appBaseURL,
+		googleClientID: googleClientID,
+		googleVerifier: googleVerifier,
+		replayStore:    newMemOAuthReplayStore(),
+		profiles:       profileRepo,
+		admin:          admin,
+		httpClient:     httpClient,
+		logger:         logger,
+		now:            time.Now,
 	}
+}
+
+// SetOAuthReplayStore configures a shared replay store (such as PostgreSQL-backed
+// LocalAuthRepo) for cross-instance single-use OAuth nonce consumption.
+func (s *SupabaseService) SetOAuthReplayStore(store OAuthReplayStore) {
+	if s == nil || store == nil {
+		return
+	}
+	s.replayStore = store
 }
 
 type supabaseErrorBody struct {
@@ -70,10 +95,22 @@ func (e supabaseErrorBody) combined() string {
 	return strings.ToLower(strings.Join([]string{e.Error, e.ErrorCode, e.ErrorDescription, e.Message, e.MsgAlt}, " "))
 }
 
+type supabaseAppMetadata struct {
+	Provider  string   `json:"provider"`
+	Providers []string `json:"providers"`
+}
+
+type supabaseUserMetadata struct {
+	FullName string `json:"full_name"`
+	Name     string `json:"name"`
+}
+
 type supabaseUser struct {
-	ID         string            `json:"id"`
-	Email      string            `json:"email"`
-	Identities []json.RawMessage `json:"identities"`
+	ID           string               `json:"id"`
+	Email        string               `json:"email"`
+	Identities   []json.RawMessage    `json:"identities"`
+	AppMetadata  supabaseAppMetadata  `json:"app_metadata"`
+	UserMetadata supabaseUserMetadata `json:"user_metadata"`
 }
 
 type supabaseSignupResponse struct {
@@ -239,13 +276,99 @@ func (s *SupabaseService) Login(ctx context.Context, rawEmail, password string) 
 		expiresIn = 3600
 	}
 
+	providers := extractSupabaseProviders(tokResp.User, "email")
+
 	return &LoginResult{
-		AccessToken: tokResp.AccessToken,
-		TokenType:   "Bearer",
-		ExpiresIn:   expiresIn,
-		UserID:      userID,
-		Email:       userEmail,
-		Profile:     prof,
+		AccessToken:   tokResp.AccessToken,
+		TokenType:     "Bearer",
+		ExpiresIn:     expiresIn,
+		UserID:        userID,
+		Email:         userEmail,
+		AuthProviders: providers,
+		HasPassword:   providersHasPassword(providers),
+		Profile:       prof,
+	}, nil
+}
+
+// LoginWithGoogle exchanges a verified Google ID token and raw nonce with
+// Supabase Auth (/auth/v1/token?grant_type=id_token) and ensures the user profile exists.
+func (s *SupabaseService) LoginWithGoogle(ctx context.Context, in GoogleLoginInput) (*LoginResult, error) {
+	if s.googleClientID == "" || s.googleVerifier == nil {
+		return nil, ErrOAuthUnavailable
+	}
+	lang, err := ValidateLanguage(in.Language, true)
+	if err != nil {
+		return nil, ErrInvalidInput
+	}
+	theme, err := ValidateTheme(in.Theme, true)
+	if err != nil {
+		return nil, ErrInvalidInput
+	}
+	if err := validateGoogleTokenInputs(in.IDToken, in.Nonce); err != nil {
+		return nil, err
+	}
+
+	identity, err := s.googleVerifier.VerifyIDToken(ctx, in.IDToken, in.Nonce)
+	if err != nil {
+		return nil, err
+	}
+
+	nowFn := s.now
+	if nowFn == nil {
+		nowFn = time.Now
+	}
+	if s.replayStore != nil {
+		consumed, replayErr := s.replayStore.ConsumeOAuthNonce(ctx, oauthReplayKey(in.Nonce), oauthReplayExpiry(identity, nowFn()))
+		if replayErr != nil {
+			return nil, fmt.Errorf("consume oauth nonce on supabase google login: %w", replayErr)
+		}
+		if !consumed {
+			return nil, ErrInvalidCredentials
+		}
+	}
+
+	tokResp, err := s.idTokenGrant(ctx, in.IDToken, in.Nonce)
+	if err != nil {
+		return nil, err
+	}
+
+	userID := tokResp.User.ID
+	userEmail := tokResp.User.Email
+	displayName := tokResp.User.UserMetadata.FullName
+	if strings.TrimSpace(displayName) == "" {
+		displayName = tokResp.User.UserMetadata.Name
+	}
+	if strings.TrimSpace(displayName) == "" {
+		displayName = identity.Name
+	}
+
+	prof, err := s.profiles.UpsertProfile(ctx, profile.UpsertProfileParams{
+		ID:          userID,
+		ProfileURL:  DiceBearAvatarURL(userID),
+		DisplayName: profile.SanitizeGoogleDisplayName(displayName),
+		Language:    lang,
+		Theme:       theme,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("ensure profile on supabase google login: %w", err)
+	}
+
+	expiresIn := tokResp.ExpiresIn
+	if expiresIn <= 0 {
+		expiresIn = 3600
+	}
+
+	providers := extractSupabaseProviders(tokResp.User, OAuthProviderGoogle)
+
+	return &LoginResult{
+		AccessToken:   tokResp.AccessToken,
+		TokenType:     "Bearer",
+		ExpiresIn:     expiresIn,
+		UserID:        userID,
+		Email:         userEmail,
+		AuthProviders: providers,
+		HasPassword:   providersHasPassword(providers),
+		Profile:       prof,
 	}, nil
 }
 
@@ -383,34 +506,144 @@ func (s *SupabaseService) ChangePassword(ctx context.Context, userID, email, acc
 	return mapSupabaseAuthError(status, rawBody, ErrUnauthorized)
 }
 
-// DeleteAccount verifies the user's password via Supabase password grant, deletes
-// their profile row (cascading saved_meals), and permanently deletes the user via
+// DeleteAccount verifies the user's password (for password accounts) or a fresh
+// Google ID token re-authentication (for Google-only accounts), deletes their
+// profile row (cascading saved_meals), and permanently deletes the user via
 // Supabase Admin API (PRD F13).
-func (s *SupabaseService) DeleteAccount(ctx context.Context, userID, email, password string) error {
-	if password == "" {
-		return ErrInvalidInput
-	}
+func (s *SupabaseService) DeleteAccount(ctx context.Context, in DeleteAccountInput) error {
+	if in.HasPassword || in.Password != "" {
+		if in.Password == "" {
+			return ErrInvalidInput
+		}
 
-	tokResp, err := s.passwordGrant(ctx, email, password)
-	if err != nil {
-		if errors.Is(err, ErrEmailNotVerified) {
+		tokResp, err := s.passwordGrant(ctx, in.Email, in.Password)
+		if err != nil {
+			if errors.Is(err, ErrEmailNotVerified) {
+				return ErrInvalidCredentials
+			}
+			return err
+		}
+		if tokResp.User.ID != in.UserID {
 			return ErrInvalidCredentials
 		}
-		return err
-	}
-	if tokResp.User.ID != userID {
-		return ErrInvalidCredentials
+	} else {
+		if s.googleClientID == "" || s.googleVerifier == nil {
+			return ErrOAuthUnavailable
+		}
+		if err := validateGoogleTokenInputs(in.GoogleIDToken, in.Nonce); err != nil {
+			return err
+		}
+		identity, err := s.googleVerifier.VerifyIDToken(ctx, in.GoogleIDToken, in.Nonce)
+		if err != nil {
+			return err
+		}
+		nowFn := s.now
+		if nowFn == nil {
+			nowFn = time.Now
+		}
+		now := nowFn()
+		if identity.IssuedAt.IsZero() || now.Sub(identity.IssuedAt) > googleReauthMaxAge || identity.IssuedAt.After(now.Add(googleReauthMaxFutureSkew)) {
+			return ErrInvalidCredentials
+		}
+		if s.replayStore != nil {
+			consumed, replayErr := s.replayStore.ConsumeOAuthNonce(ctx, oauthReplayKey(in.Nonce), oauthReplayExpiry(identity, now))
+			if replayErr != nil {
+				return fmt.Errorf("consume oauth nonce for supabase delete account: %w", replayErr)
+			}
+			if !consumed {
+				return ErrInvalidCredentials
+			}
+		}
+
+		tokResp, err := s.idTokenGrant(ctx, in.GoogleIDToken, in.Nonce)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			_ = s.Logout(ctx, tokResp.AccessToken)
+		}()
+		if tokResp.User.ID != in.UserID {
+			return ErrInvalidCredentials
+		}
+		// Reject Google-only deletion if the live Supabase user now has an email password
+		// (guards against stale JWT has_password=false after ResetPassword).
+		if providersHasPassword(extractSupabaseProviders(tokResp.User, OAuthProviderGoogle)) {
+			return ErrInvalidInput
+		}
 	}
 
-	if err := s.profiles.DeleteProfile(ctx, userID); err != nil && !errors.Is(err, database.ErrNotFound) {
+	if err := s.profiles.DeleteProfile(ctx, in.UserID); err != nil && !errors.Is(err, database.ErrNotFound) {
 		return fmt.Errorf("delete profile before supabase user deletion: %w", err)
 	}
 
-	if err := s.admin.DeleteUser(ctx, userID); err != nil {
+	if err := s.admin.DeleteUser(ctx, in.UserID); err != nil {
 		return fmt.Errorf("supabase admin delete user: %w", err)
 	}
 
 	return nil
+}
+
+func (s *SupabaseService) idTokenGrant(ctx context.Context, idToken, rawNonce string) (*supabaseTokenResponse, error) {
+	endpoint := fmt.Sprintf("%s/auth/v1/token?grant_type=id_token", s.baseURL)
+	status, rawBody, err := s.doJSON(ctx, http.MethodPost, endpoint, "", map[string]any{
+		"provider": OAuthProviderGoogle,
+		"id_token": idToken,
+		"nonce":    rawNonce,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("supabase id_token grant request: %w", err)
+	}
+
+	if status < http.StatusOK || status >= http.StatusMultipleChoices {
+		return nil, mapSupabaseAuthError(status, rawBody, ErrInvalidCredentials)
+	}
+
+	var parsed supabaseTokenResponse
+	if err := json.Unmarshal(rawBody, &parsed); err != nil {
+		return nil, fmt.Errorf("decode supabase id_token response: %w", err)
+	}
+	if parsed.AccessToken == "" || parsed.User.ID == "" {
+		return nil, errors.New("supabase id_token response missing access_token or user id")
+	}
+
+	return &parsed, nil
+}
+
+func extractSupabaseProviders(u supabaseUser, fallback string) []string {
+	raw := make([]string, 0, len(u.AppMetadata.Providers)+1)
+	raw = append(raw, u.AppMetadata.Providers...)
+	if u.AppMetadata.Provider != "" {
+		raw = append(raw, u.AppMetadata.Provider)
+	}
+	if len(raw) == 0 && fallback != "" {
+		return []string{fallback}
+	}
+	seen := make(map[string]struct{}, len(raw))
+	out := make([]string, 0, len(raw))
+	for _, r := range raw {
+		p := strings.ToLower(strings.TrimSpace(r))
+		if p == "" {
+			continue
+		}
+		if _, ok := seen[p]; ok {
+			continue
+		}
+		seen[p] = struct{}{}
+		out = append(out, p)
+	}
+	if len(out) == 0 && fallback != "" {
+		return []string{fallback}
+	}
+	return out
+}
+
+func providersHasPassword(providers []string) bool {
+	for _, p := range providers {
+		if strings.EqualFold(strings.TrimSpace(p), "email") {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *SupabaseService) passwordGrant(ctx context.Context, email, password string) (*supabaseTokenResponse, error) {

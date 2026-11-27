@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"Nouriko/internal/config"
@@ -22,9 +23,15 @@ import (
 // Claims aliases httpx.Claims for verified JWT identity.
 type Claims = httpx.Claims
 
+type appMetadataClaims struct {
+	Provider  string   `json:"provider,omitempty"`
+	Providers []string `json:"providers,omitempty"`
+}
+
 type tokenClaims struct {
-	Email string `json:"email,omitempty"`
-	Role  string `json:"role,omitempty"`
+	Email       string             `json:"email,omitempty"`
+	Role        string             `json:"role,omitempty"`
+	AppMetadata *appMetadataClaims `json:"app_metadata,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -91,10 +98,60 @@ func (v *Verifier) Verify(rawToken string) (Claims, error) {
 	}
 
 	return Claims{
-		UserID: tc.Subject,
-		Email:  tc.Email,
-		Role:   tc.Role,
+		UserID:    tc.Subject,
+		Email:     tc.Email,
+		Role:      tc.Role,
+		Providers: extractAppMetadataProviders(tc.AppMetadata),
 	}, nil
+}
+
+func extractAppMetadataProviders(meta *appMetadataClaims) []string {
+	if meta == nil {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(meta.Providers)+1)
+	out := make([]string, 0, len(meta.Providers)+1)
+	add := func(raw string) {
+		p := strings.ToLower(strings.TrimSpace(raw))
+		if p == "" {
+			return
+		}
+		if _, ok := seen[p]; ok {
+			return
+		}
+		seen[p] = struct{}{}
+		out = append(out, p)
+	}
+	for _, p := range meta.Providers {
+		add(p)
+	}
+	if meta.Provider != "" {
+		add(meta.Provider)
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func normalizeProviderList(providers []string) []string {
+	seen := make(map[string]struct{}, len(providers))
+	out := make([]string, 0, len(providers))
+	for _, raw := range providers {
+		p := strings.ToLower(strings.TrimSpace(raw))
+		if p == "" {
+			continue
+		}
+		if _, ok := seen[p]; ok {
+			continue
+		}
+		seen[p] = struct{}{}
+		out = append(out, p)
+	}
+	if len(out) == 0 {
+		return []string{"email"}
+	}
+	return out
 }
 
 func (v *Verifier) allowedMethods() []string {
@@ -124,15 +181,27 @@ func (v *Verifier) keyFunc(token *jwt.Token) (any, error) {
 	return v.jwks.Keyfunc(token)
 }
 
-// SignLocalToken creates an HS256 JWT for local development and tests.
+// SignLocalToken creates an HS256 JWT for local development and tests with the
+// default ["email"] provider list.
 func SignLocalToken(secret, userID, email, audience string, ttl time.Duration) (string, error) {
+	return SignLocalTokenWithProviders(secret, userID, email, audience, []string{"email"}, ttl)
+}
+
+// SignLocalTokenWithProviders creates an HS256 JWT embedding Supabase-compatible
+// app_metadata.provider and app_metadata.providers claims.
+func SignLocalTokenWithProviders(secret, userID, email, audience string, providers []string, ttl time.Duration) (string, error) {
 	if len(secret) < 32 {
 		return "", errors.New("secret must be at least 32 characters")
 	}
+	normProviders := normalizeProviderList(providers)
 	now := time.Now()
 	claims := tokenClaims{
 		Email: email,
 		Role:  "authenticated",
+		AppMetadata: &appMetadataClaims{
+			Provider:  normProviders[0],
+			Providers: normProviders,
+		},
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   userID,
 			Audience:  jwt.ClaimStrings{audience},
