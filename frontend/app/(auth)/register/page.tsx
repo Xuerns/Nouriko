@@ -402,6 +402,13 @@ export default function RegisterPage() {
               <p>
                 {t.register.privacyPrefix}{" "}
                 <Link
+                  href="/terms"
+                  className="text-foreground underline underline-offset-4 hover:text-[var(--brand-primary)] transition-colors"
+                >
+                  {t.common.termsOfService}
+                </Link>{" "}
+                {t.register.legalConnector}{" "}
+                <Link
                   href="/privacy"
                   className="text-foreground underline underline-offset-4 hover:text-[var(--brand-primary)] transition-colors"
                 >

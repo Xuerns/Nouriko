@@ -135,6 +135,11 @@ export function AppFooter({
                     {t.footer.privacyLink}
                   </Link>
                 </li>
+                <li>
+                  <Link href="/terms" className={footerLinkClass}>
+                    {t.footer.termsLink}
+                  </Link>
+                </li>
               </ul>
             </div>
           </nav>

@@ -1055,18 +1055,32 @@ export default function ProfilePage() {
                   </p>
                 </div>
 
-                <Button
-                  render={<Link href="/privacy" />}
-                  variant="outline"
-                  size="sm"
-                  className="h-9 shrink-0 self-start rounded-full border-border bg-card px-4 text-xs font-medium text-foreground shadow-none hover:bg-accent sm:self-center"
-                >
-                  <span>{t.profile.privacyLinkText}</span>
-                  <ArrowUpRight
-                    className="size-3.5 stroke-[1.75]"
-                    aria-hidden="true"
-                  />
-                </Button>
+                <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
+                  <Button
+                    render={<Link href="/privacy" />}
+                    variant="outline"
+                    size="sm"
+                    className="h-9 shrink-0 rounded-lg border-border bg-card px-3.5 text-xs font-medium text-foreground shadow-none hover:bg-accent"
+                  >
+                    <span>{t.profile.privacyLinkText}</span>
+                    <ArrowUpRight
+                      className="size-3.5 stroke-[1.75]"
+                      aria-hidden="true"
+                    />
+                  </Button>
+                  <Button
+                    render={<Link href="/terms" />}
+                    variant="outline"
+                    size="sm"
+                    className="h-9 shrink-0 rounded-lg border-border bg-card px-3.5 text-xs font-medium text-foreground shadow-none hover:bg-accent"
+                  >
+                    <span>{t.profile.termsLinkText}</span>
+                    <ArrowUpRight
+                      className="size-3.5 stroke-[1.75]"
+                      aria-hidden="true"
+                    />
+                  </Button>
+                </div>
               </div>
 
               <Separator className="bg-border" />
