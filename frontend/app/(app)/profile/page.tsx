@@ -1045,7 +1045,7 @@ export default function ProfilePage() {
         <TabsContent value="account">
           <Card className="rounded-3xl border border-border bg-card py-5 shadow-none ring-0 gap-5">
             <CardContent className="space-y-5 px-5">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-3">
                 <div className="max-w-lg space-y-1">
                   <h2 className="text-base font-semibold text-foreground">
                     {t.profile.privacyHeading}
@@ -1055,7 +1055,7 @@ export default function ProfilePage() {
                   </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
                     render={<Link href="/privacy" />}
                     variant="outline"
