@@ -14,7 +14,6 @@ import (
 // FoodPriceStore defines read operations for the food_prices reference table.
 type FoodPriceStore interface {
 	ListFoodPricesByBudget(ctx context.Context, maxBudgetIDR int, category string, limit int) ([]FoodPrice, error)
-	SearchFoodPrices(ctx context.Context, query string, category string, limit int) ([]FoodPrice, error)
 	ListAllFoodPrices(ctx context.Context, category string, limit int) ([]FoodPrice, error)
 }
 
@@ -50,17 +49,6 @@ func normalizeFoodPriceLimit(limit int) int {
 		return maxFoodPriceLimit
 	}
 	return limit
-}
-
-// escapeLikePattern escapes PostgreSQL LIKE/ILIKE wildcard characters (%, _)
-// and the escape character (\) so user-provided search text is matched literally.
-func escapeLikePattern(raw string) string {
-	replacer := strings.NewReplacer(
-		`\`, `\\`,
-		`%`, `\%`,
-		`_`, `\_`,
-	)
-	return replacer.Replace(raw)
 }
 
 func scanFoodPrices(rows pgx.Rows) ([]FoodPrice, error) {
@@ -132,57 +120,6 @@ func (r *FoodPriceRepo) ListFoodPricesByBudget(ctx context.Context, maxBudgetIDR
 	items, err := scanFoodPrices(rows)
 	if err != nil {
 		return nil, fmt.Errorf("scan food prices by budget: %w", err)
-	}
-	return items, nil
-}
-
-// SearchFoodPrices performs a case-insensitive substring search on food_prices.name
-// with LIKE wildcard escaping, optionally filtered by category.
-func (r *FoodPriceRepo) SearchFoodPrices(ctx context.Context, query string, category string, limit int) ([]FoodPrice, error) {
-	if r == nil || r.q == nil {
-		return nil, fmt.Errorf("food price store is not initialized")
-	}
-
-	trimmed := strings.TrimSpace(query)
-	if trimmed == "" {
-		return []FoodPrice{}, nil
-	}
-
-	pattern := "%" + escapeLikePattern(trimmed) + "%"
-	effectiveLimit := normalizeFoodPriceLimit(limit)
-	cat := strings.TrimSpace(category)
-
-	var (
-		rows pgx.Rows
-		err  error
-	)
-	if cat != "" {
-		const sqlQuery = `
-			SELECT ` + foodPriceColumns + `
-			FROM food_prices
-			WHERE name ILIKE $1::TEXT ESCAPE '\'
-			  AND category = $2::TEXT
-			ORDER BY price_idr ASC, name ASC
-			LIMIT $3::INTEGER
-		`
-		rows, err = r.q.Query(ctx, sqlQuery, pattern, cat, effectiveLimit)
-	} else {
-		const sqlQuery = `
-			SELECT ` + foodPriceColumns + `
-			FROM food_prices
-			WHERE name ILIKE $1::TEXT ESCAPE '\'
-			ORDER BY price_idr ASC, name ASC
-			LIMIT $2::INTEGER
-		`
-		rows, err = r.q.Query(ctx, sqlQuery, pattern, effectiveLimit)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("search food prices: %w", err)
-	}
-
-	items, err := scanFoodPrices(rows)
-	if err != nil {
-		return nil, fmt.Errorf("scan search food prices: %w", err)
 	}
 	return items, nil
 }

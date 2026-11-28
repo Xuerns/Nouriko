@@ -1045,7 +1045,7 @@ export default function ProfilePage() {
         <TabsContent value="account">
           <Card className="rounded-3xl border border-border bg-card py-5 shadow-none ring-0 gap-5">
             <CardContent className="space-y-5 px-5">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-3">
                 <div className="max-w-lg space-y-1">
                   <h2 className="text-base font-semibold text-foreground">
                     {t.profile.privacyHeading}
@@ -1055,18 +1055,32 @@ export default function ProfilePage() {
                   </p>
                 </div>
 
-                <Button
-                  render={<Link href="/privacy" />}
-                  variant="outline"
-                  size="sm"
-                  className="h-9 shrink-0 self-start rounded-full border-border bg-card px-4 text-xs font-medium text-foreground shadow-none hover:bg-accent sm:self-center"
-                >
-                  <span>{t.profile.privacyLinkText}</span>
-                  <ArrowUpRight
-                    className="size-3.5 stroke-[1.75]"
-                    aria-hidden="true"
-                  />
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    render={<Link href="/privacy" />}
+                    variant="outline"
+                    size="sm"
+                    className="h-9 shrink-0 rounded-lg border-border bg-card px-3.5 text-xs font-medium text-foreground shadow-none hover:bg-accent"
+                  >
+                    <span>{t.profile.privacyLinkText}</span>
+                    <ArrowUpRight
+                      className="size-3.5 stroke-[1.75]"
+                      aria-hidden="true"
+                    />
+                  </Button>
+                  <Button
+                    render={<Link href="/terms" />}
+                    variant="outline"
+                    size="sm"
+                    className="h-9 shrink-0 rounded-lg border-border bg-card px-3.5 text-xs font-medium text-foreground shadow-none hover:bg-accent"
+                  >
+                    <span>{t.profile.termsLinkText}</span>
+                    <ArrowUpRight
+                      className="size-3.5 stroke-[1.75]"
+                      aria-hidden="true"
+                    />
+                  </Button>
+                </div>
               </div>
 
               <Separator className="bg-border" />

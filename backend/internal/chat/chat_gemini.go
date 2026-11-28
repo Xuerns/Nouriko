@@ -84,10 +84,20 @@ func NewGeminiClient(ctx context.Context, cfg *config.Config) (*Client, error) {
 
 	return &Client{
 		SDK:           sdk,
-		Model:         "gemini-3.5-flash-lite",
+		Model:         resolveGeminiModel(cfg.Gemini.Model),
 		ThinkingLevel: resolveThinkingLevel(cfg.Gemini.ThinkingLevel),
 		Timeout:       cfg.Gemini.Timeout,
 	}, nil
+}
+
+const defaultGeminiModel = "gemini-3.5-flash-lite"
+
+// resolveGeminiModel trims the configured GEMINI_MODEL and falls back to defaultGeminiModel if empty.
+func resolveGeminiModel(configured string) string {
+	if model := strings.TrimSpace(configured); model != "" {
+		return model
+	}
+	return defaultGeminiModel
 }
 
 // resolveThinkingLevel maps the configured thinking level for gemini-3.5-flash-lite
@@ -280,79 +290,5 @@ func chatResponseJSONSchema() map[string]any {
 			"shopping_list":          map[string]any{"type": "array", "items": shoppingSchema},
 		},
 		"required": []string{"intent", "intro", "detected_items", "needs_clarification", "meals", "shopping_list"},
-	}
-}
-
-func chatResponseSchema() *genai.Schema {
-	mealSchema := &genai.Schema{
-		Type: genai.TypeObject,
-		Properties: map[string]*genai.Schema{
-			"name":                {Type: genai.TypeString},
-			"portion":             {Type: genai.TypeString},
-			"health_score":        {Type: genai.TypeInteger},
-			"health_label":        {Type: genai.TypeString, Enum: []string{HealthLabelLow, HealthLabelFair, HealthLabelGood}},
-			"calories":            {Type: genai.TypeInteger},
-			"protein_g":           {Type: genai.TypeNumber},
-			"carbs_g":             {Type: genai.TypeNumber},
-			"fat_g":               {Type: genai.TypeNumber},
-			"fiber_g":             {Type: genai.TypeNumber},
-			"estimated_price_idr": {Type: genai.TypeInteger},
-			"is_price_estimated":  {Type: genai.TypeBoolean},
-			"note":                {Type: genai.TypeString},
-			"cooking_steps":       {Type: genai.TypeArray, Items: &genai.Schema{Type: genai.TypeString}},
-			"missing_ingredients": {Type: genai.TypeArray, Items: &genai.Schema{Type: genai.TypeString}},
-			"input_source":        {Type: genai.TypeString, Enum: []string{InputSourceIngredients, InputSourceBudget, InputSourcePhoto}},
-		},
-		Required: []string{
-			"name", "portion", "health_score", "health_label",
-			"calories", "protein_g", "carbs_g", "fat_g", "fiber_g",
-			"estimated_price_idr", "is_price_estimated", "note",
-			"cooking_steps", "missing_ingredients", "input_source",
-		},
-	}
-
-	shoppingSchema := &genai.Schema{
-		Type: genai.TypeObject,
-		Properties: map[string]*genai.Schema{
-			"name":                {Type: genai.TypeString},
-			"unit":                {Type: genai.TypeString},
-			"estimated_price_idr": {Type: genai.TypeInteger},
-			"is_price_estimated":  {Type: genai.TypeBoolean},
-			"calories":            {Type: genai.TypeInteger},
-			"protein_g":           {Type: genai.TypeNumber},
-			"carbs_g":             {Type: genai.TypeNumber},
-			"fat_g":               {Type: genai.TypeNumber},
-			"fiber_g":             {Type: genai.TypeNumber},
-		},
-		Required: []string{
-			"name", "unit", "estimated_price_idr", "is_price_estimated",
-			"calories", "protein_g", "carbs_g", "fat_g", "fiber_g",
-		},
-	}
-
-	return &genai.Schema{
-		Type: genai.TypeObject,
-		Properties: map[string]*genai.Schema{
-			"intent": {
-				Type: genai.TypeString,
-				Enum: []string{
-					IntentIngredients,
-					IntentBudgetMeals,
-					IntentBudgetIngredients,
-					IntentPhotoFood,
-					IntentPhotoIngredients,
-					IntentOffTopic,
-				},
-			},
-			"intro":                  {Type: genai.TypeString},
-			"off_topic_notice":       {Type: genai.TypeString},
-			"detected_items":         {Type: genai.TypeArray, Items: &genai.Schema{Type: genai.TypeString}},
-			"needs_clarification":    {Type: genai.TypeBoolean},
-			"budget_idr":             {Type: genai.TypeInteger},
-			"budget_exceeded_notice": {Type: genai.TypeString},
-			"meals":                  {Type: genai.TypeArray, Items: mealSchema},
-			"shopping_list":          {Type: genai.TypeArray, Items: shoppingSchema},
-		},
-		Required: []string{"intent", "intro", "detected_items", "needs_clarification", "meals", "shopping_list"},
 	}
 }

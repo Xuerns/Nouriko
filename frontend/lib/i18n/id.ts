@@ -11,6 +11,7 @@ export const idDictionary: Dictionary = {
     submitting: "Memproses...",
     backHome: "Kembali ke Beranda",
     privacyPolicy: "Kebijakan Privasi",
+    termsOfService: "Syarat & Ketentuan",
     languageLabel: "Bahasa",
     themeLabel: "Tema",
     themeLight: "Terang",
@@ -60,6 +61,7 @@ export const idDictionary: Dictionary = {
     accountHeading: "Akun",
     infoHeading: "Informasi",
     privacyLink: "Kebijakan Privasi",
+    termsLink: "Syarat & Ketentuan",
   },
   landing: {
     eyebrow: "MENU BERGIZI ANAK KOS",
@@ -234,7 +236,8 @@ export const idDictionary: Dictionary = {
     submitButton: "Daftar Akun",
     hasAccount: "Sudah punya akun?",
     loginLink: "Masuk di sini",
-    privacyPrefix: "Dengan mendaftar, kamu dapat membaca ketentuan data di",
+    privacyPrefix: "Dengan mendaftar, kamu menyetujui",
+    legalConnector: "serta membaca",
     successTitle: "Periksa Email Kamu",
     successMessage:
       "Akun berhasil dibuat. Buka tautan verifikasi yang dikirim ke emailmu sebelum masuk.",
@@ -372,10 +375,11 @@ export const idDictionary: Dictionary = {
     googleManagedHeading: "Masuk dengan Google",
     googleManagedDescription:
       "Akun ini masuk menggunakan Google dan tidak menggunakan kata sandi lokal di Nouriko. Keamanan masuk dikelola langsung melalui akun Google kamu.",
-    privacyHeading: "Privasi & Data",
+    privacyHeading: "Privasi & Ketentuan",
     privacyDescription:
-      "Pelajari data apa saja yang disimpan Nouriko, cara penggunaannya untuk perhitungan nutrisi, serta hak kontrol penuh atas datamu.",
-    privacyLinkText: "Baca Kebijakan Privasi Nouriko",
+      "Pelajari data apa saja yang disimpan Nouriko, aturan penggunaan layanan, serta hak kontrol penuh atas datamu.",
+    privacyLinkText: "Kebijakan Privasi",
+    termsLinkText: "Syarat & Ketentuan",
     deleteAccountHeading: "Hapus Akun",
     deleteAccountDescription:
       "Menghapus akun akan menghapus permanen seluruh data profil, target nutrisi, dan riwayat menu tersimpan. Kamu akan diminta memasukkan kata sandi untuk konfirmasi sebelum tindakan ini dijalankan.",
@@ -443,6 +447,67 @@ export const idDictionary: Dictionary = {
         heading: "6. Dasar Hukum",
         paragraphs: [
           "Pengelolaan data pribadi di Nouriko mengacu pada Undang-Undang Nomor 27 Tahun 2022 tentang Pelindungan Data Pribadi (UU PDP) di Indonesia, termasuk prinsip persetujuan pengguna, pembatasan tujuan, keamanan penyimpanan, dan hak penghapusan data.",
+        ],
+      },
+    ],
+  },
+  terms: {
+    title: "Syarat & Ketentuan",
+    updatedLabel: "Terakhir diperbarui: 28 November 2026",
+    sections: [
+      {
+        heading: "1. Penerimaan dan Ruang Lingkup Layanan",
+        paragraphs: [
+          "Dengan mengakses atau menggunakan Nouriko, kamu menyetujui Syarat & Ketentuan ini beserta Kebijakan Privasi kami. Nouriko adalah asisten perencanaan makan berbasis AI yang membantu menyusun rekomendasi menu dari bahan yang tersedia, anggaran makan, atau foto makanan, serta membantu mencatat ringkasan nutrisi harian.",
+        ],
+      },
+      {
+        heading: "2. Bukan Nasihat Medis dan Sifat Estimasi",
+        paragraphs: [
+          "Seluruh informasi yang dihasilkan Nouriko bersifat informatif dan edukatif semata, bukan pengganti diagnosis, terapi, atau nasihat medis dari dokter maupun ahli gizi klinis.",
+        ],
+        items: [
+          "Estimasi nutrisi dan harga: angka kalori, makronutrisi, skor kesehatan, serta estimasi harga bahan atau menu merupakan perkiraan berbasis AI dan referensi umum sehingga dapat berbeda dari kondisi porsi atau harga pasar sebenarnya.",
+          "Kondisi kesehatan dan alergi: kamu bertanggung jawab penuh memeriksa bahan makanan terhadap alergi, intoleransi, kehamilan, atau kondisi medis tertentu sebelum mengonsumsi rekomendasi menu apa pun.",
+        ],
+      },
+      {
+        heading: "3. Akun dan Keamanan Akses",
+        paragraphs: [
+          "Untuk menggunakan fitur utama Nouriko, kamu perlu membuat akun menggunakan alamat email atau masuk dengan Google.",
+        ],
+        items: [
+          "Keakuratan informasi: berikan data profil tubuh yang wajar agar perhitungan target harian relevan.",
+          "Kerahasiaan kredensial: kamu bertanggung jawab menjaga kerahasiaan kata sandi dan seluruh aktivitas yang terjadi melalui akunmu.",
+          "Usia pengguna: layanan ini ditujukan untuk pengguna berusia minimal 13 tahun.",
+        ],
+      },
+      {
+        heading: "4. Penggunaan yang Diperbolehkan",
+        paragraphs: [
+          "Kamu setuju menggunakan Nouriko hanya untuk keperluan perencanaan makan dan pemantauan nutrisi yang wajar dan sah.",
+        ],
+        items: [
+          "Dilarang menyalahgunakan layanan: tidak diperkenankan melakukan spam permintaan, scraping otomatis, percobaan injeksi prompt berbahaya, atau mengunggah konten melanggar hukum.",
+          "Batas pemakaian wajar: Nouriko menerapkan pembatasan laju permintaan (rate limiting) pada fitur analisis AI untuk menjaga stabilitas dan keadilan akses bagi seluruh pengguna.",
+        ],
+      },
+      {
+        heading: "5. Konten dan Foto Makanan",
+        paragraphs: [
+          "Kamu tetap memegang kendali atas teks dan foto makanan yang kamu kirimkan ke Nouriko. Foto yang diunggah diproses sementara untuk menghasilkan analisis nutrisi dan tidak disimpan secara permanen di server kami, sedangkan riwayat percakapan chat bersifat sementara selama sesi berlangsung.",
+        ],
+      },
+      {
+        heading: "6. Ketersediaan Layanan dan Penghapusan Akun",
+        paragraphs: [
+          "Nouriko disediakan sebagaimana adanya (as is). Karena sebagian fitur bergantung pada layanan pihak ketiga seperti model AI dan penyedia autentikasi, gangguan sementara atau perubahan fitur dapat terjadi sewaktu-waktu. Kamu dapat berhenti menggunakan layanan dan menghapus akun beserta seluruh data tersimpan secara permanen kapan saja melalui halaman Profil.",
+        ],
+      },
+      {
+        heading: "7. Perubahan Ketentuan dan Hukum yang Berlaku",
+        paragraphs: [
+          "Kami dapat memperbarui Syarat & Ketentuan ini dari waktu ke waktu seiring perkembangan fitur Nouriko. Tanggal pembaruan terbaru akan ditampilkan di bagian atas halaman ini. Ketentuan ini diatur dan ditafsirkan berdasarkan hukum yang berlaku di Republik Indonesia.",
         ],
       },
     ],

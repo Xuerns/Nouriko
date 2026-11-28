@@ -120,12 +120,6 @@ type DTO struct {
 	HasPassword         bool     `json:"has_password"`
 }
 
-// ToDTO maps a Profile and verified email into a canonical JSON DTO with default
-// email/password auth metadata for backward compatibility.
-func ToDTO(p *Profile, email string) DTO {
-	return ToDTOWithAuth(p, email, []string{"email"}, true)
-}
-
 // ToDTOWithAuth maps a Profile, verified email, and auth provider metadata into
 // a canonical JSON DTO.
 func ToDTOWithAuth(p *Profile, email string, providers []string, hasPassword bool) DTO {

@@ -63,7 +63,7 @@ func TestOpenFoodFactsClient_ServingAndFallback100g(t *testing.T) {
 			APIKey:  "test-secret",
 		},
 	}
-	client, err := NewOpenFoodFactsClient(cfg, nil)
+	client, err := NewOpenFoodFactsClient(cfg)
 	if err != nil {
 		t.Fatalf("NewOpenFoodFactsClient error: %v", err)
 	}
@@ -124,7 +124,7 @@ func TestOpenFoodFactsClient_RedirectBlockedAndErrors(t *testing.T) {
 	client, err := NewOpenFoodFactsClient(&config.Config{
 		Mode: config.ModeLocal,
 		Food: config.FoodAPI{BaseURL: srv.URL},
-	}, nil)
+	})
 	if err != nil {
 		t.Fatalf("NewOpenFoodFactsClient error: %v", err)
 	}
@@ -153,7 +153,7 @@ func TestOpenFoodFactsClient_Timeout(t *testing.T) {
 	client, err := NewOpenFoodFactsClient(&config.Config{
 		Mode: config.ModeLocal,
 		Food: config.FoodAPI{BaseURL: srv.URL},
-	}, nil)
+	})
 	if err != nil {
 		t.Fatalf("NewOpenFoodFactsClient error: %v", err)
 	}
@@ -195,6 +195,15 @@ func TestOpenFoodFactsClient_CacheBoundedEvictionAndTTL(t *testing.T) {
 	now = now.Add(15 * time.Minute)
 	if _, _, ok := client.cacheGet("b"); ok {
 		t.Fatal("expected expired entry 'b' to miss")
+	}
+}
+
+func TestNewOpenFoodFactsClient_RequiresBaseURL(t *testing.T) {
+	if _, err := NewOpenFoodFactsClient(&config.Config{Mode: config.ModeLocal}); err == nil {
+		t.Fatal("expected error when FOOD_API_BASE_URL is empty")
+	}
+	if _, err := NewOpenFoodFactsClient(nil); err == nil {
+		t.Fatal("expected error when config is nil")
 	}
 }
 

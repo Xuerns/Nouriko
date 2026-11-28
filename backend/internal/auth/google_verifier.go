@@ -100,16 +100,6 @@ func newGoogleJWKSVerifierWithURL(ctx context.Context, clientID, jwksURL string)
 	}
 }
 
-func newGoogleJWKSVerifierWithKeyfunc(clientID string, kf keyfunc.Keyfunc) *GoogleJWKSVerifier {
-	return &GoogleJWKSVerifier{
-		clientID: strings.TrimSpace(clientID),
-		jwksURL:  defaultGoogleJWKSURL,
-		bgCtx:    context.Background(),
-		jwks:     kf,
-		now:      time.Now,
-	}
-}
-
 func (v *GoogleJWKSVerifier) getKeyfunc() (keyfunc.Keyfunc, error) {
 	v.mu.Lock()
 	defer v.mu.Unlock()

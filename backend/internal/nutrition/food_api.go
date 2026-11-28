@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"math"
 	"net"
 	"net/http"
@@ -22,13 +21,12 @@ import (
 )
 
 const (
-	defaultFoodAPIBaseURL = "https://world.openfoodfacts.org"
-	foodAPITimeout        = 3 * time.Second
-	foodAPIMaxBodyBytes   = 1 << 20 // 1 MiB
-	foodAPICacheMaxItems  = 500
-	foodAPICacheTTL       = time.Hour
-	foodAPIMaxCalories    = 2500
-	foodAPISourceLabel    = "food_api"
+	foodAPITimeout       = 3 * time.Second
+	foodAPIMaxBodyBytes  = 1 << 20 // 1 MiB
+	foodAPICacheMaxItems = 500
+	foodAPICacheTTL      = time.Hour
+	foodAPIMaxCalories   = 2500
+	foodAPISourceLabel   = "food_api"
 )
 
 // MacroData holds macro nutrition values retrieved from an external Food API.
@@ -60,7 +58,6 @@ type OpenFoodFactsClient struct {
 	baseURL    string
 	apiKey     string
 	httpClient *http.Client
-	logger     *slog.Logger
 
 	mu       sync.RWMutex
 	cache    map[string]foodCacheEntry
@@ -73,20 +70,17 @@ type OpenFoodFactsClient struct {
 var _ FoodLookup = (*OpenFoodFactsClient)(nil)
 
 // NewOpenFoodFactsClient constructs an SSRF-hardened OpenFoodFactsClient from runtime config.
-func NewOpenFoodFactsClient(cfg *config.Config, logger *slog.Logger) (*OpenFoodFactsClient, error) {
-	if logger == nil {
-		logger = slog.Default()
-	}
-
-	rawBase := defaultFoodAPIBaseURL
+func NewOpenFoodFactsClient(cfg *config.Config) (*OpenFoodFactsClient, error) {
+	rawBase := ""
 	apiKey := ""
 	isProd := false
 	if cfg != nil {
 		isProd = cfg.IsProduction()
-		if trimmed := strings.TrimSpace(cfg.Food.BaseURL); trimmed != "" {
-			rawBase = trimmed
-		}
+		rawBase = strings.TrimSpace(cfg.Food.BaseURL)
 		apiKey = strings.TrimSpace(cfg.Food.APIKey)
+	}
+	if rawBase == "" {
+		return nil, errors.New("FOOD_API_BASE_URL is required")
 	}
 
 	validatedURL, err := validateFoodAPIBaseURL(rawBase, isProd)
@@ -123,7 +117,6 @@ func NewOpenFoodFactsClient(cfg *config.Config, logger *slog.Logger) (*OpenFoodF
 		baseURL:    validatedURL,
 		apiKey:     apiKey,
 		httpClient: httpClient,
-		logger:     logger,
 		cache:      make(map[string]foodCacheEntry),
 		maxItems:   foodAPICacheMaxItems,
 		ttl:        foodAPICacheTTL,

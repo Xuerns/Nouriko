@@ -71,15 +71,6 @@ func NewHandler(mealStore SavedMealStore, profiles ProfileGetter, logger *slog.L
 	}
 }
 
-// NewHandlerWithClock creates a meals Handler with a custom clock for deterministic tests.
-func NewHandlerWithClock(mealStore SavedMealStore, profiles ProfileGetter, logger *slog.Logger, clock func() time.Time) *Handler {
-	h := NewHandler(mealStore, profiles, logger)
-	if clock != nil {
-		h.now = clock
-	}
-	return h
-}
-
 // SavedMealDTO is the canonical JSON representation of a saved meal.
 type SavedMealDTO struct {
 	ID          string    `json:"id"`

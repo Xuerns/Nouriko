@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"Nouriko/internal/config"
+	"Nouriko/internal/httpx"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/golang-jwt/jwt/v5"
@@ -66,7 +67,7 @@ func TestMiddlewareEnforcesBearerAuth(t *testing.T) {
 	v := newLocalVerifier(t)
 	app := fiber.New()
 	app.Get("/me", Middleware(v), func(c fiber.Ctx) error {
-		claims, ok := ClaimsFromContext(c)
+		claims, ok := httpx.ClaimsFromContext(c)
 		if !ok {
 			return fiber.ErrUnauthorized
 		}

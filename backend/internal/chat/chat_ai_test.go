@@ -313,10 +313,6 @@ func (s *stubFoodPriceStore) ListFoodPricesByBudget(_ context.Context, _ int, _ 
 	return s.items, nil
 }
 
-func (s *stubFoodPriceStore) SearchFoodPrices(_ context.Context, _ string, _ string, _ int) ([]FoodPrice, error) {
-	return s.items, nil
-}
-
 func (s *stubFoodPriceStore) ListAllFoodPrices(_ context.Context, _ string, _ int) ([]FoodPrice, error) {
 	return s.items, nil
 }
@@ -550,15 +546,6 @@ func TestSecurityRegression_LLMCannotSpoofFoodAPIMacroSource(t *testing.T) {
 	}
 
 	// 5. Gemini response schema must not expose macro_source or is_macro_estimated.
-	schema := chatResponseSchema()
-	mealProps := schema.Properties["meals"].Items.Properties
-	if _, ok := mealProps["macro_source"]; ok {
-		t.Fatal("macro_source must not be exposed in Gemini mealSchema")
-	}
-	if _, ok := mealProps["is_macro_estimated"]; ok {
-		t.Fatal("is_macro_estimated must not be exposed in Gemini mealSchema")
-	}
-
 	jsonSchema := chatResponseJSONSchema()
 	jsonMeals := jsonSchema["properties"].(map[string]any)["meals"].(map[string]any)
 	jsonMealProps := jsonMeals["items"].(map[string]any)["properties"].(map[string]any)

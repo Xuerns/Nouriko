@@ -11,6 +11,7 @@ export const enDictionary: Dictionary = {
     submitting: "Processing...",
     backHome: "Back to Home",
     privacyPolicy: "Privacy Policy",
+    termsOfService: "Terms of Service",
     languageLabel: "Language",
     themeLabel: "Theme",
     themeLight: "Light",
@@ -60,6 +61,7 @@ export const enDictionary: Dictionary = {
     accountHeading: "Account",
     infoHeading: "Information",
     privacyLink: "Privacy Policy",
+    termsLink: "Terms of Service",
   },
   landing: {
     eyebrow: "DAILY NUTRITION ASSISTANT",
@@ -234,7 +236,8 @@ export const enDictionary: Dictionary = {
     submitButton: "Create Account",
     hasAccount: "Already have an account?",
     loginLink: "Sign in here",
-    privacyPrefix: "By signing up, you can review how we handle data in our",
+    privacyPrefix: "By signing up, you agree to our",
+    legalConnector: "and",
     successTitle: "Check Your Email",
     successMessage:
       "Your account has been created. Please open the verification link sent to your email before signing in.",
@@ -372,10 +375,11 @@ export const enDictionary: Dictionary = {
     googleManagedHeading: "Signed in with Google",
     googleManagedDescription:
       "This account signs in with Google and does not use a local Nouriko password. Sign-in security is managed directly through your Google account.",
-    privacyHeading: "Privacy & Data",
+    privacyHeading: "Privacy & Terms",
     privacyDescription:
-      "Learn what data Nouriko stores, how it is used for nutrition calculations, and your rights to control your data.",
-    privacyLinkText: "Read Nouriko Privacy Policy",
+      "Review what data Nouriko stores, the rules for using the service, and your rights to control your data.",
+    privacyLinkText: "Privacy Policy",
+    termsLinkText: "Terms of Service",
     deleteAccountHeading: "Delete Account",
     deleteAccountDescription:
       "Deleting your account permanently removes your profile, nutrition targets, and all saved meal history. You will be asked to enter your password to confirm before this action takes effect.",
@@ -443,6 +447,67 @@ export const enDictionary: Dictionary = {
         heading: "6. Legal Basis",
         paragraphs: [
           "Personal data processing in Nouriko aligns with Indonesia Law No. 27 of 2022 on Personal Data Protection (UU PDP), including user consent, purpose limitation, secure storage, and the right to erasure.",
+        ],
+      },
+    ],
+  },
+  terms: {
+    title: "Terms of Service",
+    updatedLabel: "Last updated: November 28, 2026",
+    sections: [
+      {
+        heading: "1. Acceptance and Scope of Service",
+        paragraphs: [
+          "By accessing or using Nouriko, you agree to these Terms of Service and our Privacy Policy. Nouriko is an AI-assisted meal planning web application that helps generate meal ideas from available ingredients, meal budgets, or food photos, and helps track daily nutrition summaries.",
+        ],
+      },
+      {
+        heading: "2. Not Medical Advice and Estimate Disclaimer",
+        paragraphs: [
+          "All information provided by Nouriko is for general informational and educational purposes only and is not a substitute for diagnosis, treatment, or advice from a physician or licensed clinical dietitian.",
+        ],
+        items: [
+          "Nutrition and price estimates: calorie figures, macronutrient breakdowns, health scores, and meal or grocery prices are AI-generated estimates and general references that may differ from actual portions or local market prices.",
+          "Allergies and medical conditions: you are solely responsible for verifying ingredients against allergies, intolerances, pregnancy, or medical conditions before following any meal recommendation.",
+        ],
+      },
+      {
+        heading: "3. Accounts and Access Security",
+        paragraphs: [
+          "To use core Nouriko features, you must register with an email address or sign in with Google.",
+        ],
+        items: [
+          "Accurate profile data: provide reasonable body profile details so daily calorie and macro estimates remain relevant.",
+          "Account security: you are responsible for safeguarding your credentials and for all activity conducted under your account.",
+          "Minimum age: this service is intended for users who are at least 13 years old.",
+        ],
+      },
+      {
+        heading: "4. Acceptable Use and Fair Usage",
+        paragraphs: [
+          "You agree to use Nouriko only for lawful, personal meal planning and nutrition tracking.",
+        ],
+        items: [
+          "No abuse: you may not spam requests, run automated scraping, attempt malicious prompt injection, or upload unlawful content.",
+          "Rate limits: Nouriko applies request rate limits on AI analysis endpoints to maintain service reliability and fair access for all users.",
+        ],
+      },
+      {
+        heading: "5. User Content and Food Photos",
+        paragraphs: [
+          "You retain responsibility for the text and food photos you submit to Nouriko. Uploaded photos are processed temporarily to generate nutrition analysis and are not stored permanently on our servers, and chat conversations remain ephemeral within your active session.",
+        ],
+      },
+      {
+        heading: "6. Service Availability and Account Deletion",
+        paragraphs: [
+          "Nouriko is provided on an \"as is\" basis. Because parts of the service rely on third-party providers such as AI models and authentication services, temporary interruptions or feature updates may occur. You may stop using the service and permanently delete your account and saved data at any time from your Profile page.",
+        ],
+      },
+      {
+        heading: "7. Changes to Terms and Governing Law",
+        paragraphs: [
+          "We may update these Terms of Service from time to time as Nouriko evolves. The latest revision date is displayed at the top of this page. These terms are governed by and construed in accordance with the laws of the Republic of Indonesia.",
         ],
       },
     ],

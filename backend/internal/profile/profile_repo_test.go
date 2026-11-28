@@ -190,9 +190,9 @@ func TestSanitizeGoogleDisplayNameAndDTOAuth(t *testing.T) {
 		t.Fatalf("sanitized display name must pass ValidateDisplayName: %v", err)
 	}
 
-	dto := ToDTO(&Profile{ID: "u1"}, "raka@example.com")
+	dto := ToDTOWithAuth(&Profile{ID: "u1"}, "raka@example.com", nil, true)
 	if !dto.HasPassword || len(dto.AuthProviders) != 1 || dto.AuthProviders[0] != "email" {
-		t.Fatalf("unexpected default ToDTO auth metadata: %+v", dto)
+		t.Fatalf("unexpected default ToDTOWithAuth auth metadata: %+v", dto)
 	}
 
 	googleDTO := ToDTOWithAuth(&Profile{ID: "u2"}, "g@example.com", []string{"google"}, false)

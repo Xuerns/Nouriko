@@ -36,7 +36,6 @@ type Dependencies struct {
 	DB            Pinger
 	ProfileRepo   profile.Repository
 	Auth          *auth.Verifier
-	AuthAdmin     *auth.AdminClient
 	AuthService   auth.Service
 	FoodPriceRepo chat.FoodPriceStore
 	Gemini        *chat.Client

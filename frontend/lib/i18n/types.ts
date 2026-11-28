@@ -1,4 +1,4 @@
-export interface PrivacySection {
+export interface LegalSection {
   heading: string;
   paragraphs: string[];
   items?: string[];
@@ -15,6 +15,7 @@ export interface Dictionary {
     submitting: string;
     backHome: string;
     privacyPolicy: string;
+    termsOfService: string;
     languageLabel: string;
     themeLabel: string;
     themeLight: string;
@@ -63,6 +64,7 @@ export interface Dictionary {
     accountHeading: string;
     infoHeading: string;
     privacyLink: string;
+    termsLink: string;
   };
   landing: {
     eyebrow: string;
@@ -166,6 +168,7 @@ export interface Dictionary {
     hasAccount: string;
     loginLink: string;
     privacyPrefix: string;
+    legalConnector: string;
     successTitle: string;
     successMessage: string;
     devTokenLabel: string;
@@ -293,6 +296,7 @@ export interface Dictionary {
     privacyHeading: string;
     privacyDescription: string;
     privacyLinkText: string;
+    termsLinkText: string;
     deleteAccountHeading: string;
     deleteAccountDescription: string;
     deleteAccountGoogleDescription: string;
@@ -309,7 +313,12 @@ export interface Dictionary {
   privacy: {
     title: string;
     updatedLabel: string;
-    sections: PrivacySection[];
+    sections: LegalSection[];
+  };
+  terms: {
+    title: string;
+    updatedLabel: string;
+    sections: LegalSection[];
   };
   chat: {
     title: string;
