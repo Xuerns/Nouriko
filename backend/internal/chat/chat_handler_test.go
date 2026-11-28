@@ -458,6 +458,18 @@ func TestMapGeminiError(t *testing.T) {
 	}
 }
 
+func TestResolveGeminiModel(t *testing.T) {
+	if got := resolveGeminiModel(""); got != defaultGeminiModel {
+		t.Fatalf("expected default %q, got %q", defaultGeminiModel, got)
+	}
+	if got := resolveGeminiModel("   "); got != defaultGeminiModel {
+		t.Fatalf("expected default %q for whitespace, got %q", defaultGeminiModel, got)
+	}
+	if got := resolveGeminiModel("  gemini-2.5-flash  "); got != "gemini-2.5-flash" {
+		t.Fatalf("expected trimmed configured model, got %q", got)
+	}
+}
+
 func TestResolveThinkingLevel(t *testing.T) {
 	if got := resolveThinkingLevel(""); got != genai.ThinkingLevelMinimal {
 		t.Fatalf("expected default MINIMAL for gemini-3.5-flash-lite, got %q", got)

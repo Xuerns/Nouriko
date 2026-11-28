@@ -84,10 +84,20 @@ func NewGeminiClient(ctx context.Context, cfg *config.Config) (*Client, error) {
 
 	return &Client{
 		SDK:           sdk,
-		Model:         "gemini-3.5-flash-lite",
+		Model:         resolveGeminiModel(cfg.Gemini.Model),
 		ThinkingLevel: resolveThinkingLevel(cfg.Gemini.ThinkingLevel),
 		Timeout:       cfg.Gemini.Timeout,
 	}, nil
+}
+
+const defaultGeminiModel = "gemini-3.5-flash-lite"
+
+// resolveGeminiModel trims the configured GEMINI_MODEL and falls back to defaultGeminiModel if empty.
+func resolveGeminiModel(configured string) string {
+	if model := strings.TrimSpace(configured); model != "" {
+		return model
+	}
+	return defaultGeminiModel
 }
 
 // resolveThinkingLevel maps the configured thinking level for gemini-3.5-flash-lite
