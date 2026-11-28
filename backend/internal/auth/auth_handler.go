@@ -43,7 +43,7 @@ func (h *Handler) handleAuthError(c fiber.Ctx, err error) error {
 		return httpx.WriteError(c, fiber.StatusUnauthorized, httpx.CodeUnauthorized)
 	case errors.Is(err, ErrEmailNotVerified):
 		return httpx.WriteError(c, fiber.StatusForbidden, httpx.CodeEmailNotVerified)
-	case errors.Is(err, ErrNotFound), errors.Is(err, database.ErrNotFound):
+	case errors.Is(err, database.ErrNotFound):
 		return httpx.WriteError(c, fiber.StatusNotFound, httpx.CodeNotFound)
 	case errors.Is(err, ErrEmailAlreadyExists), errors.Is(err, database.ErrConflict):
 		return httpx.WriteError(c, fiber.StatusConflict, httpx.CodeEmailAlreadyExists)

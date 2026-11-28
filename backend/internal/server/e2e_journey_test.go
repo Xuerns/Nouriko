@@ -406,10 +406,6 @@ func (f *e2eMemStore) ListFoodPricesByBudget(_ context.Context, _ int, _ string,
 	return []chat.FoodPrice{}, nil
 }
 
-func (f *e2eMemStore) SearchFoodPrices(_ context.Context, _ string, _ string, _ int) ([]chat.FoodPrice, error) {
-	return []chat.FoodPrice{}, nil
-}
-
 func (f *e2eMemStore) ListAllFoodPrices(_ context.Context, _ string, _ int) ([]chat.FoodPrice, error) {
 	return []chat.FoodPrice{}, nil
 }

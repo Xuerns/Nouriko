@@ -231,11 +231,6 @@ func Middleware(v *Verifier) fiber.Handler {
 	}
 }
 
-// ClaimsFromContext retrieves verified user claims stored by Middleware.
-func ClaimsFromContext(c fiber.Ctx) (Claims, bool) {
-	return httpx.ClaimsFromContext(c)
-}
-
 // AdminClient performs privileged Supabase Auth operations (such as F13 account deletion).
 type AdminClient struct {
 	baseURL    string

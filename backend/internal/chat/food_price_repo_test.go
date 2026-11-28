@@ -80,23 +80,7 @@ func (f *queryFakeDBTX) QueryRow(_ context.Context, _ string, _ ...any) pgx.Row 
 	return fakeRow{}
 }
 
-func TestEscapeLikePatternAndLimit(t *testing.T) {
-	tests := []struct {
-		in   string
-		want string
-	}{
-		{in: "ayam", want: "ayam"},
-		{in: "100%", want: `100\%`},
-		{in: "nasi_goreng", want: `nasi\_goreng`},
-		{in: `kol\kubis`, want: `kol\\kubis`},
-		{in: `50%_off\test`, want: `50\%\_off\\test`},
-	}
-	for _, tc := range tests {
-		if got := escapeLikePattern(tc.in); got != tc.want {
-			t.Errorf("escapeLikePattern(%q) = %q, want %q", tc.in, got, tc.want)
-		}
-	}
-
+func TestNormalizeFoodPriceLimit(t *testing.T) {
 	if got := normalizeFoodPriceLimit(-10); got != defaultFoodPriceLimit {
 		t.Errorf("normalizeFoodPriceLimit(-10) = %d, want %d", got, defaultFoodPriceLimit)
 	}
@@ -196,59 +180,6 @@ func TestFoodPriceRepo(t *testing.T) {
 		}
 	})
 
-	t.Run("SearchFoodPrices escapes wildcards and uses ILIKE ESCAPE", func(t *testing.T) {
-		db := &queryFakeDBTX{
-			queryFn: func(_ context.Context, sql string, args ...any) (pgx.Rows, error) {
-				if !strings.Contains(sql, `name ILIKE $1::TEXT ESCAPE '\'`) ||
-					!strings.Contains(sql, "category = $2::TEXT") ||
-					!strings.Contains(sql, "LIMIT $3::INTEGER") {
-					t.Errorf("unexpected SearchFoodPrices SQL: %s", sql)
-				}
-				wantPattern := `%50\%\_ayam\\goreng%`
-				if len(args) != 3 || args[0] != wantPattern || args[1] != "ingredient" || args[2] != 15 {
-					t.Errorf("unexpected SearchFoodPrices args: %#v (want pattern %q)", args, wantPattern)
-				}
-				return &fakeRows{items: sampleRows[:1]}, nil
-			},
-		}
-
-		store := NewFoodPriceRepoWithDBTX(db)
-		got, err := store.SearchFoodPrices(ctx, `  50%_ayam\goreng  `, "ingredient", 15)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if len(got) != 1 {
-			t.Fatalf("expected 1 row, got %d", len(got))
-		}
-
-		// Blank query short-circuits cleanly.
-		blank, err := store.SearchFoodPrices(ctx, "   ", "", 10)
-		if err != nil {
-			t.Fatalf("unexpected error for blank query: %v", err)
-		}
-		if len(blank) != 0 || len(db.queryCalls) != 1 {
-			t.Fatalf("expected blank search query to short-circuit")
-		}
-	})
-
-	t.Run("SearchFoodPrices without category uses 2 parameters", func(t *testing.T) {
-		db := &queryFakeDBTX{
-			queryFn: func(_ context.Context, sql string, args ...any) (pgx.Rows, error) {
-				if strings.Contains(sql, "AND category =") || !strings.Contains(sql, "LIMIT $2::INTEGER") {
-					t.Errorf("unexpected SearchFoodPrices SQL without category: %s", sql)
-				}
-				if len(args) != 2 || args[0] != "%tempe%" || args[1] != defaultFoodPriceLimit {
-					t.Errorf("unexpected args: %#v", args)
-				}
-				return &fakeRows{}, nil
-			},
-		}
-		store := NewFoodPriceRepoWithDBTX(db)
-		if _, err := store.SearchFoodPrices(ctx, "tempe", "", 0); err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-	})
-
 	t.Run("ListAllFoodPrices supports optional category and propagates errors", func(t *testing.T) {
 		db := &queryFakeDBTX{
 			queryFn: func(_ context.Context, sql string, args ...any) (pgx.Rows, error) {
@@ -280,9 +211,6 @@ func TestFoodPriceRepo(t *testing.T) {
 		var s *FoodPriceRepo
 		if _, err := s.ListFoodPricesByBudget(ctx, 10000, "", 10); err == nil {
 			t.Fatal("expected error from nil store ListFoodPricesByBudget")
-		}
-		if _, err := s.SearchFoodPrices(ctx, "ayam", "", 10); err == nil {
-			t.Fatal("expected error from nil store SearchFoodPrices")
 		}
 		if _, err := s.ListAllFoodPrices(ctx, "", 10); err == nil {
 			t.Fatal("expected error from nil store ListAllFoodPrices")

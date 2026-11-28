@@ -8,7 +8,6 @@ export const ACCEPTED_PHOTO_MIME_TYPES = [
 
 export const ACCEPTED_PHOTO_INPUT = ACCEPTED_PHOTO_MIME_TYPES.join(",");
 export const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MiB
-export const MAX_INPUT_PHOTO_BYTES = 25 * 1024 * 1024; // 25 MiB pre-decode guard
 const MAX_DIMENSION_PX = 1280;
 const PRIMARY_JPEG_QUALITY = 0.82;
 const FALLBACK_JPEG_QUALITY = 0.68;

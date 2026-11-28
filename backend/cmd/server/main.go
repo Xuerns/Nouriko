@@ -81,9 +81,15 @@ func run(cfg *config.Config, logger *slog.Logger) error {
 		return err
 	}
 
-	foodClient, err := nutrition.NewOpenFoodFactsClient(cfg, logger)
-	if err != nil {
-		return err
+	var foodLookup nutrition.FoodLookup
+	if strings.TrimSpace(cfg.Food.BaseURL) != "" {
+		foodClient, err := nutrition.NewOpenFoodFactsClient(cfg)
+		if err != nil {
+			return err
+		}
+		foodLookup = foodClient
+	} else {
+		logger.Info("food api enrichment disabled (FOOD_API_BASE_URL not set)")
 	}
 
 	profileRepo := profile.NewStore(db.Pool)
@@ -104,11 +110,10 @@ func run(cfg *config.Config, logger *slog.Logger) error {
 		DB:            db,
 		ProfileRepo:   profileRepo,
 		Auth:          verifier,
-		AuthAdmin:     adminClient,
 		AuthService:   authService,
 		FoodPriceRepo: foodPriceRepo,
 		Gemini:        geminiClient,
-		FoodLookup:    foodClient,
+		FoodLookup:    foodLookup,
 		MealRepo:      mealRepo,
 	})
 

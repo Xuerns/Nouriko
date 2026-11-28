@@ -51,7 +51,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { HealthLabel, SavedMealDTO } from "@/lib/types";
+import type { SavedMealDTO } from "@/lib/types";
 
 interface SavedMealItemProps {
   meal: SavedMealDTO;
@@ -67,16 +67,6 @@ const MEAL_TIME_ICONS = {
   dinner: Moon,
   snack: Cookie,
 } as const;
-
-export function getHealthLabelTextClass(label: HealthLabel): string {
-  if (label === "good") {
-    return "text-[var(--score-good-text)]";
-  }
-  if (label === "fair") {
-    return "text-[var(--score-fair-text)]";
-  }
-  return "text-[var(--score-low-text)]";
-}
 
 interface DeleteIconActionProps {
   mealName: string;

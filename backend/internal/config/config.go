@@ -82,7 +82,8 @@ type Gemini struct {
 	Timeout       time.Duration `env:"GEMINI_TIMEOUT" envDefault:"60s"`
 }
 
-// FoodAPI configures the nutrition data provider (provider not decided yet).
+// FoodAPI configures the external nutrition data provider (e.g. Open Food Facts).
+// Leave BaseURL empty to disable external macro enrichment.
 type FoodAPI struct {
 	BaseURL string `env:"FOOD_API_BASE_URL"`
 	APIKey  string `env:"FOOD_API_KEY"`
